@@ -25,7 +25,10 @@ jobs:
         with:
           node-version: 24
           cache: npm
-      - run: npm ci
+      # npm ci 는 리눅스에서 잠금 파일에 없는 선택 패키지(@emnapi, wasm 대체 빌드용)를 이유로 멈춘다.
+      # 맥에서 만든 잠금 파일의 알려진 문제라, 잠금 파일의 버전은 그대로 따르되 빠진 것만 채우는 npm install 을 쓴다.
+      - name: 패키지 설치
+        run: npm install --no-audit --no-fund
       - name: 단위 테스트 (정답 유일성 포함)
         run: npm test
       - name: 빌드 (타입 검사 포함)
