@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>탐정학원 · 확정안과 시안 나란히 보기</title>
+    <style>*{box-sizing:border-box}html,body{margin:0}body{color:#f1f1f1;background:#17181a;min-height:100vh;padding:28px 24px 40px;font-family:-apple-system,Apple SD Gothic Neo,Malgun Gothic,sans-serif}h1{letter-spacing:-.02em;margin:0 0 6px;font-size:22px}p{color:#b9babd;max-width:70ch;margin:0 0 22px;font-size:14px;line-height:1.6}.pair{flex-wrap:wrap;gap:32px;display:flex}figure{margin:0}figcaption{margin-bottom:10px;font-size:15px;font-weight:700}figcaption span{color:#9a9ca0;margin-left:8px;font-weight:400}iframe{background:#000;border:0;width:390px;height:760px;display:block;box-shadow:0 0 0 1px #3a3c40,0 30px 60px -30px #000}</style>
+  </head>
+  <body>
+    <h1>탐정학원 · 세 안 나란히 보기</h1>
+    <p>왼쪽부터 확정안(D안 1비트 흑백 도트), 이전 확정안(B안 픽셀 아트), 비교용 시안(C안 누아르 카툰)입니다. 세 화면은 진행 상태를 따로 저장하므로 각각 눌러 가며 볼 수 있습니다. 화면 왼쪽 가장자리의 QA 손잡이로 진행 상태를 바꿀 수 있습니다. D안은 사건을 열 때 자막 화면이 잠깐 뜨고, 화면을 누르면 바로 넘어갑니다.</p>
+    <div class="pair">
+      <figure>
+        <figcaption>D안 · 1비트 흑백 도트<span>확정안</span></figcaption>
+        <iframe title="D안 1비트 흑백 도트" src="./index.html?demo=1&save=cmp-d"></iframe>
+      </figure>
+      <figure>
+        <figcaption>B안 · 픽셀 아트<span>이전 확정안</span></figcaption>
+        <iframe title="B안 픽셀 아트" src="./pixel.html?demo=1&save=cmp-b"></iframe>
+      </figure>
+      <figure>
+        <figcaption>C안 · 누아르 카툰<span>비교용 시안</span></figcaption>
+        <iframe title="C안 누아르 카툰" src="./noir.html?demo=1&save=cmp-c"></iframe>
+      </figure>
+    </div>
+  </body>
+</html>

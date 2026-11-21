@@ -1,0 +1,74 @@
+@layer layout {
+  /* 공통 부품: 수사 지원 서랍 */
+
+  /* ───────── 수사 지원 ───────── */
+
+  /* 단계 사이는 실선 하나로만 나눈다 (시트 안에 카드를 또 넣지 않는다) */
+  .hint {
+    padding: 16px 0;
+    border-top: 1px solid var(--px-slate-edge);
+  }
+
+  .hint:first-child {
+    padding-top: 2px;
+    border-top: 0;
+  }
+
+  /* 연 힌트는 종이 쪽지가 된다 */
+  .hint[data-opened="true"] {
+    margin: 6px 0 10px;
+    padding: 14px;
+    border-top: 0;
+    border-radius: 5px;
+    background-color: var(--px-paper-lit);
+    color: var(--px-ink);
+  }
+
+  .hint[data-opened="true"] + .hint {
+    border-top: 0;
+  }
+
+  .hint__name {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 15px;
+    font-weight: 700;
+  }
+
+  .hint__tier {
+    width: 22px;
+    height: 22px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    font-size: 12px;
+    font-weight: 800;
+    background: var(--px-brass);
+    color: var(--px-ink);
+  }
+
+  .hint__text {
+    margin-top: 8px;
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  .hint__open {
+    margin-top: 10px;
+    width: 100%;
+  }
+
+  .hint__short {
+    margin-top: 8px;
+    font-size: 13px;
+    color: var(--px-wine-lit);
+  }
+
+  .hints__note {
+    padding: 14px 0 0;
+    border-top: 1px solid var(--px-slate-edge);
+    font-size: 13px;
+    color: var(--px-paper-dim);
+  }
+}

@@ -1,0 +1,1478 @@
+/* 겉모습 · D안 1비트 흑백 도트 (2026-11-22 확정)
+   진입점 index.html → src/main.tsx (2026-11-22 에 확정안이 되었다). 배치(@layer layout)와 픽셀안의 격자 규칙(pixel*.css)을 깔고 그 위에 입힌다.
+
+   규칙
+   1. 화면의 색은 두 가지뿐이다: 검정(#000)과 흰색(--m-w). 회색·투명도·흐림을 쓰지 않는다.
+      중간 밝기는 흰 점과 검은 점을 격자로 섞어(점묘) 만든다. 흐리게 보일 것은 점묘 마스크로 반만 찍는다.
+   2. 점 하나는 2px. 글자는 Neo둥근모 16px(1배)·32px(2배)·48px(3배). 작은 꼬리말(라벨)만 갈무리11 12px.
+      흐린 회색 글자가 없으므로, 덜 중요한 글자는 색이 아니라 크기로 낮춘다.
+   3. 종이는 없다. 모든 문서는 검은 바탕에 흰 줄을 두른 창이고, 고른 것·누를 것은 흰 바탕에 검은 글자로 뒤집는다.
+   4. 화면은 텍스트 어드벤처처럼 짠다: 위에 장면, 그 아래 한 줄 서술(▌커서), 그 아래 명령 창.
+   5. 움직임은 끊어서 보여 준다(steps). 화면 전환은 격자가 차오르며 덮였다가 걷힌다.
+
+   글자 크기: pixel.css 가 본문에 정한 15·30px 이 16·32px 격자에 놓이도록 Neo둥근모를 비율로 올린 이름을 둔다
+   (NeoDGM-15, size-adjust). 이 파일에서 새로 정하는 글자는 "NeoDGM"(--m-font) 에 16·32·48px 을 쓴다. */
+
+@font-face {
+  font-family: "NeoDGM";
+  font-weight: 400;
+  font-display: swap;
+  src: url("../../node_modules/@kfonts/neodgm/neodgm.woff2") format("woff2");
+}
+
+/* 15px → 16px, 30px → 32px */
+@font-face {
+  font-family: "NeoDGM-15";
+  font-weight: 400;
+  font-display: swap;
+  size-adjust: 106.6667%;
+  src: url("../../node_modules/@kfonts/neodgm/neodgm.woff2") format("woff2");
+}
+
+:root[data-art="mono"] {
+  color-scheme: dark;
+
+  --m-k: #000000;
+  --m-w: #f1f1ea;
+  --m-font: "NeoDGM", "Galmuri14", monospace;
+  --m-cap: "Galmuri11", "NeoDGM", monospace;
+
+  /* 점묘: 흰 점의 비율 */
+  --m-d06: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8'%3E%3Crect width='2' height='2' fill='%23f1f1ea'/%3E%3C/svg%3E") 0 0 / 8px 8px;
+  --m-d25: repeating-conic-gradient(var(--m-w) 0% 25%, #000 0% 100%) 0 0 / 4px 4px;
+  --m-d50: repeating-conic-gradient(var(--m-w) 0% 25%, #000 0% 50%) 0 0 / 4px 4px;
+  --m-d75: repeating-conic-gradient(#000 0% 25%, var(--m-w) 0% 100%) 0 0 / 4px 4px;
+  /* 흐리게 보일 것에 씌우는 마스크: 점의 반만 남긴다 */
+  --m-ghost: repeating-conic-gradient(#000 0% 25%, transparent 0% 50%) 0 0 / 2px 2px;
+  --m-ghost2: repeating-conic-gradient(#000 0% 25%, transparent 0% 50%) 0 0 / 4px 4px;
+
+  /* 창틀: 모서리 한 점이 빠진 흰 줄. 겹줄은 고른 것·주된 것에 쓴다. */
+  --m-frame: 0 -2px 0 0 var(--m-w), 0 2px 0 0 var(--m-w), -2px 0 0 0 var(--m-w), 2px 0 0 0 var(--m-w);
+  --m-frame2: var(--m-frame), inset 0 0 0 2px #000, inset 0 0 0 4px var(--m-w);
+
+  /* 픽셀안의 이름을 두 색으로 돌린다. 바탕 계열은 검정, 줄·글자·강조 계열은 흰색. */
+  --px-ink: var(--m-w);
+  --px-night: #000;
+  --px-slate: #000;
+  --px-slate-lit: #000;
+  --px-slate-edge: #000;
+  --px-paper: #000;
+  --px-paper-lit: #000;
+  --px-paper-dim: #000;
+  --px-sepia: var(--m-w);
+  --px-wine: var(--m-w);
+  --px-wine-dark: var(--m-w);
+  --px-wine-lit: var(--m-w);
+  --px-red: var(--m-w);
+  --px-brass: var(--m-w);
+  --px-brass-dark: var(--m-w);
+  --px-brass-lit: var(--m-w);
+  --px-wood: #000;
+  --px-wood-dark: #000;
+  --px-photo: var(--m-w);
+  --px-dither: none;
+  --px-drop: 0 0 0 0 transparent;
+  --px-bevel-paper: 0 0 0 0 transparent;
+  --px-frame: var(--m-frame);
+  --px-frame-brass: var(--m-frame2);
+
+  --font-px: "NeoDGM-15", "Galmuri14", monospace;
+  --font-px-big: "Galmuri11", "NeoDGM", monospace;
+}
+
+:root[data-art="mono"] body {
+  background: #000;
+  color: var(--m-w);
+}
+
+.app {
+  background-color: #000;
+  box-shadow: none;
+}
+
+/* ───────── 공통 ───────── */
+
+.inkworld {
+  color: var(--m-w);
+  line-height: 1.5;
+}
+
+/* 화면이 바뀔 때 흐려지며 들어오지 않는다(회색이 생긴다). 전환은 아래의 격자 덮기가 맡는다. */
+.screen {
+  animation: none;
+}
+
+.inkworld :focus-visible {
+  outline: 2px solid var(--m-w);
+  outline-offset: 2px;
+}
+
+.inkworld ::selection {
+  background: var(--m-w);
+  color: #000;
+}
+
+/* 표시(동그라미·가위표·체크): 겹친 자리의 색을 뒤집어 흰 바탕에서도 보이게 한다 */
+.pxmark {
+  mix-blend-mode: difference;
+}
+
+.diamonds i {
+  width: 10px;
+  height: 10px;
+  border: 2px solid var(--m-w);
+}
+
+.diamonds i[data-on="true"] {
+  background: var(--m-w);
+}
+
+/* 등급 표식: 흰 칸에 검은 글자 */
+.pxrank,
+.pxrank[data-rank] {
+  width: 24px;
+  height: 24px;
+  font-family: var(--m-font);
+  font-size: 16px;
+  line-height: 1;
+  color: #000;
+  background: var(--m-w);
+  box-shadow: none;
+}
+
+/* 단추: 흰 줄을 두른 검은 칸. 주 단추는 뒤집힌 흰 칸이고 ▶ 커서가 깜빡인다. */
+.inkbtn {
+  min-height: 48px;
+  margin-bottom: 4px;
+  font-family: var(--m-font);
+  font-size: 32px;
+  color: var(--m-w);
+  background: #000;
+  box-shadow: var(--m-frame);
+}
+
+.inkbtn--wine {
+  color: #000;
+  background: var(--m-w);
+  box-shadow: var(--m-frame);
+}
+
+.inkbtn--wine::before {
+  content: "▶";
+  font-size: 16px;
+  animation: m-blink 800ms steps(1) infinite;
+}
+
+.inkbtn:active:not(:disabled),
+.inkbtn--wine:active:not(:disabled) {
+  transform: none;
+  color: #000;
+  background: var(--m-w);
+  box-shadow: var(--m-frame);
+}
+
+.inkbtn--wine:active:not(:disabled) {
+  color: var(--m-w);
+  background: #000;
+}
+
+/* 누를 수 없는 단추: 큰 글자는 반만 찍고, 작은 글자는 읽히게 둔 채 줄만 점선으로 바꾼다 */
+.inkbtn:disabled {
+  color: var(--m-w);
+  background: #000;
+  box-shadow: var(--m-frame);
+  -webkit-mask: var(--m-ghost2);
+  mask: var(--m-ghost2);
+}
+
+.inkbtn--sm:disabled,
+.deskfoot__submit[data-long="true"]:disabled {
+  box-shadow: none;
+  outline: 2px dotted var(--m-w);
+  outline-offset: -2px;
+  -webkit-mask: none;
+  mask: none;
+}
+
+.inkbtn:disabled::before {
+  content: none;
+}
+
+.inkbtn--sm {
+  min-height: 44px;
+  font-family: var(--m-font);
+  font-size: 16px;
+}
+
+@keyframes m-blink {
+  50% {
+    visibility: hidden;
+  }
+}
+
+.tilebtn {
+  color: var(--m-w);
+}
+
+.tilebtn::before {
+  inset: 6px;
+  background: #000;
+  box-shadow: var(--m-frame);
+}
+
+.tilebtn .sprite path:first-child {
+  fill: var(--m-w);
+}
+
+.tilebtn:active {
+  transform: none;
+}
+
+.tilebtn:active::before {
+  background: var(--m-w);
+}
+
+/* 인장: 덜 찍힌 자리가 있는 겹줄 네모 */
+.pxstamp {
+  font-family: var(--m-font);
+  font-size: 32px;
+  line-height: 32px;
+  color: var(--m-w);
+  background: #000;
+  border: 2px solid var(--m-w);
+  outline: 2px solid var(--m-w);
+  outline-offset: 2px;
+  -webkit-mask: none;
+  mask: none;
+}
+
+.pxstamp[data-rows="1"] {
+  width: auto;
+  height: auto;
+  padding: 2px 8px;
+  white-space: nowrap;
+}
+
+.pxstamp[data-animate="true"] {
+  animation: m-stamp 360ms steps(1) var(--stamp-delay, 0ms) both;
+}
+
+@keyframes m-stamp {
+  0% {
+    visibility: hidden;
+  }
+  20% {
+    visibility: visible;
+    color: #000;
+    background: var(--m-w);
+  }
+  60% {
+    color: var(--m-w);
+    background: #000;
+  }
+  80% {
+    color: #000;
+    background: var(--m-w);
+  }
+}
+
+/* ───────── 메인 홈: 장면 → 서술 한 줄 → 명령 창 ───────── */
+
+.hall {
+  background-color: #000;
+  color: var(--m-w);
+}
+
+.hall__scene {
+  aspect-ratio: auto;
+  height: clamp(150px, 30dvh, 264px);
+  min-height: 0;
+  max-height: none;
+  margin-bottom: 0;
+  background: #000;
+  border-bottom: 2px solid var(--m-w);
+  box-shadow: none;
+}
+
+.hall__scene img {
+  width: 100%;
+  height: 100%;
+  object-fit: none;
+  object-position: 50% 44%;
+}
+
+/* 장면 두 장을 겹쳐 두고 끊어서 바꿔 보여 준다: 가까운 등이 꺼졌다 켜지고, 끝 방의 사람이 사라졌다 돌아온다 */
+.hall__scene::before,
+.hall__scene::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  left: 0;
+  top: 0;
+  width: auto;
+  height: auto;
+  aspect-ratio: auto;
+  transform: none;
+  mix-blend-mode: normal;
+  background-color: #000;
+  background-repeat: no-repeat;
+  background-position: 50% 44%;
+  background-size: 480px 320px;
+  image-rendering: pixelated;
+  opacity: 0;
+}
+
+.hall__scene::before {
+  background-image: url("../assets/art/mono/corridor-empty.png");
+  animation: m-gone 19s steps(1) infinite;
+}
+
+.hall__scene::after {
+  background-image: url("../assets/art/mono/corridor-dim.png");
+  animation: m-flicker 19s steps(1) infinite;
+}
+
+@keyframes m-flicker {
+  0%,
+  57.9% {
+    opacity: 0;
+  }
+  58% {
+    opacity: 1;
+  }
+  58.5% {
+    opacity: 0;
+  }
+  59.2% {
+    opacity: 1;
+  }
+  60.4% {
+    opacity: 0;
+  }
+  79% {
+    opacity: 1;
+  }
+  79.6% {
+    opacity: 0;
+  }
+  80.1% {
+    opacity: 1;
+  }
+  81%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes m-gone {
+  0%,
+  59.2% {
+    opacity: 0;
+  }
+  59.3%,
+  80.1% {
+    opacity: 1;
+  }
+  80.2%,
+  100% {
+    opacity: 0;
+  }
+}
+
+/* 학원 이름과 등급: 장면 위의 검은 띠 */
+.hall__top {
+  position: relative;
+  order: -1;
+  z-index: 3;
+  align-items: flex-start;
+  padding: calc(10px + env(safe-area-inset-top)) 10px 10px;
+  background: #000;
+  border-bottom: 2px solid var(--m-w);
+}
+
+.hall__sign {
+  gap: 8px;
+}
+
+.hall__name span:first-child {
+  font-family: var(--m-font);
+  font-size: 32px;
+  color: var(--m-w);
+  text-shadow: none;
+}
+
+.hall__name span:last-child {
+  margin-top: 4px;
+  font-family: var(--m-font);
+  font-size: 16px;
+  letter-spacing: 0;
+  color: var(--m-w);
+  text-shadow: none;
+}
+
+.hall__rank {
+  margin-top: 2px;
+  padding: 0 8px 0 0;
+  gap: 8px;
+  font-family: var(--m-font);
+  font-size: 16px;
+  line-height: 24px;
+  color: var(--m-w);
+  background: #000;
+  box-shadow: var(--m-frame);
+}
+
+/* 서술 한 줄: 장면 아래, 명령 창 위 */
+.narr {
+  position: relative;
+  z-index: 2;
+  flex: none;
+  padding: 10px 12px 8px;
+  font-family: var(--m-font);
+  font-size: 16px;
+  line-height: 22px;
+  color: var(--m-w);
+  background: #000;
+}
+
+.narr__line {
+  position: relative;
+  display: block;
+}
+
+/* 문장 전체가 차지할 자리(보이지 않는다)와, 그 위에 한 자씩 찍히는 글 */
+.narr__room {
+  display: block;
+  visibility: hidden;
+}
+
+.narr__typed {
+  position: absolute;
+  inset: 0;
+}
+
+.narr__room::before,
+.narr__typed::before {
+  content: "> ";
+}
+
+.narr__caret {
+  display: inline-block;
+  width: 8px;
+  height: 16px;
+  margin-left: 2px;
+  vertical-align: -2px;
+  background: var(--m-w);
+  animation: m-blink 700ms steps(1) infinite;
+}
+
+/* 게시판은 판이 아니라 명령 창이 놓이는 자리다 */
+.bulletin {
+  margin: 0 10px;
+  padding: 2px 0 6px;
+  gap: 14px;
+  justify-content: center;
+  background: none;
+  box-shadow: none;
+}
+
+.posting {
+  color: var(--m-w);
+  animation: m-open 200ms steps(2) both;
+}
+
+@keyframes m-open {
+  from {
+    clip-path: inset(46% 0 46% 0);
+  }
+}
+
+.posting__pin,
+.promoslip__pin,
+.statement__pin {
+  display: none;
+}
+
+.posting__leaf {
+  padding: 12px 14px 12px;
+  background: #000;
+  box-shadow: var(--m-frame2);
+}
+
+.posting__title {
+  font-family: var(--m-font);
+  font-size: 32px;
+  line-height: 36px;
+}
+
+.posting__date {
+  margin-top: 6px;
+  padding: 0 6px;
+  font-family: var(--m-font);
+  font-size: 16px;
+  line-height: 20px;
+  color: #000;
+  background: var(--m-w);
+  border: 0;
+}
+
+.posting__subject {
+  margin-top: 6px;
+  padding-bottom: 8px;
+  color: var(--m-w);
+  border-bottom: 2px solid var(--m-w);
+}
+
+.posting__status {
+  font-family: var(--m-font);
+  font-size: 16px;
+  line-height: 1.4;
+}
+
+.posting__status::before {
+  content: "[";
+}
+
+.posting__status::after {
+  content: "]";
+}
+
+.posting__meta {
+  padding: 8px 0 14px;
+}
+
+.posting__meta i {
+  font-family: var(--m-cap);
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--m-w);
+}
+
+.posting__meta b {
+  font-size: 16px;
+  line-height: 22px;
+}
+
+.posting:active .posting__cta {
+  transform: none;
+  color: var(--m-w);
+  background: #000;
+  box-shadow: var(--m-frame);
+}
+
+.posting[data-lifting="true"] {
+  transform: none;
+}
+
+.posting[data-lifting="true"] .posting__leaf {
+  box-shadow: var(--m-frame2);
+  animation: m-invert 150ms steps(1) both;
+}
+
+@keyframes m-invert {
+  0%,
+  66% {
+    filter: invert(1);
+  }
+  33%,
+  100% {
+    filter: none;
+  }
+}
+
+.posting__stamp {
+  right: 0;
+  top: 0;
+  margin-top: 0;
+}
+
+.posting__sealed {
+  width: 56px;
+  min-height: 32px;
+}
+
+/* 공고의 인장은 작은 겹줄 꼬리표로 줄인다(유형·난이도와 한 줄에 놓인다) */
+.posting__stamp.pxstamp {
+  padding: 2px 6px;
+  font-size: 16px;
+  line-height: 20px;
+}
+
+.promoslip {
+  gap: 14px;
+  padding-left: 4px;
+  align-items: center;
+}
+
+.promoslip__tag {
+  gap: 4px;
+  padding: 8px 10px 10px;
+  background: #000;
+  box-shadow: var(--m-frame);
+}
+
+.promoslip__title {
+  font-size: 16px;
+  line-height: 22px;
+  color: var(--m-w);
+}
+
+.promoslip__note,
+.promoslip__reqs li {
+  font-size: 16px;
+  line-height: 22px;
+  color: var(--m-w);
+}
+
+.tickbox {
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--m-w);
+  background: #000;
+}
+
+/* 아래 막대: 상태 창 세 칸 */
+.ledge {
+  gap: 0;
+  margin-top: 10px;
+  padding: 0 0 env(safe-area-inset-bottom);
+  background: #000;
+  box-shadow: none;
+  border-top: 2px solid var(--m-w);
+}
+
+.ledge__item {
+  grid-template-rows: 52px auto auto;
+  margin-bottom: 0;
+  padding: 12px 2px 8px;
+  color: var(--m-w);
+  background: #000;
+  box-shadow: none;
+}
+
+.ledge__item + .ledge__item {
+  border-left: 2px solid var(--m-w);
+}
+
+button.ledge__item:active {
+  transform: none;
+  box-shadow: none;
+  filter: invert(1);
+}
+
+.ledge__name {
+  margin-top: 8px;
+  font-size: 16px;
+  line-height: 20px;
+}
+
+.ledge__sub {
+  font-family: var(--m-cap);
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--m-w);
+}
+
+.ledge__item[data-primary="true"] {
+  box-shadow: inset 0 0 0 2px #000, inset 0 0 0 4px var(--m-w);
+}
+
+.ledge__item[data-primary="true"] .ledge__sub {
+  color: #000;
+  background: var(--m-w);
+  padding: 0 4px;
+}
+
+.ledge__item--coins .ledge__name {
+  font-family: var(--m-font);
+  font-size: 32px;
+  line-height: 24px;
+  color: var(--m-w);
+}
+
+/* ───────── 추리 책상 ───────── */
+
+.desk {
+  background-color: #000;
+  color: var(--m-w);
+}
+
+.desk__wood {
+  object-fit: none;
+  object-position: 50% 0;
+}
+
+.deskbar {
+  background: #000;
+  border-bottom: 2px solid var(--m-w);
+  padding-bottom: 4px;
+}
+
+.deskbar__tag {
+  min-height: 32px;
+  padding: 0 4px 0 2px;
+  color: var(--m-w);
+  background: none;
+  border: 0;
+  box-shadow: none;
+}
+
+.deskbar__type {
+  font-size: 16px;
+}
+
+.deskbar__timer {
+  font-family: var(--m-font);
+  font-size: 16px;
+  color: var(--m-w);
+}
+
+.credittag {
+  min-height: 32px;
+  padding: 0 8px 0 6px;
+  font-family: var(--m-font);
+  font-size: 16px;
+  color: var(--m-w);
+  background: #000;
+  border: 0;
+  box-shadow: var(--m-frame);
+}
+
+.desk__scroll {
+  padding: 10px 12px 8px;
+}
+
+.code {
+  gap: 6px;
+}
+
+.exampaper {
+  padding: 10px 14px 6px;
+  background: #000;
+  box-shadow: var(--m-frame);
+}
+
+.exampaper__title {
+  font-family: var(--m-font);
+  font-size: 32px;
+  line-height: 36px;
+}
+
+.exampaper__text {
+  margin-top: 4px;
+  font-size: 16px;
+  line-height: 20px;
+  color: var(--m-w);
+}
+
+.exampaper__hint {
+  border-top: 2px dotted var(--m-w);
+  font-size: 16px;
+  line-height: 22px;
+}
+
+.exampaper__hint b {
+  font-size: 16px;
+  line-height: 22px;
+  color: var(--m-w);
+}
+
+.exampaper__hint b::before {
+  content: "! ";
+}
+
+.clues {
+  margin-top: 6px;
+  border-top: 2px solid var(--m-w);
+}
+
+.clues__head {
+  padding: 4px 0 2px;
+}
+
+.clues__head h2 {
+  font-size: 16px;
+}
+
+.clues__legend {
+  font-family: var(--m-cap);
+  font-size: 12px;
+  color: var(--m-w);
+}
+
+.peg {
+  width: 8px;
+  height: 8px;
+  border: 2px solid var(--m-w);
+}
+
+.peg[data-kind="place"] {
+  background: var(--m-w);
+}
+
+.peg[data-kind="none"] {
+  border-color: transparent;
+  background: linear-gradient(var(--m-w), var(--m-w)) center / 6px 2px no-repeat;
+}
+
+.clue {
+  gap: 8px;
+  min-height: 36px;
+  border-top: 2px dotted var(--m-w);
+}
+
+.clue__digit {
+  width: 20px;
+  height: 28px;
+  margin: 0 2px;
+  font-family: var(--m-font);
+  font-size: 32px;
+  line-height: 28px;
+  color: var(--m-w);
+  background: #000;
+  box-shadow: var(--m-frame);
+}
+
+.clue__digit[data-memo="out"] {
+  color: var(--m-w);
+  background: #000;
+}
+
+.clue__text {
+  font-size: 16px;
+  line-height: 18px;
+}
+
+.memo {
+  border-top: 2px dotted var(--m-w);
+}
+
+.memo__head h2 {
+  font-size: 16px;
+}
+
+.memo__head p {
+  font-family: var(--m-cap);
+  font-size: 12px;
+  color: var(--m-w);
+}
+
+.memo__chip {
+  min-height: 44px;
+  font-family: var(--m-font);
+  font-size: 32px;
+  color: var(--m-w);
+}
+
+.memo__chip[data-state="out"] {
+  color: var(--m-w);
+}
+
+.memo__chip:active:not(:disabled) {
+  transform: none;
+  color: #000;
+  background: var(--m-w);
+}
+
+/* 자물쇠: 흰 몸통에 검은 창 세 개 */
+.lock__shackle {
+  margin-bottom: -58px;
+}
+
+.lock__body {
+  background: var(--m-w);
+  box-shadow:
+    var(--m-frame),
+    inset 0 0 0 2px var(--m-w),
+    inset 0 0 0 4px #000;
+}
+
+.lock__rivet {
+  background: #000;
+}
+
+.lock__rivet--tl,
+.lock__rivet--tr {
+  top: 10px;
+}
+.lock__rivet--bl,
+.lock__rivet--br {
+  bottom: 10px;
+}
+.lock__rivet--tl,
+.lock__rivet--bl {
+  left: 10px;
+}
+.lock__rivet--tr,
+.lock__rivet--br {
+  right: 10px;
+}
+
+.dial__step {
+  color: #000;
+}
+
+.dial__step:active:not(:disabled) {
+  transform: none;
+  filter: invert(1);
+}
+
+.dial__step:disabled {
+  opacity: 1;
+  -webkit-mask: var(--m-ghost2);
+  mask: var(--m-ghost2);
+}
+
+.dial__window {
+  background: #000;
+  box-shadow: 0 -2px 0 0 #000, 0 2px 0 0 #000, -2px 0 0 0 #000, 2px 0 0 0 #000;
+}
+
+.dial__window:focus-visible {
+  outline: 2px solid #000;
+  outline-offset: 4px;
+}
+
+.dial__face {
+  font-family: var(--m-font);
+  font-size: 48px;
+  color: var(--m-w);
+  background-color: #000;
+  border-top: 2px dotted var(--m-w);
+  border-bottom: 2px dotted var(--m-w);
+}
+
+/* 릴의 위아래는 점묘로 어두워진다 */
+.dial__shade {
+  background:
+    repeating-conic-gradient(#000 0% 25%, transparent 0% 50%) 0 0 / 4px 4px repeat-x,
+    repeating-conic-gradient(#000 0% 25%, transparent 0% 50%) 0 100% / 4px 4px repeat-x;
+  background-size:
+    4px 26%,
+    4px 26%;
+}
+
+.dial[data-duplicate="true"] .dial__face {
+  color: #000;
+  background-color: var(--m-w);
+}
+
+.dial[data-duplicate="true"] .dial__window {
+  box-shadow: 0 -2px 0 0 #000, 0 2px 0 0 #000, -2px 0 0 0 #000, 2px 0 0 0 #000;
+}
+
+.lock__status,
+.lock.lock--open[data-verdict] .lock__status {
+  padding: 2px 10px;
+  font-family: var(--m-font);
+  font-size: 16px;
+  line-height: 22px;
+  color: var(--m-w);
+  background: #000;
+  box-shadow: var(--m-frame);
+}
+
+.lock__status[data-warn="true"] {
+  color: #000;
+  background: var(--m-w);
+}
+
+.lock[data-verdict="correct"]:not(.lock--open) .lock__status {
+  color: #000;
+  background: var(--m-w);
+  box-shadow: var(--m-frame);
+}
+
+.deskfoot {
+  gap: 12px;
+  padding-top: 10px;
+  background: #000;
+  border-top: 2px solid var(--m-w);
+}
+
+/* 단추가 둘일 때: 주 단추만 큰 글자, 곁 단추는 작은 글자 */
+.deskfoot .inkbtn {
+  padding: 0 10px;
+}
+
+.deskfoot .inkbtn:not(.inkbtn--wine):not(:only-child) {
+  font-size: 16px;
+}
+
+.deskfoot .inkbtn--wine:not(:only-child)::before {
+  content: none;
+}
+
+.deskfoot__count {
+  min-width: 20px;
+  height: 20px;
+  font-family: var(--m-font);
+  font-size: 16px;
+  color: #000;
+  background: var(--m-w);
+}
+
+.inkbtn:active .deskfoot__count {
+  color: var(--m-w);
+  background: #000;
+}
+
+.slip {
+  font-size: 16px;
+  line-height: 22px;
+  color: #000;
+  background: var(--m-w);
+  box-shadow: var(--m-frame), 0 0 0 4px #000;
+}
+
+.slip strong {
+  font-size: 16px;
+  color: #000;
+}
+
+.slip strong::before {
+  content: "! ";
+}
+
+.slip__action {
+  font-family: var(--m-font);
+  font-size: 16px;
+  color: #000;
+}
+
+/* 수사 지원 서랍 */
+.sheet-backdrop--paper {
+  background: repeating-conic-gradient(#000 0% 25%, transparent 0% 50%) 0 0 / 4px 4px;
+}
+
+.hints--paper {
+  font-family: var(--m-font);
+  font-size: 16px;
+  color: var(--m-w);
+  background: #000;
+  border-top: 2px solid var(--m-w);
+  box-shadow: 0 -6px 0 0 #000, 0 -8px 0 0 var(--m-w);
+}
+
+.hints--paper .sheet__title {
+  font-family: var(--m-font);
+  font-size: 32px;
+}
+
+.hints--paper .iconbtn,
+.pxclose {
+  font-size: 16px;
+  color: var(--m-w);
+}
+
+.hints--paper .hint {
+  border-top: 2px dotted var(--m-w);
+}
+
+.hints--paper .hint:first-child {
+  border-top: 0;
+}
+
+.hints--paper .hint__open {
+  width: calc(100% - 4px);
+  margin: 10px 2px 4px;
+}
+
+.hints--paper .hint[data-opened="true"] {
+  color: var(--m-w);
+  background: #000;
+  box-shadow: var(--m-frame);
+}
+
+.hints--paper .hint__name,
+.hints--paper .hint__text,
+.hints--paper .hint__short,
+.hints--paper .hints__note {
+  font-family: var(--m-font);
+  font-size: 16px;
+  line-height: 22px;
+  color: var(--m-w);
+}
+
+.hints--paper .hint__tier {
+  font-family: var(--m-font);
+  font-size: 16px;
+  color: #000;
+  background: var(--m-w);
+}
+
+.hints--paper .hints__note {
+  border-top: 2px dotted var(--m-w);
+}
+
+/* ───────── 채점 결과 ───────── */
+
+.graded {
+  padding: 14px 14px 6px;
+}
+
+.graded .exampaper__title {
+  padding-right: 92px;
+  font-size: 32px;
+}
+
+.graded__lead {
+  padding-right: 96px;
+  font-size: 16px;
+  line-height: 22px;
+  color: var(--m-w);
+}
+
+.graded__facts {
+  border-top: 2px solid var(--m-w);
+}
+
+.graded__facts dt {
+  font-family: var(--m-cap);
+  font-size: 12px;
+  color: var(--m-w);
+}
+
+.graded__facts dd {
+  font-family: var(--m-font);
+  font-size: 16px;
+  line-height: 24px;
+}
+
+.graded__prize,
+.graded__explain {
+  border-top: 2px dotted var(--m-w);
+}
+
+.graded__amount {
+  font-family: var(--m-font);
+  font-size: 48px;
+  color: var(--m-w);
+}
+
+.graded__balance,
+.graded__claimed,
+.graded__toggle {
+  font-family: var(--m-font);
+  font-size: 16px;
+  color: var(--m-w);
+}
+
+.graded__nohint {
+  padding: 0 6px;
+  font-size: 16px;
+  line-height: 22px;
+  color: #000;
+  background: var(--m-w);
+  border: 0;
+}
+
+.graded__steps li {
+  grid-template-columns: 26px 1fr;
+  font-size: 16px;
+  line-height: 22px;
+}
+
+.graded__no {
+  font-family: var(--m-font);
+  font-size: 16px;
+  line-height: 22px;
+  color: #000;
+  background: var(--m-w);
+  width: 18px;
+  height: 20px;
+  text-align: center;
+}
+
+.desk__replay {
+  font-family: var(--m-font);
+  font-size: 16px;
+  color: var(--m-w);
+  background: #000;
+  box-shadow: var(--m-frame);
+}
+
+.pxcaret {
+  background: var(--m-w);
+}
+
+/* ───────── 장면 전환: 화면이 격자로 뜯겨 나가고, 새 화면이 격자로 차오른다 ─────────
+   8px 칸마다 네모 구멍이 0·2·4·6·8px 로 커진다(다섯 장면). 회색 없이 두 색만으로 넘어간다. */
+
+@property --m-cell {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+
+:root[data-nav]::view-transition-old(root) {
+  animation: 200ms steps(5, jump-none) both m-cell-grow;
+  -webkit-mask: conic-gradient(from 0deg at var(--m-cell) var(--m-cell), #000 75%, transparent 0) 0 0 / 8px 8px;
+  mask: conic-gradient(from 0deg at var(--m-cell) var(--m-cell), #000 75%, transparent 0) 0 0 / 8px 8px;
+}
+
+:root[data-nav]::view-transition-new(root) {
+  animation: 200ms steps(5, jump-none) 220ms both m-cell-grow;
+  -webkit-mask: conic-gradient(from 0deg at var(--m-cell) var(--m-cell), transparent 75%, #000 0) 0 0 / 8px 8px;
+  mask: conic-gradient(from 0deg at var(--m-cell) var(--m-cell), transparent 75%, #000 0) 0 0 / 8px 8px;
+}
+
+:root[data-nav]::view-transition-group(root) {
+  background: #000;
+}
+
+@keyframes m-cell-grow {
+  from {
+    --m-cell: 0px;
+    opacity: 1;
+  }
+  to {
+    --m-cell: 8px;
+    opacity: 1;
+  }
+}
+
+/* ───────── 자막 화면: 장면이 바뀔 때 잠깐 뜨는 검은 화면 ───────── */
+
+.cine {
+  position: absolute;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 12px;
+  padding: 0 24px 8dvh;
+  font-family: var(--m-font);
+  color: var(--m-w);
+  text-align: center;
+  background: #000;
+  cursor: pointer;
+}
+
+/* 위아래의 겹줄: 영화 자막 화면의 테 */
+.cine::before,
+.cine::after {
+  content: "";
+  position: absolute;
+  left: 24px;
+  right: 24px;
+  height: 6px;
+  border-top: 2px solid var(--m-w);
+  border-bottom: 2px solid var(--m-w);
+}
+
+.cine::before {
+  top: 30%;
+}
+
+.cine::after {
+  bottom: 38%;
+}
+
+.cine__kicker {
+  font-size: 16px;
+  line-height: 20px;
+  letter-spacing: 4px;
+}
+
+.cine__title {
+  min-height: 40px;
+  font-size: 32px;
+  line-height: 40px;
+}
+
+.cine__title .narr__caret {
+  width: 16px;
+  height: 32px;
+  vertical-align: -4px;
+}
+
+.cine__sub {
+  min-height: 20px;
+  font-size: 16px;
+  line-height: 20px;
+}
+
+.cine__sub[data-shown="false"] {
+  visibility: hidden;
+}
+
+.cine[data-stage="out"] {
+  pointer-events: none;
+  animation: 280ms steps(5, jump-none) both m-cell-grow;
+  -webkit-mask: conic-gradient(from 0deg at var(--m-cell) var(--m-cell), #000 75%, transparent 0) 0 0 / 8px 8px;
+  mask: conic-gradient(from 0deg at var(--m-cell) var(--m-cell), #000 75%, transparent 0) 0 0 / 8px 8px;
+}
+
+/* ───────── 정답 순간: 화면 전체가 두 번 뒤집힌다 ───────── */
+
+.desk[data-phase="checking"]::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+  background: #fff;
+  mix-blend-mode: difference;
+  animation: m-flash 420ms steps(1) both;
+}
+
+@keyframes m-flash {
+  0%,
+  40% {
+    opacity: 1;
+  }
+  20%,
+  60%,
+  100% {
+    opacity: 0;
+  }
+}
+
+/* 종이가 따로 날아가는 전환(시험지·자물쇠)은 쓰지 않는다: 겹쳐 흐려지는 동안 회색이 생긴다 */
+.inkworld [style*="view-transition-name"] {
+  view-transition-name: none !important;
+}
+
+:root::view-transition-image-pair(exam-sheet) {
+  box-shadow: none;
+}
+
+/* ───────── 좁은 화면 ───────── */
+
+@media (max-width: 380px) {
+  /* 시도 기록의 설명이 한 줄에 들어가도록 숫자 칸을 조인다 */
+  .clue {
+    gap: 6px;
+  }
+
+  .clue__digit {
+    width: 18px;
+    margin: 0 1px;
+  }
+}
+
+/* ───────── 조금 낮은 화면 (812px 안팎) ───────── */
+
+@media (max-height: 820px) {
+  .exampaper__text {
+    line-height: 18px;
+  }
+
+  .clue {
+    min-height: 34px;
+  }
+
+  .lock__shackle {
+    margin-bottom: -72px;
+  }
+}
+
+/* ───────── 낮은 화면 (주소창이 보이는 모바일 브라우저) ─────────
+   글자 크기는 줄이지 않고(16·32px 격자를 지킨다) 줄 간격과 여백을 조여, 시도 기록을 보면서 드럼을 굴릴 수 있게 한다. */
+
+@media (max-height: 740px) {
+  .hall__scene {
+    height: clamp(110px, 21dvh, 180px);
+    max-height: none;
+  }
+
+  .hall__top {
+    padding-bottom: 6px;
+  }
+
+  .narr {
+    padding: 6px 12px 4px;
+  }
+
+  .bulletin {
+    gap: 10px;
+    padding: 2px 0 4px;
+  }
+
+  .posting__leaf {
+    padding: 8px 12px 10px;
+  }
+
+  .posting__title {
+    font-size: 32px;
+  }
+
+  .posting__meta {
+    padding: 4px 0 10px;
+  }
+
+  .ledge {
+    margin-top: 8px;
+    padding-top: 0;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .ledge__item {
+    grid-template-rows: 48px auto auto;
+    padding: 4px 2px;
+  }
+
+  .desk__scroll {
+    padding-top: 6px;
+    padding-bottom: 2px;
+  }
+
+  .code {
+    gap: 4px;
+  }
+
+  .exampaper {
+    padding: 6px 12px 4px;
+  }
+
+  .exampaper__title {
+    line-height: 32px;
+  }
+
+  .exampaper__text {
+    margin-top: 2px;
+    font-size: 16px;
+    line-height: 18px;
+  }
+
+  .clues {
+    margin-top: 4px;
+  }
+
+  .clues__head {
+    padding: 2px 0 0;
+  }
+
+  .clue {
+    min-height: 30px;
+  }
+
+  .clue__digit {
+    height: 24px;
+    line-height: 24px;
+  }
+
+  .memo__chip {
+    min-height: 40px;
+  }
+
+  /* 고리는 접어 넣는다: 몸통과 드럼만 남긴다 */
+  .lock__shackle {
+    display: none;
+  }
+
+  .lock__body {
+    padding: 4px 18px 6px;
+  }
+
+  .dial__step {
+    height: 20px;
+  }
+
+  .deskfoot {
+    padding-top: 8px;
+    padding-bottom: calc(8px + env(safe-area-inset-bottom));
+  }
+}

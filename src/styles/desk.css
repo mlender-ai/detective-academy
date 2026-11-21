@@ -1,0 +1,702 @@
+@layer layout {
+  /* 추리 책상 (암호 해독 · 채점 결과)
+     나무 책상 위에 시험지와 자물쇠가 놓여 있다. 겉모습은 pixel.css 가 입힌다. */
+
+  .desk {
+    position: relative;
+    font-family: var(--font-px);
+    overflow: hidden;
+  }
+
+  .desk__wood {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: 50% 0;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  /* ── 위: 뒤로 · 시험 종류와 시간 · 크레딧 ── */
+
+  .deskbar {
+    position: relative;
+    z-index: 2;
+    flex: none;
+    display: flex;
+    align-items: center;
+    min-height: 52px;
+    padding: calc(4px + env(safe-area-inset-top)) 12px 0 10px;
+  }
+
+  .deskbar__tag {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    border: 1.2px solid var(--px-ink);
+    border-radius: 2px;
+  }
+
+  .deskbar__type {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .deskbar__timer {
+    flex: none;
+    line-height: 1.3;
+  }
+
+  .credittag {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    line-height: 1;
+    color: var(--px-ink);
+    border: 1.2px solid var(--px-ink);
+    border-radius: 2px;
+  }
+
+  /* ── 가운데: 시험지와 자물쇠 ── */
+
+  .desk__scroll {
+    position: relative;
+    z-index: 1;
+    display: block;
+    scrollbar-width: none;
+  }
+
+  .desk__scroll::-webkit-scrollbar {
+    display: none;
+  }
+
+  .code {
+    display: grid;
+    justify-items: center;
+  }
+
+  .exampaper {
+    width: 100%;
+  }
+
+  .exampaper__text {
+    text-wrap: pretty;
+  }
+
+  /* 교관이 빨간 펜으로 덧붙인 수사 지원 */
+  .exampaper__hint {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 8px;
+    align-items: baseline;
+    margin-top: 8px;
+    padding-top: 7px;
+    color: var(--px-ink);
+  }
+
+  .exampaper__hint b {
+    white-space: nowrap;
+  }
+
+  .clues__head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+  }
+
+  .clues__head h2 {
+    letter-spacing: -0.01em;
+  }
+
+  .clues__legend {
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+  }
+
+  .clues__legend .peg:not(:first-child) {
+    margin-left: 6px;
+  }
+
+  .peg {
+    flex: none;
+    display: inline-block;
+    border-radius: 50%;
+  }
+
+  .peg[data-kind="place"] {
+    background: var(--px-ink);
+  }
+
+  .clue {
+    display: grid;
+    grid-template-columns: auto auto 1fr;
+    align-items: center;
+  }
+
+  .clue__digits {
+    display: flex;
+  }
+
+  .clue__digit {
+    position: relative;
+    display: grid;
+    place-items: center;
+    border-radius: 2px;
+  }
+
+  .clue__digit:nth-child(2) {
+    transform: rotate(0.8deg);
+  }
+
+  .clue__digit:nth-child(3) {
+    transform: rotate(-0.6deg);
+  }
+
+  /* 메모가 시도 기록에 그대로 반영된다: 제외는 연필 가위표, 후보는 빨간 동그라미 */
+  .clue__digit[data-memo="out"] {
+    border-color: rgba(42, 34, 30, 0.4);
+  }
+
+  .clue__pegs {
+    display: flex;
+    gap: 4px;
+  }
+
+  .clue__text {
+    line-height: 1.25;
+  }
+
+  /* 숫자 메모: 시험지 여백에 직접 쓴다 */
+  .memo {
+    margin-top: 2px;
+  }
+
+  .memo__head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+    padding-top: 5px;
+  }
+
+  .memo__head h2 {
+    color: var(--px-ink);
+  }
+
+  .memo__grid {
+    display: grid;
+    grid-template-columns: repeat(9, 1fr);
+  }
+
+  .memo__chip {
+    position: relative;
+    display: grid;
+    place-items: center;
+    min-height: 44px;
+    line-height: 1;
+    color: var(--px-ink);
+  }
+
+  /* ── 암호 자물쇠 ── */
+
+  .lock {
+    position: relative;
+    display: grid;
+    justify-items: center;
+  }
+
+  .lock__shackle {
+    position: relative;
+    z-index: 0;
+  }
+
+  .dial__window--still {
+    cursor: default;
+  }
+
+  .lock__body {
+    position: relative;
+    z-index: 1;
+    border-radius: 12px;
+  }
+
+  .lock__rivet {
+    position: absolute;
+    z-index: 1;
+    border-radius: 50%;
+  }
+
+  .lock__dials {
+    position: relative;
+    z-index: 1;
+    display: flex;
+  }
+
+  /* 가운데 판독선: 양옆의 눈금 */
+  .lock__sight {
+    position: absolute;
+    top: 50%;
+    height: 0;
+    pointer-events: none;
+  }
+
+  .lock__sight::before,
+  .lock__sight::after {
+    content: "";
+    position: absolute;
+    top: -6px;
+    border: 6px solid transparent;
+  }
+
+  .lock__sight::before {
+    left: 0;
+    border-left-color: var(--px-ink);
+  }
+
+  .lock__sight::after {
+    right: 0;
+    border-right-color: var(--px-ink);
+  }
+
+  .dial {
+    display: grid;
+    justify-items: center;
+  }
+
+  .dial__step {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 66px;
+    color: var(--px-ink);
+  }
+
+  /* 보이는 크기는 그대로 두고 눌리는 영역만 넓힌다 */
+  .dial__step::before {
+    content: "";
+    position: absolute;
+    inset: -9px 0;
+  }
+
+  .dial__step:disabled {
+    opacity: 0.4;
+  }
+
+  .dial__window {
+    position: relative;
+    width: 66px;
+    height: 114px;
+    overflow: hidden;
+    border-radius: 3px;
+    cursor: grab;
+    touch-action: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  .dial__window[data-dragging="true"] {
+    cursor: grabbing;
+  }
+
+  /* 숫자 면: 원통 위의 위치와 납작해지는 정도는 코드가 계산해 넣는다 */
+  .dial__face {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    height: 50px;
+    margin-top: -25px;
+    display: grid;
+    place-items: center;
+    will-change: transform;
+  }
+
+  .dial__window[data-dragging="true"] .dial__face {
+    transition: none;
+  }
+
+  /* 원통의 그늘: 위아래가 어둡고 가운데가 밝다 */
+  .dial__shade {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  .lock__status {
+    pointer-events: none;
+    min-height: 24px;
+    text-align: center;
+    border-radius: 2px;
+  }
+
+  .lock__status[data-warn="true"] {
+    border-color: var(--px-red);
+  }
+
+  .lock[data-verdict="correct"] .lock__status {
+    color: #fbf3e2;
+    background: var(--px-wine);
+    border-color: var(--px-wine-dark);
+  }
+
+  /* ── 아래: 수사 지원 · 추론 제출 ── */
+
+  .deskfoot {
+    position: relative;
+    z-index: 5;
+    flex: none;
+    display: flex;
+  }
+
+  .deskfoot__hint {
+    flex: none;
+  }
+
+  .deskfoot__submit {
+    flex: 1;
+  }
+
+  .deskfoot__count {
+    display: grid;
+    place-items: center;
+    padding: 0 5px;
+    border-radius: 11px;
+  }
+
+  /* 알림 쪽지 */
+  /* 시험지 머리 위에 얹히는 쪽지. 자물쇠와 단추는 가리지 않는다. */
+  .desk__notice {
+    position: absolute;
+    left: 22px;
+    right: 22px;
+    top: calc(58px + env(safe-area-inset-top));
+    z-index: 6;
+  }
+
+  .slip {
+    border-radius: 2px;
+  }
+
+  .slip strong {
+    display: block;
+  }
+
+  .slip__action {
+    min-height: 44px;
+    margin: 2px 0 -8px;
+    text-decoration: underline;
+    text-underline-offset: 4px;
+  }
+
+  .desk__skip {
+    position: absolute;
+    inset: 0;
+    z-index: 20;
+  }
+
+  .hints--paper {
+    color: var(--px-ink);
+    border-radius: 3px 3px 0 0;
+  }
+
+  .hints--paper .iconbtn {
+    color: var(--px-ink);
+  }
+
+  .hints--paper .iconbtn:active {
+    background: rgba(42, 34, 30, 0.08);
+  }
+
+  .hints--paper .hint {
+    border-color: rgba(42, 34, 30, 0.22);
+  }
+
+  .hints--paper .hint__name {
+    color: var(--px-ink);
+  }
+
+  .hints--paper .hint__tier {
+    background: var(--px-ink);
+    color: var(--px-paper);
+    box-shadow: none;
+  }
+
+  .hints--paper .hint__text {
+    color: var(--px-ink);
+  }
+
+  /* ── 채점된 시험지 ── */
+
+  .desk--result .desk__scroll {
+    padding-top: calc(26px + env(safe-area-inset-top));
+  }
+
+  .graded__stamp {
+    position: absolute;
+    z-index: 2;
+  }
+
+  .graded__lead {
+    text-wrap: pretty;
+  }
+
+  .graded__facts {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    padding: 12px 0 10px;
+  }
+
+  .graded__facts > div {
+    display: grid;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .graded__facts dd {
+    color: var(--px-ink);
+    white-space: nowrap;
+  }
+
+  .graded__prize {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px 14px;
+    padding: 12px 0 13px;
+  }
+
+  .graded__reward {
+    display: grid;
+    grid-template-columns: auto auto;
+    column-gap: 12px;
+    align-items: center;
+  }
+
+  .graded__coins {
+    grid-row: 1 / 3;
+  }
+
+  .graded__amount {
+    align-self: end;
+    line-height: 1;
+  }
+
+  .graded__balance {
+    align-self: start;
+    margin-top: 3px;
+  }
+
+  .graded__claimed {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .graded__nohint {
+    position: relative;
+  }
+
+  .graded__toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    min-height: 46px;
+    color: var(--px-ink);
+  }
+
+  .graded__steps {
+    display: grid;
+    gap: 9px;
+    padding: 2px 0 14px;
+  }
+
+  .graded__steps li {
+    display: grid;
+    gap: 6px;
+    align-items: baseline;
+  }
+
+  .desk__replay {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin: 12px auto 0;
+    color: var(--px-ink);
+    border-radius: 2px;
+  }
+
+  .desk--result .desk__scroll {
+    display: grid;
+    align-content: start;
+    justify-items: center;
+    gap: 4px;
+  }
+
+  /* ── 장면 전환: 같은 시험지와 자물쇠가 이어진다 ── */
+
+  ::view-transition-group(exam-sheet),
+  ::view-transition-group(code-lock) {
+    animation-duration: 480ms;
+    animation-timing-function: cubic-bezier(0.22, 0.9, 0.24, 1);
+  }
+
+  /* 시험지는 늘어나지 않고, 커지는 만큼 아래쪽이 펼쳐진다 */
+  ::view-transition-image-pair(exam-sheet) {
+    overflow: clip;
+    border-radius: 2px;
+    box-shadow: 0 22px 30px -18px rgba(30, 20, 14, 0.8);
+  }
+
+  ::view-transition-old(exam-sheet),
+  ::view-transition-new(exam-sheet) {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: left top;
+    animation-duration: 480ms;
+  }
+
+  ::view-transition-old(code-lock),
+  ::view-transition-new(code-lock) {
+    animation-duration: 420ms;
+  }
+
+  /* 복도에서 책상으로: 벽이 뒤로 물러나고 책상이 다가온다 */
+  :root[data-nav="forward"]::view-transition-old(root) {
+    animation: 300ms var(--ease-out) both scene-leave;
+  }
+
+  :root[data-nav="forward"]::view-transition-new(root) {
+    animation: 380ms var(--ease-out) both scene-arrive;
+  }
+
+  :root[data-nav="back"]::view-transition-old(root) {
+    animation: 280ms var(--ease-out) both scene-leave-back;
+  }
+
+  :root[data-nav="back"]::view-transition-new(root) {
+    animation: 360ms var(--ease-out) both scene-arrive-back;
+  }
+
+  @keyframes scene-leave {
+    to {
+      opacity: 0;
+      transform: scale(1.06);
+      filter: blur(2px);
+    }
+  }
+
+  @keyframes scene-arrive {
+    from {
+      opacity: 0;
+      transform: scale(0.97);
+    }
+  }
+
+  @keyframes scene-leave-back {
+    to {
+      opacity: 0;
+      transform: scale(0.97);
+    }
+  }
+
+  @keyframes scene-arrive-back {
+    from {
+      opacity: 0;
+      transform: scale(1.05);
+      filter: blur(2px);
+    }
+  }
+
+  /* ── 낮은 화면 (주소창이 보이는 모바일 브라우저 등) ──
+     시험지와 자물쇠를 조여, 시도 기록을 읽으면서 드럼을 굴릴 수 있게 한 화면에 넣는다. */
+  @media (max-height: 740px) {
+    .deskbar {
+      min-height: 48px;
+    }
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+    .memo__head {
+      padding-top: 3px;
+    }
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+    .dial__window {
+      height: 100px;
+    }
+
+  
+
+    /* 안내 문구는 자리를 차지하지 않는다. 경고와 판정만 고리 위에 걸리고, 단추를 가리거나 누르는 것을 막지 않는다. */
+    .lock__status {
+      position: absolute;
+      left: 50%;
+      top: 4px;
+      z-index: 2;
+      width: max-content;
+      max-width: calc(100vw - 36px);
+      margin: 0;
+    }
+
+    .lock__status[data-warn="false"] {
+      display: none;
+    }
+
+    .lock[data-verdict="correct"] .lock__status,
+    .lock--open .lock__status {
+      display: block;
+    }
+
+    /* 결과 화면의 풀린 자물쇠에는 누를 것이 없으므로 이름표를 아래에 단다 */
+    .lock--open .lock__status {
+      top: auto;
+      bottom: -9px;
+    }
+
+  
+
+  
+  }
+}

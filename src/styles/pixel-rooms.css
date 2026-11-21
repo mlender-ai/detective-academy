@@ -1,0 +1,1554 @@
+/* 격자 규칙의 바탕 (앞선 픽셀 아트 안의 겉모습) — 입학·연습실·진술 추리·승급 시험·신분증
+   지금은 mono-pixel.css 가 @layer skin 으로 감싸 싣고, 그 위에 mono-rooms.css 가 입혀진다. 색 이름(--px-*)은 mono.css 가 두 색으로 돌린다.
+   입학 · 신분증 · 연습실 · 진술 추리 · 발표 순서 · 시험실 · 승급 증서
+   규칙은 pixel.css 와 같다: 점 하나는 2px, 둥근 모서리·흐림·기울임 없음, 움직임은 steps() 로 끊는다. */
+
+.app {
+  background-color: var(--px-night);
+}
+
+/* ───────── 공용 ───────── */
+
+.minibtn {
+  min-height: 44px;
+  padding: 0 12px;
+  font-family: var(--font-px);
+  font-size: 15px;
+  font-weight: 400;
+  color: var(--px-ink);
+  transition: none;
+}
+
+.minibtn.leaf {
+  min-height: 44px;
+  margin-bottom: 4px;
+  border: 0;
+  box-shadow:
+    var(--px-frame),
+    var(--px-bevel-paper),
+    0 4px 0 0 var(--px-ink);
+}
+
+.minibtn.leaf:active:not(:disabled) {
+  transform: translateY(4px);
+  box-shadow: var(--px-frame), inset 2px 2px 0 0 var(--px-paper-dim);
+}
+
+.minibtn:not(.leaf) {
+  text-decoration: none;
+  box-shadow: 0 2px 0 0 var(--px-ink);
+  min-height: 30px;
+  padding: 0 2px;
+  margin: 0 6px 8px;
+}
+
+.minibtn:disabled {
+  opacity: 1;
+  color: var(--px-sepia);
+  background: var(--px-paper-dim);
+}
+
+.desknote {
+  padding: 8px 12px;
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.4;
+  color: var(--px-sepia);
+  border: 0;
+  transform: none;
+}
+
+/* 큰 등급 휘장: 방패 위에 등급 글자 */
+.pxmedal {
+  position: relative;
+  display: block;
+  flex: none;
+}
+
+.pxmedal b {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 16px;
+  font-family: var(--font-px-big);
+  font-size: 24px;
+  font-weight: 400;
+  line-height: 24px;
+  text-align: center;
+  color: var(--px-ink);
+}
+
+.pxmedal[data-rank="D"] b,
+.pxmedal[data-rank="C"] b,
+.pxmedal[data-rank="S"] b {
+  color: var(--px-paper-lit);
+}
+
+/* ───────── 탐정 신분증 ───────── */
+
+.idcard {
+  max-width: 348px;
+  padding: 10px 12px 8px;
+  font-family: var(--font-px);
+  color: var(--px-ink);
+  background-color: var(--px-paper-lit);
+  box-shadow:
+    var(--px-frame),
+    inset -2px -2px 0 0 var(--px-paper-dim),
+    var(--px-drop);
+}
+
+.idcard__org {
+  line-height: 1;
+}
+
+.idcard__org span:first-child {
+  font-size: 15px;
+  font-weight: 400;
+}
+
+.idcard__org span:last-child {
+  margin-top: 4px;
+  font-family: var(--font-px-big);
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0;
+  color: var(--px-sepia);
+}
+
+.idcard__kind {
+  padding: 3px 6px 2px;
+  font-family: var(--font-px-big);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.2;
+  color: var(--px-red);
+  border: 2px solid var(--px-red);
+  transform: none;
+  filter: none;
+}
+
+.idcard__band {
+  height: 6px;
+  margin: 8px -12px 10px;
+  background: var(--px-wine);
+  box-shadow:
+    inset 0 2px 0 0 var(--px-wine-lit),
+    0 2px 0 0 var(--px-wine-dark);
+}
+
+.idcard__body {
+  grid-template-columns: 48px minmax(0, 1fr) auto;
+  gap: 12px;
+}
+
+.idcard__photo {
+  width: 48px;
+  height: 56px;
+  margin: 2px 0 0 2px;
+  background: var(--px-photo);
+  box-shadow: var(--px-frame);
+  overflow: visible;
+}
+
+.idcard__fields {
+  gap: 6px;
+}
+
+.idcard__field dt {
+  font-family: var(--font-px-big);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.3;
+  color: var(--px-sepia);
+}
+
+.idcard__field dd {
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.3;
+}
+
+.idcard__field--name dd {
+  padding-bottom: 2px;
+  font-family: var(--font-px-big);
+  font-size: 24px;
+  line-height: 26px;
+  border-bottom: 2px dotted var(--px-paper-dim);
+}
+
+.idcard__row {
+  gap: 12px;
+}
+
+.idcard__row dd.hand {
+  font-family: var(--font-px-big);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.idcard__badge {
+  align-self: start;
+  transform: none;
+}
+
+.idcard__badge-empty {
+  width: 48px;
+  height: 48px;
+  border: 2px dashed var(--px-paper-dim);
+}
+
+.idcard__badge[data-engrave="true"] {
+  animation: px-blink-in 320ms steps(1) 420ms both;
+}
+
+.idcard__foot {
+  margin-top: 10px;
+  padding-top: 4px;
+  font-family: var(--font-px-big);
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0;
+  color: var(--px-sepia);
+  border-top: 2px solid var(--px-paper-dim);
+}
+
+.idcard__stamp {
+  --stamp-size: 58px !important;
+  right: 12px;
+  bottom: 6px;
+}
+
+.idcard__input input {
+  min-height: 40px;
+  padding: 0 6px;
+  caret-color: var(--px-red);
+  background: var(--px-paper);
+  box-shadow: inset 0 0 0 2px var(--px-paper-dim);
+}
+
+.idcard__input input:focus-visible {
+  outline: 2px solid var(--px-red);
+  outline-offset: 0;
+}
+
+/* ───────── 입학: 위 화면(복도) + 아래 화면(입학 원서) ───────── */
+
+.admit {
+  background-color: var(--px-night);
+  background-image: none;
+  color: var(--px-paper-lit);
+}
+
+.admit .hall__scene {
+  height: auto;
+  aspect-ratio: 4 / 3;
+  max-height: 30dvh;
+}
+
+.admit__sign {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-items: start;
+  gap: 6px;
+  padding: calc(8px + env(safe-area-inset-top)) 8px 0;
+  text-align: left;
+  animation: none !important;
+}
+
+.admit__wordmark {
+  line-height: 1;
+  text-shadow: none;
+}
+
+.admit__wordmark span:first-child {
+  font-family: var(--font-px);
+  font-size: 30px;
+  font-weight: 400;
+  color: var(--px-paper-lit);
+  text-shadow:
+    2px 0 0 var(--px-ink),
+    -2px 0 0 var(--px-ink),
+    0 2px 0 var(--px-ink),
+    0 -2px 0 var(--px-ink),
+    2px 2px 0 var(--px-ink),
+    -2px 2px 0 var(--px-ink),
+    2px -2px 0 var(--px-ink),
+    -2px -2px 0 var(--px-ink),
+    0 4px 0 var(--px-ink);
+}
+
+.admit__wordmark span:last-child {
+  margin-top: 6px;
+  font-family: var(--font-px-big);
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 1px;
+  color: var(--px-brass-lit);
+  text-shadow:
+    1px 0 0 var(--px-ink),
+    -1px 0 0 var(--px-ink),
+    0 1px 0 var(--px-ink),
+    0 -1px 0 var(--px-ink),
+    1px 1px 0 var(--px-ink),
+    -1px 1px 0 var(--px-ink),
+    1px -1px 0 var(--px-ink),
+    -1px -1px 0 var(--px-ink);
+}
+
+.admit__scroll {
+  justify-content: center;
+  padding: 2px 10px 12px;
+}
+
+.admit__form {
+  padding: 12px 12px 12px;
+  color: var(--px-ink);
+  transform: none;
+  box-shadow:
+    var(--px-frame),
+    var(--px-bevel-paper),
+    var(--px-drop);
+}
+
+.admit[data-intro="playing"] .admit__form {
+  animation: px-drop 240ms steps(3) 200ms both;
+}
+
+.admit__title {
+  padding-bottom: 8px;
+  font-family: var(--font-px);
+  font-size: 30px;
+  font-weight: 400;
+  line-height: 1.1;
+  letter-spacing: 0;
+  border-bottom: 2px solid var(--px-ink);
+}
+
+.admit__lead {
+  margin-top: 8px;
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.4;
+  color: var(--px-sepia);
+}
+
+.admit__card {
+  margin: 12px 0 0;
+  transform: none;
+}
+
+.admit__note {
+  margin-top: 12px;
+  font-family: var(--font-px-big);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--px-sepia);
+}
+
+.admit__grant {
+  margin-top: 12px;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 400;
+}
+
+/* ───────── 연습실 ───────── */
+
+.practice__scroll {
+  gap: 16px;
+  padding-top: 10px;
+}
+
+.worksheet {
+  transform: none;
+  animation: px-drop 240ms steps(3) both;
+}
+
+.worksheet__pile {
+  inset: 6px -4px -6px 4px;
+  background: var(--px-paper-dim);
+  box-shadow:
+    var(--px-frame),
+    4px 6px 0 0 rgba(28, 23, 34, 0.4);
+  transform: none;
+}
+
+.worksheet__leaf {
+  padding: 14px 14px 12px;
+  box-shadow: var(--px-frame), var(--px-bevel-paper);
+}
+
+.worksheet__head {
+  padding-right: 0;
+}
+
+.worksheet__no {
+  font-family: var(--font-px-big);
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--px-wine);
+}
+
+.worksheet__title {
+  margin-top: 4px;
+  font-family: var(--font-px);
+  font-size: 30px;
+  font-weight: 400;
+  line-height: 1.1;
+  letter-spacing: 0;
+}
+
+.worksheet__desc {
+  margin-top: 6px;
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.4;
+  color: var(--px-sepia);
+}
+
+.worksheet .posting__meta {
+  margin-top: 8px;
+  border-top: 2px solid var(--px-ink);
+}
+
+.worksheet:active .inkbtn {
+  transform: translateY(4px);
+}
+
+.practice__props {
+  height: 92px;
+}
+
+.practice__key {
+  left: 14px;
+  top: 12px;
+  transform: none;
+  filter: none;
+}
+
+.practice__pencil {
+  right: 14px;
+  top: 58px;
+  transform: none;
+  filter: none;
+}
+
+/* ───────── 진술 추리 ───────── */
+
+.truth,
+.schedule {
+  gap: 10px;
+}
+
+.suspects {
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 2px solid var(--px-ink);
+}
+
+.suspects h2,
+.conditions h2 {
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.3;
+  color: var(--px-wine);
+}
+
+.suspects__rail {
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.suspects[data-shaking="true"] .suspects__rail,
+.board[data-shaking="true"] {
+  animation: px-shake 320ms steps(1);
+}
+
+@keyframes px-shake {
+  0% {
+    transform: translateX(-4px);
+  }
+  25% {
+    transform: translateX(4px);
+  }
+  50% {
+    transform: translateX(-2px);
+  }
+  75% {
+    transform: translateX(2px);
+  }
+  100% {
+    transform: none;
+  }
+}
+
+.suspect {
+  padding: 2px 0 2px;
+  transition: none;
+}
+
+.suspect__photo {
+  width: 44px;
+  height: 50px;
+  background: var(--px-photo);
+  box-shadow: var(--px-frame);
+}
+
+.suspect__photo .penmark {
+  inset: -8px;
+}
+
+.suspect__name {
+  margin-top: 8px;
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.2;
+}
+
+.suspect__memo {
+  margin-top: 2px;
+  font-family: var(--font-px-big);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.3;
+  color: var(--px-sepia);
+}
+
+.suspect[data-selected="true"] {
+  transform: translateY(-2px);
+}
+
+.suspect[data-selected="true"] .suspect__memo,
+.suspect[data-culprit="true"] .suspect__memo {
+  color: var(--px-red);
+  font-weight: 400;
+}
+
+.suspect[data-mentioned="true"] .suspect__name {
+  text-decoration: none;
+  color: var(--px-red);
+  box-shadow: 0 2px 0 0 var(--px-red);
+}
+
+/* 물음은 대사 창에 뜬다 */
+.truth__prompt {
+  padding: 8px 10px;
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.4;
+  color: var(--px-paper-lit);
+  background: var(--px-slate);
+  border: 0;
+  box-shadow:
+    var(--px-frame),
+    inset 2px 2px 0 0 var(--px-slate-edge),
+    inset -2px -2px 0 0 #1c1524;
+  transform: none;
+}
+
+.truth__who {
+  font-weight: 400;
+  color: var(--px-brass-lit);
+}
+
+.statements,
+.statements__list {
+  gap: 8px;
+}
+
+.statement {
+  padding: 4px 6px 4px 6px;
+  border: 0;
+  box-shadow: var(--px-frame), var(--px-bevel-paper);
+  transform: none;
+  transition: none;
+}
+
+.statement__main {
+  gap: 10px;
+  min-height: 50px;
+}
+
+.statement__photo {
+  width: 40px;
+  height: 46px;
+  background: var(--px-photo);
+  box-shadow: var(--px-frame);
+}
+
+.statement__who {
+  font-family: var(--font-px-big);
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--px-sepia);
+}
+
+.statement__quote {
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.3;
+}
+
+.statement__memo {
+  gap: 6px;
+  padding-right: 2px;
+}
+
+.statement__memo button {
+  width: 46px;
+  height: 44px;
+  margin-bottom: 4px;
+  font-family: var(--font-px);
+  font-size: 15px;
+  font-weight: 400;
+  color: var(--px-ink);
+  background: var(--px-paper-lit);
+  border: 0;
+  box-shadow:
+    var(--px-frame),
+    inset -2px -2px 0 0 var(--px-paper-dim),
+    0 4px 0 0 var(--px-ink);
+}
+
+.statement__memo button[aria-pressed="true"] {
+  transform: translateY(4px);
+  background: var(--px-brass-lit);
+  box-shadow: var(--px-frame), inset 2px 2px 0 0 var(--px-brass);
+}
+
+.statement__memo button[data-value="false"][aria-pressed="true"] {
+  color: var(--px-ink);
+  background: #e9b8ae;
+  box-shadow: var(--px-frame), inset 2px 2px 0 0 #c98a80;
+}
+
+.statement__memo button:disabled {
+  opacity: 1;
+  color: var(--px-paper-dim);
+  background: var(--px-paper);
+  box-shadow:
+    0 -2px 0 0 var(--px-paper-dim),
+    0 2px 0 0 var(--px-paper-dim),
+    -2px 0 0 0 var(--px-paper-dim),
+    2px 0 0 0 var(--px-paper-dim);
+}
+
+.statement__memo .penmark {
+  inset: 2px;
+}
+
+.statement__memo .penmark[data-kind="cross"] {
+  inset: 2px 2px auto auto;
+  width: 14px;
+  height: 14px;
+}
+
+.statement__verdict {
+  width: 64px;
+  height: 46px;
+  font-family: var(--font-px-big);
+  font-size: 24px;
+  font-weight: 400;
+  color: var(--px-red);
+}
+
+.statement__verdict[data-true="false"] {
+  color: var(--px-sepia);
+}
+
+.statement__verdict .penmark {
+  inset: 2px 8px;
+}
+
+.statement__verdict .penmark[data-kind="cross"] {
+  inset: 0 0 auto auto;
+  width: 14px;
+  height: 14px;
+}
+
+.statement[data-pinned="true"] {
+  transform: translateY(-2px);
+  box-shadow: var(--px-frame-brass), var(--px-bevel-paper), 0 6px 0 0 rgba(28, 23, 34, 0.5);
+}
+
+.statement[data-dim="true"] {
+  opacity: 0.5;
+}
+
+.statement[data-result="true"] {
+  background-color: var(--px-brass-lit);
+}
+
+.statement__pin {
+  left: -4px;
+  top: -12px;
+}
+
+.statements__tip {
+  padding: 6px 8px;
+  font-family: var(--font-px-big);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--px-sepia);
+  border: 0;
+  transform: none;
+}
+
+/* ───────── 발표 순서 (승급 시험) ───────── */
+
+.desk__blotter {
+  inset: calc(54px + env(safe-area-inset-top)) 4px 4px;
+  background: var(--px-dither), #3f6a57;
+  border: 0;
+  box-shadow:
+    var(--px-frame),
+    inset 0 0 0 4px #2f5646;
+  filter: none;
+  opacity: 1;
+}
+
+.conditions {
+  margin-top: 8px;
+  padding-top: 6px;
+  border-top: 2px solid var(--px-ink);
+}
+
+.conditions ol {
+  gap: 2px;
+}
+
+.conditions li {
+  grid-template-columns: 14px 1fr;
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.35;
+}
+
+.conditions__no {
+  font-family: var(--font-px-big);
+  font-size: 12px;
+  line-height: 20px;
+  color: var(--px-red);
+}
+
+.board {
+  gap: 10px;
+}
+
+.board__slots {
+  gap: 8px;
+  padding: 8px;
+  background: var(--px-paper);
+  border: 0;
+  box-shadow: var(--px-frame), var(--px-bevel-paper);
+}
+
+.slot__time {
+  font-family: var(--font-px-big);
+  font-size: 24px;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.slot__ordinal {
+  margin-top: 4px;
+  font-family: var(--font-px-big);
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--px-sepia);
+}
+
+/* 이름표가 들어갈 홈 */
+.slot__drop {
+  height: 72px;
+  margin-top: 6px;
+  background: var(--px-dither), var(--px-paper-dim);
+  border: 0;
+  box-shadow:
+    inset 2px 2px 0 0 var(--px-sepia),
+    inset -2px -2px 0 0 var(--px-paper-lit);
+}
+
+.slot__drop[data-ready="true"] {
+  box-shadow: inset 0 0 0 2px var(--px-red);
+  animation: px-ready 700ms steps(1) infinite;
+}
+
+@keyframes px-ready {
+  50% {
+    box-shadow: inset 0 0 0 2px var(--px-brass);
+  }
+}
+
+.slot__drop[data-over="true"] {
+  background: var(--px-brass-lit);
+  box-shadow: inset 0 0 0 2px var(--px-wine);
+}
+
+.slot__check {
+  right: -6px;
+  top: -12px;
+  width: 30px;
+  height: 30px;
+}
+
+.board__tray {
+  padding: 8px;
+  color: var(--px-paper-lit);
+  background: var(--px-slate);
+  border: 0;
+  box-shadow:
+    var(--px-frame),
+    inset 2px 2px 0 0 #1c1524,
+    inset -2px -2px 0 0 var(--px-slate-edge);
+}
+
+.board__tray[data-over="true"],
+.board__tray[data-ready="true"] {
+  background: var(--px-wine-dark);
+}
+
+.board__tray-label {
+  font-family: var(--font-px-big);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.4;
+}
+
+.board__seats {
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.seat {
+  height: 72px;
+  border: 2px dashed var(--px-slate-edge);
+}
+
+.pcard {
+  gap: 2px;
+  padding: 2px;
+  background: var(--px-paper-lit);
+  border: 0;
+  box-shadow:
+    var(--px-frame),
+    inset -2px -2px 0 0 var(--px-paper-dim),
+    0 4px 0 0 rgba(28, 23, 34, 0.55);
+  /* 자리로 갈 때 세 장면으로 끊겨 움직인다 */
+  transition: transform 160ms steps(3);
+}
+
+.pcard[data-dragging="true"] {
+  box-shadow:
+    var(--px-frame),
+    inset -2px -2px 0 0 var(--px-paper-dim),
+    4px 8px 0 0 rgba(28, 23, 34, 0.45);
+  transition: none;
+}
+
+.pcard[data-selected="true"] {
+  outline: 2px solid var(--px-red);
+  outline-offset: 2px;
+}
+
+.pcard__name {
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.2;
+}
+
+.board[data-verdict="correct"] .pcard[data-placed="true"] {
+  animation: px-card-pass 420ms steps(1) both;
+}
+
+@keyframes px-card-pass {
+  0%,
+  50% {
+    background-color: var(--px-brass-lit);
+  }
+  25%,
+  75%,
+  100% {
+    background-color: var(--px-paper-lit);
+  }
+}
+
+.schedule__tools {
+  gap: 10px;
+}
+
+.schedule__count {
+  padding: 6px 8px;
+  font-size: 15px;
+  font-weight: 400;
+  border: 0;
+  transform: none;
+}
+
+/* 글자가 긴 제출 단추는 작은 글꼴로 줄여 한 줄에 넣는다 */
+.deskfoot__submit[data-long="true"] {
+  font-family: var(--font-px);
+  font-size: 15px;
+}
+
+/* ───────── 결과에 남은 정답 ───────── */
+
+.solution {
+  margin-top: 10px;
+  padding: 12px 14px;
+  border: 0;
+  box-shadow:
+    var(--px-frame),
+    var(--px-bevel-paper),
+    var(--px-drop);
+  transform: none;
+}
+
+.solution__label {
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.3;
+  color: var(--px-wine);
+}
+
+.solution__person {
+  gap: 16px;
+  margin-top: 12px;
+  font-family: var(--font-px-big);
+  font-size: 24px;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+.solution__photo {
+  width: 44px;
+  height: 50px;
+  margin-left: 8px;
+  background: var(--px-photo);
+  box-shadow: var(--px-frame);
+}
+
+.solution__photo .penmark {
+  inset: -8px;
+}
+
+.solution__statements {
+  gap: 2px;
+  margin-top: 14px;
+  padding-top: 8px;
+  border-top: 2px solid var(--px-paper-dim);
+}
+
+.solution__statements li {
+  grid-template-columns: 36px minmax(0, 1fr) auto;
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+.solution__speaker {
+  font-weight: 400;
+}
+
+.solution__quote {
+  color: var(--px-sepia);
+}
+
+.solution__truth {
+  font-family: var(--font-px);
+  font-size: 15px;
+  line-height: 1.4;
+  color: var(--px-sepia);
+}
+
+.solution__truth[data-true="true"] {
+  color: var(--px-red);
+}
+
+.solution__order {
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.solution__order li {
+  gap: 4px;
+  padding: 6px 2px;
+  background: var(--px-paper-lit);
+  border: 0;
+  box-shadow: var(--px-frame);
+}
+
+.solution__time {
+  font-family: var(--font-px-big);
+  font-size: 24px;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.solution__name {
+  font-size: 15px;
+  font-weight: 400;
+}
+
+/* ───────── 시험실: 위 화면(시험실) + 아래 화면(응시자 책상) ───────── */
+
+.room {
+  --room-h: clamp(118px, 25dvh, 214px);
+  background-color: var(--px-slate);
+  background-image: none;
+  color: var(--px-ink);
+}
+
+.room--ceremony,
+.room--passed {
+  --room-h: clamp(84px, 14dvh, 122px);
+}
+
+.room__scene {
+  height: var(--room-h);
+  border-bottom: 4px solid var(--px-ink);
+}
+
+.room__scene img {
+  object-position: 50% 10%;
+  animation: none;
+}
+
+.room__wood {
+  top: calc(var(--room-h) + 10px);
+  image-rendering: pixelated;
+  border-top: 4px solid var(--px-ink);
+  box-shadow: none;
+}
+
+.room__scroll {
+  gap: 16px;
+  padding: calc(var(--room-h) - 52px - env(safe-area-inset-top) + 30px) 12px 12px;
+}
+
+.room__glow {
+  height: var(--room-h);
+  background: #fff3b8;
+  mix-blend-mode: screen;
+  transition: none;
+}
+
+.room--ceremony:not([data-step="0"]) .room__glow {
+  opacity: 0.3;
+  animation: px-flash 480ms steps(1) both;
+}
+
+@keyframes px-flash {
+  0% {
+    opacity: 0.7;
+  }
+  25% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 0.55;
+  }
+  75% {
+    opacity: 0.1;
+  }
+  100% {
+    opacity: 0.3;
+  }
+}
+
+/* 시험 봉투: 덮개가 한 장면에 젖혀지고, 시험지가 네 장면으로 올라온다 */
+.envelope {
+  transform: none;
+}
+
+.envelope::before {
+  inset: 6px -4px -6px 4px;
+  background: rgba(28, 23, 34, 0.4);
+  filter: none;
+}
+
+.envelope > .sprite {
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+
+.envelope__lid {
+  top: -88px !important;
+  opacity: 0;
+  transform: none;
+}
+
+.envelope__letter {
+  left: 14px;
+  right: 14px;
+  top: 8px;
+  height: 126px;
+  gap: 4px;
+  padding-top: 12px;
+  background: var(--px-paper-lit);
+  border: 0;
+  box-shadow: var(--px-frame);
+}
+
+.envelope__letter-title {
+  font-family: var(--font-px-big);
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0;
+  color: var(--px-wine);
+}
+
+.envelope__letter-rank {
+  font-family: var(--font-px-big);
+  font-size: 24px;
+  font-weight: 400;
+  line-height: 1.1;
+}
+
+.envelope__letter i {
+  height: 2px;
+  margin-top: 8px;
+  background: var(--px-paper-dim);
+}
+
+.envelope[data-state="opening"] .envelope__flap {
+  animation: px-flap 240ms steps(1) both;
+}
+
+.envelope[data-state="opening"] .envelope__lid {
+  animation: px-lid 240ms steps(1) both;
+}
+
+.envelope[data-state="opening"] .envelope__letter {
+  animation: px-letter 420ms steps(4) 300ms both;
+}
+
+@keyframes px-flap {
+  0% {
+    opacity: 1;
+  }
+  33% {
+    opacity: 0;
+  }
+  66% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes px-lid {
+  0%,
+  66% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes px-letter {
+  to {
+    transform: translateY(-84px);
+  }
+}
+
+/* 잠긴 봉투는 빛이 바랬다. 젖혀진 덮개는 숨겨 둔 채로 둔다. */
+.envelope[data-state="locked"] > .sprite:not(.envelope__lid) {
+  filter: grayscale(0.8);
+}
+
+.roomnote {
+  padding: 12px 14px;
+  border: 0;
+  box-shadow:
+    var(--px-frame),
+    var(--px-bevel-paper),
+    var(--px-drop);
+  transform: none;
+}
+
+.roomnote__lead {
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.4;
+  color: var(--px-sepia);
+}
+
+.roomnote__facts {
+  margin-top: 8px;
+  border-top: 2px solid var(--px-ink);
+}
+
+.roomnote__facts > div {
+  grid-template-columns: 62px minmax(0, 1fr);
+  padding: 6px 0;
+  font-size: 15px;
+  line-height: 1.35;
+  border-bottom: 2px dotted var(--px-paper-dim);
+}
+
+.roomnote__facts > div:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.roomnote__facts dt {
+  padding-top: 3px;
+  font-family: var(--font-px-big);
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--px-sepia);
+}
+
+.roomnote__facts dd {
+  font-weight: 400;
+}
+
+.roomnote__reqs {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 2px solid var(--px-ink);
+}
+
+.roomnote__title {
+  font-family: var(--font-px-big);
+  font-size: 24px;
+  font-weight: 400;
+  line-height: 1.1;
+  letter-spacing: 0;
+}
+
+.roomnote__stamp {
+  right: 10px;
+  top: -10px;
+}
+
+/* 승급 증서: 황동 줄을 두른 종이 */
+.diploma {
+  gap: 4px;
+  padding: 18px 16px 16px;
+  background-color: var(--px-paper-lit);
+  box-shadow:
+    var(--px-frame),
+    inset 0 0 0 4px var(--px-paper-lit),
+    inset 0 0 0 6px var(--px-brass),
+    var(--px-drop);
+  transform: none;
+}
+
+.diploma__kind {
+  padding-left: 4px;
+  font-family: var(--font-px-big);
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 4px;
+  color: var(--px-wine);
+}
+
+.diploma__marks {
+  width: 96px;
+  height: 84px;
+  margin-top: 6px;
+}
+
+.diploma__mark--new .penmark {
+  inset: -2px 2px;
+}
+
+.diploma__title {
+  margin-top: 4px;
+  font-family: var(--font-px);
+  font-size: 30px;
+  font-weight: 400;
+  line-height: 1.2;
+  letter-spacing: 0;
+}
+
+.diploma__lead {
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.4;
+  color: var(--px-sepia);
+}
+
+.room--ceremony .diploma__mark,
+.room--ceremony .diploma__title,
+.room--ceremony .diploma__lead,
+.room--ceremony .ceremony__card {
+  transition:
+    opacity 1ms steps(1),
+    transform 200ms steps(2);
+}
+
+.room--ceremony:not([data-step="0"]) .diploma__mark--old {
+  opacity: 0;
+  transform: translateY(12px);
+}
+
+.room--ceremony[data-step="0"] .diploma__mark--new,
+.room--ceremony[data-step="1"] .diploma__mark--new {
+  opacity: 0;
+  transform: translateY(-12px);
+}
+
+.room--ceremony[data-step="0"] .diploma__title,
+.room--ceremony[data-step="1"] .diploma__title,
+.room--ceremony[data-step="0"] .diploma__lead,
+.room--ceremony[data-step="1"] .diploma__lead {
+  opacity: 0;
+  transform: none;
+}
+
+.ceremony__card {
+  transform: none;
+}
+
+.room--ceremony[data-step="0"] .ceremony__card,
+.room--ceremony[data-step="1"] .ceremony__card,
+.room--ceremony[data-step="2"] .ceremony__card {
+  opacity: 0;
+  transform: translateY(16px);
+}
+
+.ceremony__reward {
+  padding: 8px 14px 8px 10px;
+  border: 0;
+  transform: none;
+  animation: px-pop 240ms steps(2) both;
+}
+
+/* ───────── 탐정 신분증 화면 ───────── */
+
+.profile__scroll {
+  gap: 14px;
+  padding-top: 10px;
+}
+
+.profile__card,
+.profile__rename {
+  transform: none;
+}
+
+.rename {
+  padding: 10px;
+  border: 0;
+}
+
+.rename__label {
+  font-family: var(--font-px-big);
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--px-sepia);
+}
+
+.rename input {
+  min-height: 40px;
+  font-family: var(--font-px-big);
+  font-size: 24px;
+  caret-color: var(--px-red);
+  border-bottom: 2px solid var(--px-ink);
+}
+
+.ledger {
+  padding: 12px 14px;
+  border: 0;
+  box-shadow:
+    var(--px-frame),
+    var(--px-bevel-paper),
+    var(--px-drop);
+  transform: none;
+}
+
+.ledger__title {
+  padding-bottom: 8px;
+  font-family: var(--font-px-big);
+  font-size: 24px;
+  font-weight: 400;
+  line-height: 1.1;
+  letter-spacing: 0;
+  border-bottom: 2px solid var(--px-ink);
+}
+
+.ranks__ladder {
+  margin-top: 12px;
+}
+
+.ranks__mark {
+  width: 40px;
+  height: 40px;
+}
+
+.ranks__mark .penmark {
+  inset: 0;
+}
+
+.ranks__id {
+  font-family: var(--font-px-big);
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.ranks__ladder li[data-state="locked"] .ranks__mark {
+  opacity: 0.38;
+  filter: grayscale(1);
+}
+
+.ranks__ladder li[data-state="locked"] .ranks__id {
+  color: var(--px-paper-dim);
+}
+
+.ranks__note {
+  font-size: 15px;
+  font-weight: 400;
+  color: var(--px-sepia);
+}
+
+.records li {
+  grid-template-columns: 14px minmax(0, 1fr);
+  padding: 8px 0;
+  border-bottom: 2px dotted var(--px-paper-dim);
+}
+
+.records li:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.records__cat {
+  font-family: var(--font-px-big);
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--px-sepia);
+}
+
+.records__title {
+  font-size: 15px;
+  font-weight: 400;
+}
+
+.records__line {
+  font-family: var(--font-px-big);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--px-sepia);
+}
+
+.records li[data-status="solved"] .records__line {
+  color: var(--px-red);
+}
+
+.soundswitch {
+  min-height: 52px;
+  margin-bottom: 4px;
+  padding: 8px 14px;
+  color: var(--px-ink);
+  border: 0;
+  box-shadow:
+    var(--px-frame),
+    var(--px-bevel-paper),
+    0 4px 0 0 var(--px-ink);
+  transform: none;
+}
+
+.soundswitch:active {
+  transform: translateY(4px);
+  box-shadow: var(--px-frame), inset 2px 2px 0 0 var(--px-paper-dim);
+}
+
+.soundswitch__text span {
+  font-size: 15px;
+  font-weight: 400;
+}
+
+.soundswitch__text small {
+  font-family: var(--font-px-big);
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--px-sepia);
+}
+
+.soundswitch .tickbox {
+  width: 18px;
+  height: 18px;
+}
+
+.soundswitch .tickbox .penmark {
+  inset: -8px -10px -2px 0;
+}
+
+/* ───────── 낮은 화면 ───────── */
+
+@media (max-height: 740px) {
+  .admit .hall__scene {
+    max-height: 22dvh;
+  }
+
+  .admit__form {
+    padding: 10px 12px;
+  }
+
+  .admit__title {
+    font-size: 24px;
+    font-family: var(--font-px-big);
+    padding-bottom: 6px;
+  }
+
+  .admit__lead {
+    margin-top: 6px;
+    line-height: 1.3;
+  }
+
+  .admit__card,
+  .admit__note,
+  .admit__grant {
+    margin-top: 8px;
+  }
+
+  .truth,
+  .schedule,
+  .statements,
+  .statements__list {
+    gap: 8px;
+  }
+
+  .truth__prompt {
+    padding: 6px 10px;
+  }
+
+  .statement {
+    padding: 2px 6px;
+  }
+
+  .slot__drop,
+  .seat {
+    height: 64px;
+  }
+
+  .board__slots,
+  .board__tray {
+    padding: 6px 8px;
+  }
+
+  .room__scroll {
+    gap: 12px;
+  }
+
+  .roomnote {
+    padding: 10px 14px;
+  }
+
+  .roomnote__facts > div {
+    padding: 4px 0;
+  }
+
+  .diploma {
+    padding: 14px 16px 12px;
+  }
+}

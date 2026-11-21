@@ -1,0 +1,154 @@
+import { expect, type Page } from "@playwright/test";
+
+export const STORAGE_KEY = "detective-academy:v1";
+export const SHOTS = "docs/screenshots";
+
+/** 저장된 게임 상태를 그대로 읽는다 */
+export async function stored(page: Page) {
+  return page.evaluate((key) => JSON.parse(window.localStorage.getItem(key) ?? "null"), STORAGE_KEY);
+}
+
+export async function shot(page: Page, name: string) {
+  // 글자 조각(웹폰트)이 다 내려온 뒤, 유한한 CSS 애니메이션·전환은 끝 상태로 넘겨서 찍는다.
+  await page.evaluate(() => document.fonts.ready.then(() => undefined));
+  // QA 손잡이는 일반 사용자 화면에 없는 것이므로 기록에서 뺀다.
+  await page.screenshot({
+    path: `${SHOTS}/${name}.png`,
+    animations: "disabled",
+    style: ".demo { visibility: hidden !important; }",
+  });
+}
+
+/** 첫 실행 → 입학 → 학원 홈 */
+export async function enroll(page: Page, nickname?: string) {
+  await page.goto("/");
+  await expect(page.getByTestId("admission-screen")).toBeVisible();
+  if (nickname) await page.getByTestId("nickname-input").fill(nickname);
+  await page.getByTestId("enroll").click();
+  await expect(page.getByTestId("admission-grant")).toBeVisible();
+  await page.getByTestId("enter-academy").click();
+  await expect(page.getByTestId("home-screen")).toBeVisible();
+}
+
+/** QA 패널(?demo=1)로 원하는 진행 상태를 만든다 */
+export async function preset(
+  page: Page,
+  id: "first-run" | "daily-unsolved" | "daily-solved" | "exam-ready" | "promoted",
+  /** 주소에 덧붙일 값. 예: "&save=b" (다른 저장 칸으로 열기) */
+  query = "",
+) {
+  await page.goto(`/?demo=1${query}`);
+  await page.getByTestId("demo-toggle").click();
+  await page.getByTestId(`demo-${id}`).click();
+  await expect(page.getByTestId("demo-toggle")).toHaveAttribute("aria-expanded", "false");
+}
+
+export async function dialValue(page: Page, index: number) {
+  return Number(await page.getByTestId(`dial-${index}`).getAttribute("aria-valuenow"));
+}
+
+/** 아래 화살표를 눌러 다이얼을 원하는 숫자로 맞춘다 */
+export async function setDial(page: Page, index: number, digit: number) {
+  for (let i = 0; i < 9; i++) {
+    if ((await dialValue(page, index)) === digit) return;
+    const before = await dialValue(page, index);
+    await page.getByTestId(`dial-${index}-next`).click();
+    await expect(page.getByTestId(`dial-${index}`)).not.toHaveAttribute("aria-valuenow", String(before));
+  }
+  expect(await dialValue(page, index)).toBe(digit);
+}
+
+export async function setCode(page: Page, code: [number, number, number]) {
+  for (let i = 0; i < 3; i++) await setDial(page, i, code[i]);
+}
+
+/**
+ * 자리로 가는 움직임이 끝나 위치가 멈출 때까지 기다린 뒤 좌표를 돌려준다.
+ * 이름표는 세 장면으로 끊겨 움직이므로(장면 사이에 잠깐 멈춘다), 한 번 같다고 멈춘 것으로 보지 않고
+ * 네 번 연속(약 200ms) 같은 자리에 있을 때만 멈췄다고 본다.
+ */
+export async function settledBox(page: Page, testId: string) {
+  const locator = page.getByTestId(testId);
+  let previous = await locator.boundingBox();
+  let still = 0;
+  for (let i = 0; i < 60; i++) {
+    await page.waitForTimeout(50);
+    const current = await locator.boundingBox();
+    const same = !!previous && !!current && Math.abs(current.x - previous.x) < 0.5 && Math.abs(current.y - previous.y) < 0.5;
+    still = same ? still + 1 : 0;
+    if (still >= 4 && current) return current;
+    previous = current;
+  }
+  throw new Error(`${testId} 위치가 멈추지 않습니다`);
+}
+
+/** 카드를 누른 뒤 시간 슬롯을 눌러 배치한다 */
+export async function placeByTap(page: Page, person: string, slot: number) {
+  await page.getByTestId(`card-${person}`).click();
+  await expect(page.getByTestId(`card-${person}`)).toHaveAttribute("aria-pressed", "true");
+  // 빈 슬롯은 슬롯을, 찬 슬롯은 그 위의 카드를 누르게 되므로 좌표로 누른다.
+  const box = await settledBox(page, `slot-${slot}`);
+  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+  await expect(page.getByTestId(`slot-${slot}`)).toHaveAttribute("aria-label", /배치됨/);
+}
+
+/** 카드를 끌어서 시간 슬롯에 놓는다 */
+export async function placeByDrag(page: Page, person: string, slot: number) {
+  const from = await settledBox(page, `card-${person}`);
+  const to = await settledBox(page, `slot-${slot}`);
+  await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(from.x + from.width / 2, from.y + from.height / 2 - 20, { steps: 3 });
+  await page.mouse.move(to.x + to.width / 2, to.y + to.height / 2, { steps: 8 });
+  await page.mouse.up();
+}
+
+/** 화면이 가로로 넘치지 않고, 주 버튼이 화면 안에서 가려지지 않았는지 확인한다 */
+export async function expectLayoutOk(page: Page, primarySelector: string) {
+  const viewport = page.viewportSize()!;
+  await page.waitForTimeout(450); // 화면 전환·진입 모션이 끝난 뒤에 잰다
+  const overflow = await page.evaluate(() => ({
+    doc: document.documentElement.scrollWidth,
+    inner: window.innerWidth,
+    // 앱 안에서 화면 폭을 넘는 요소 (가로 스크롤·잘림의 원인)
+    wide: [...document.querySelectorAll(".app *")]
+      .filter((el): el is HTMLElement => el instanceof HTMLElement)
+      .filter((el) => {
+        const r = el.getBoundingClientRect();
+        if (r.width === 0 || r.height === 0) return false;
+        // 일부러 화면 밖으로 내보낸 장식(절대 위치)과 그 안쪽은 제외한다.
+        for (let node: HTMLElement | null = el; node && !node.classList.contains("app"); node = node.parentElement) {
+          const position = getComputedStyle(node).position;
+          if (position === "absolute" || position === "fixed") return false;
+        }
+        return r.right > window.innerWidth + 1 || r.left < -1;
+      })
+      .map((el) => `${el.tagName.toLowerCase()}.${el.className}`)
+      .slice(0, 5),
+  }));
+  expect(overflow.doc, "문서가 가로로 넘친다").toBeLessThanOrEqual(overflow.inner);
+  expect(overflow.wide, "화면 폭을 넘는 요소가 있다").toEqual([]);
+
+  const button = page.locator(primarySelector).first();
+  await expect(button).toBeVisible();
+
+  // 버튼 한가운데를 눌렀을 때 실제로 그 버튼이 눌리는가 (다른 요소에 가려지지 않았는가).
+  // 화면 전환이 끝날 때까지는 전환 층이 위에 있으므로 잠시 기다린다.
+  await expect
+    .poll(
+      () =>
+        button.evaluate((el) => {
+          const r = el.getBoundingClientRect();
+          const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+          return !!hit && (hit === el || el.contains(hit));
+        }),
+      { message: "주 버튼이 다른 요소에 가려져 있다" },
+    )
+    .toBe(true);
+
+  const box = (await button.boundingBox())!;
+  expect(box.y + box.height, "주 버튼이 화면 아래로 잘린다").toBeLessThanOrEqual(viewport.height);
+  expect(box.x, "주 버튼이 왼쪽으로 잘린다").toBeGreaterThanOrEqual(0);
+  expect(box.x + box.width, "주 버튼이 오른쪽으로 잘린다").toBeLessThanOrEqual(viewport.width);
+  expect(box.height, "주 버튼 터치 영역이 44px 보다 작다").toBeGreaterThanOrEqual(44);
+}

@@ -1,0 +1,982 @@
+/* 겉모습 · D안 1비트 흑백 도트 — 입학 · 신분증 · 연습실 · 진술 추리 · 발표 순서 · 시험실 · 승급 증서
+   규칙은 mono.css 와 같다: 검정과 흰색 두 가지, 중간 밝기는 점묘, 글자는 Neo둥근모 16·32·48px. */
+
+/* ───────── 공용 ───────── */
+
+.minibtn {
+  font-family: var(--m-font);
+  font-size: 16px;
+  color: var(--m-w);
+}
+
+.minibtn.leaf {
+  background: #000;
+  box-shadow: var(--m-frame);
+}
+
+.minibtn.leaf:active:not(:disabled) {
+  transform: none;
+  color: #000;
+  background: var(--m-w);
+  box-shadow: var(--m-frame);
+}
+
+.minibtn:not(.leaf) {
+  box-shadow: 0 2px 0 0 var(--m-w);
+}
+
+.minibtn:disabled,
+.minibtn.leaf:disabled {
+  color: var(--m-w);
+  background: #000;
+  box-shadow: none;
+  outline: 2px dotted var(--m-w);
+  outline-offset: -2px;
+}
+
+.desknote {
+  font-size: 16px;
+  line-height: 22px;
+  color: var(--m-w);
+  background: #000;
+  box-shadow: var(--m-frame);
+}
+
+/* 등급 휘장의 글자: 점묘 위에서도 읽히게 검은 테를 두른다 */
+.pxmedal b,
+.pxmedal[data-rank] b {
+  top: 12px;
+  font-family: var(--m-font);
+  font-size: 32px;
+  line-height: 32px;
+  color: var(--m-w);
+  text-shadow:
+    2px 0 0 #000,
+    -2px 0 0 #000,
+    0 2px 0 #000,
+    0 -2px 0 #000,
+    2px 2px 0 #000,
+    -2px 2px 0 #000,
+    2px -2px 0 #000,
+    -2px -2px 0 #000;
+}
+
+/* ───────── 탐정 신분증 ───────── */
+
+.idcard {
+  padding: 10px 12px 8px;
+  font-family: var(--m-font);
+  color: var(--m-w);
+  background-color: #000;
+  box-shadow: var(--m-frame2);
+}
+
+.idcard__org span:first-child {
+  font-size: 16px;
+}
+
+.idcard__org span:last-child {
+  margin-top: 2px;
+  font-family: var(--m-cap);
+  font-size: 12px;
+  color: var(--m-w);
+}
+
+.idcard__kind {
+  padding: 0 6px;
+  font-family: var(--m-font);
+  font-size: 16px;
+  line-height: 20px;
+  color: #000;
+  background: var(--m-w);
+  border: 0;
+}
+
+/* 띠: 흰 줄과 점묘 줄 */
+.idcard__band {
+  height: 8px;
+  margin: 8px -8px 10px;
+  background:
+    linear-gradient(var(--m-w), var(--m-w)) 0 0 / 100% 2px no-repeat,
+    var(--m-d50);
+  box-shadow: none;
+}
+
+.idcard__photo {
+  background: var(--m-w);
+  box-shadow: var(--m-frame), 0 0 0 4px #000;
+}
+
+.idcard__field dt {
+  font-family: var(--m-cap);
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--m-w);
+}
+
+.idcard__field dd {
+  font-size: 16px;
+  line-height: 22px;
+}
+
+/* 이름은 여섯 자가 넘어도 칸에 들어가도록 갈무리11 24px(두 배)로 둔다. 32px 이면 사진과 휘장 사이에서 잘린다. */
+.idcard__field--name dd {
+  font-family: var(--m-cap);
+  font-size: 24px;
+  line-height: 28px;
+  border-bottom: 2px dotted var(--m-w);
+}
+
+.idcard__row dd.hand {
+  font-family: var(--m-cap);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.idcard__badge-empty {
+  border: 2px dashed var(--m-w);
+}
+
+.idcard__foot {
+  font-family: var(--m-cap);
+  font-size: 12px;
+  color: var(--m-w);
+  border-top: 2px solid var(--m-w);
+}
+
+.idcard__input input {
+  color: var(--m-w);
+  caret-color: var(--m-w);
+  background: #000;
+  box-shadow: inset 0 0 0 2px var(--m-w);
+}
+
+.idcard__input input:focus-visible {
+  outline: 2px solid var(--m-w);
+  outline-offset: 2px;
+}
+
+/* ───────── 입학 ───────── */
+
+.admit {
+  background-color: #000;
+  color: var(--m-w);
+}
+
+.admit .hall__scene {
+  aspect-ratio: auto;
+  height: clamp(120px, 22dvh, 200px);
+  max-height: none;
+}
+
+.admit__sign {
+  position: relative;
+  order: -1;
+  z-index: 3;
+  gap: 8px;
+  padding: calc(10px + env(safe-area-inset-top)) 10px 10px;
+  background: #000;
+  border-bottom: 2px solid var(--m-w);
+}
+
+.admit__wordmark span:first-child {
+  font-family: var(--m-font);
+  font-size: 32px;
+  color: var(--m-w);
+  text-shadow: none;
+}
+
+.admit__wordmark span:last-child {
+  margin-top: 4px;
+  font-family: var(--m-font);
+  font-size: 16px;
+  letter-spacing: 0;
+  color: var(--m-w);
+  text-shadow: none;
+}
+
+.admit__scroll {
+  padding: 10px 10px 12px;
+}
+
+.admit__form {
+  color: var(--m-w);
+  background: #000;
+  box-shadow: var(--m-frame);
+}
+
+.admit[data-intro="playing"] .admit__form {
+  animation: m-open 200ms steps(2) 200ms both;
+}
+
+.admit__title {
+  font-family: var(--m-font);
+  font-size: 32px;
+  line-height: 36px;
+  border-bottom: 2px solid var(--m-w);
+}
+
+.admit__lead {
+  font-size: 16px;
+  line-height: 22px;
+  color: var(--m-w);
+}
+
+.admit__note {
+  font-family: var(--m-cap);
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--m-w);
+}
+
+.admit__grant {
+  font-size: 16px;
+}
+
+/* ───────── 연습실 ───────── */
+
+.worksheet {
+  animation: m-open 200ms steps(2) both;
+}
+
+.worksheet__pile {
+  inset: 6px -6px -6px 6px;
+  background: #000;
+  box-shadow: var(--m-frame);
+}
+
+.worksheet__leaf {
+  background: #000;
+  box-shadow: var(--m-frame);
+}
+
+.worksheet__no {
+  font-family: var(--m-cap);
+  font-size: 12px;
+  color: var(--m-w);
+}
+
+.worksheet__title {
+  font-family: var(--m-font);
+  font-size: 32px;
+  line-height: 36px;
+}
+
+.worksheet__desc {
+  font-size: 16px;
+  line-height: 22px;
+  color: var(--m-w);
+}
+
+.worksheet .posting__meta {
+  border-top: 2px solid var(--m-w);
+}
+
+.worksheet:active .inkbtn {
+  transform: none;
+}
+
+/* ───────── 진술 추리 ───────── */
+
+.suspects {
+  border-top: 2px solid var(--m-w);
+}
+
+.suspects h2,
+.conditions h2 {
+  font-size: 16px;
+  color: var(--m-w);
+}
+
+.suspects h2::before,
+.conditions h2::before {
+  content: "▼ ";
+}
+
+.suspect__photo {
+  background: var(--m-w);
+  box-shadow: var(--m-frame), 0 0 0 4px #000;
+}
+
+.suspect__name {
+  font-size: 16px;
+}
+
+.suspect__memo {
+  font-family: var(--m-cap);
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--m-w);
+}
+
+.suspect[data-selected="true"] .suspect__memo,
+.suspect[data-culprit="true"] .suspect__memo {
+  color: var(--m-w);
+  -webkit-mask: none;
+  mask: none;
+}
+
+.suspect[data-selected="true"] .suspect__name {
+  color: #000;
+  background: var(--m-w);
+}
+
+.suspect[data-mentioned="true"] .suspect__name {
+  color: var(--m-w);
+  box-shadow: 0 2px 0 0 var(--m-w);
+}
+
+/* 물음은 뒤집힌 대사 띠에 뜬다 */
+.truth__prompt {
+  font-size: 16px;
+  line-height: 22px;
+  color: #000;
+  background: var(--m-w);
+  box-shadow: var(--m-frame);
+}
+
+.truth__who {
+  color: #000;
+  box-shadow: 0 2px 0 0 #000;
+}
+
+.statement {
+  background: #000;
+  box-shadow: var(--m-frame);
+}
+
+.statement__photo {
+  background: var(--m-w);
+  box-shadow: none;
+}
+
+.statement__who {
+  font-family: var(--m-cap);
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--m-w);
+}
+
+.statement__quote {
+  font-size: 16px;
+  line-height: 20px;
+}
+
+.statement__memo button {
+  margin-bottom: 0;
+  font-family: var(--m-font);
+  font-size: 16px;
+  color: var(--m-w);
+  background: #000;
+  box-shadow: var(--m-frame);
+}
+
+.statement__memo button[aria-pressed="true"],
+.statement__memo button[data-value="false"][aria-pressed="true"] {
+  transform: none;
+  color: #000;
+  background: var(--m-w);
+  box-shadow: var(--m-frame);
+}
+
+.statement__memo button:disabled {
+  color: var(--m-w);
+  background: #000;
+  box-shadow: none;
+  outline: 2px dotted var(--m-w);
+  outline-offset: -2px;
+}
+
+.statement__verdict {
+  font-family: var(--m-font);
+  font-size: 16px;
+  color: var(--m-w);
+}
+
+.statement__verdict[data-true="true"] {
+  font-size: 32px;
+}
+
+.statement__verdict[data-true="false"] {
+  color: var(--m-w);
+}
+
+.statement[data-pinned="true"] {
+  transform: none;
+  box-shadow: var(--m-frame2);
+}
+
+/* 견주지 않는 진술은 줄만 점선으로 물러난다 */
+.statement[data-dim="true"] {
+  opacity: 1;
+  box-shadow: none;
+  outline: 2px dotted var(--m-w);
+  outline-offset: 0;
+}
+
+.statement[data-dim="true"] .statement__photo {
+  -webkit-mask: var(--m-ghost2);
+  mask: var(--m-ghost2);
+}
+
+.statement[data-result="true"] {
+  background-color: #000;
+  box-shadow: var(--m-frame2);
+}
+
+.statements__tip {
+  font-family: var(--m-cap);
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--m-w);
+  background: none;
+  box-shadow: none;
+}
+
+/* ───────── 발표 순서 (승급 시험) ───────── */
+
+/* 시험실 책상의 깔개: 성긴 점묘 */
+.desk__blotter {
+  background: var(--m-d06);
+  background-color: #000;
+  box-shadow: var(--m-frame);
+}
+
+.conditions {
+  border-top: 2px solid var(--m-w);
+}
+
+.conditions li {
+  grid-template-columns: 22px 1fr;
+  font-size: 16px;
+  line-height: 22px;
+}
+
+.conditions__no {
+  font-family: var(--m-font);
+  font-size: 16px;
+  line-height: 22px;
+  color: var(--m-w);
+}
+
+.conditions__no::after {
+  content: ".";
+}
+
+.board__slots {
+  background: #000;
+  box-shadow: var(--m-frame);
+}
+
+.slot__time {
+  font-family: var(--m-font);
+  font-size: 32px;
+}
+
+.slot__ordinal {
+  font-family: var(--m-cap);
+  font-size: 12px;
+  color: var(--m-w);
+}
+
+.slot__drop {
+  background: var(--m-d25);
+  box-shadow: inset 0 0 0 2px var(--m-w);
+}
+
+.slot__drop[data-ready="true"] {
+  box-shadow: inset 0 0 0 2px var(--m-w);
+  animation: m-ready 700ms steps(1) infinite;
+}
+
+@keyframes m-ready {
+  50% {
+    background: var(--m-d50);
+    box-shadow:
+      inset 0 0 0 2px #000,
+      inset 0 0 0 4px var(--m-w);
+  }
+}
+
+.slot__drop[data-over="true"] {
+  background: var(--m-w);
+  box-shadow: inset 0 0 0 2px #000;
+}
+
+.board__tray {
+  color: var(--m-w);
+  background: #000;
+  box-shadow: var(--m-frame);
+}
+
+.board__tray[data-over="true"],
+.board__tray[data-ready="true"] {
+  background: var(--m-d25);
+}
+
+.board__tray-label {
+  font-family: var(--m-cap);
+  font-size: 12px;
+}
+
+.seat {
+  border: 2px dashed var(--m-w);
+}
+
+.pcard {
+  color: var(--m-w);
+  background: #000;
+  box-shadow: var(--m-frame);
+}
+
+.pcard[data-dragging="true"] {
+  box-shadow: var(--m-frame2);
+}
+
+.pcard[data-selected="true"] {
+  outline: 2px solid var(--m-w);
+  outline-offset: 2px;
+}
+
+.pcard .portrait {
+  background: var(--m-w);
+}
+
+.pcard__name {
+  font-size: 16px;
+}
+
+.board[data-verdict="correct"] .pcard[data-placed="true"] {
+  animation: m-card-pass 420ms steps(1) both;
+}
+
+@keyframes m-card-pass {
+  0%,
+  50% {
+    filter: invert(1);
+  }
+  25%,
+  75%,
+  100% {
+    filter: none;
+  }
+}
+
+.schedule__count {
+  font-size: 16px;
+  color: var(--m-w);
+  background: #000;
+  box-shadow: var(--m-frame);
+}
+
+.deskfoot__submit[data-long="true"] {
+  font-family: var(--m-font);
+  font-size: 16px;
+}
+
+/* ───────── 결과에 남은 정답 ───────── */
+
+.solution {
+  background: #000;
+  box-shadow: var(--m-frame);
+}
+
+.solution__label {
+  font-size: 16px;
+  color: var(--m-w);
+}
+
+.solution__label::before {
+  content: "▼ ";
+}
+
+.solution__person {
+  font-family: var(--m-font);
+  font-size: 32px;
+}
+
+.solution__photo {
+  background: var(--m-w);
+  box-shadow: var(--m-frame), 0 0 0 4px #000;
+}
+
+.solution__statements {
+  border-top: 2px dotted var(--m-w);
+}
+
+.solution__statements li {
+  font-size: 16px;
+  line-height: 22px;
+}
+
+.solution__quote,
+.solution__truth {
+  font-family: var(--m-font);
+  font-size: 16px;
+  line-height: 22px;
+  color: var(--m-w);
+}
+
+.solution__truth[data-true="true"] {
+  color: #000;
+  background: var(--m-w);
+  padding: 0 4px;
+}
+
+.solution__order li {
+  background: #000;
+  box-shadow: var(--m-frame);
+}
+
+.solution__time {
+  font-family: var(--m-font);
+  font-size: 32px;
+}
+
+.solution__name {
+  font-size: 16px;
+}
+
+/* ───────── 시험실 ───────── */
+
+.room {
+  --room-h: clamp(118px, 25dvh, 214px);
+  background-color: #000;
+  color: var(--m-w);
+}
+
+.room--ceremony,
+.room--passed {
+  --room-h: clamp(72px, 12dvh, 104px);
+}
+
+.room__scroll {
+  gap: 12px;
+}
+
+.room__scene {
+  background: #000;
+  border-bottom: 2px solid var(--m-w);
+}
+
+.room__scene img {
+  object-fit: none;
+  object-position: 50% 0;
+}
+
+.room .deskbar {
+  background: none;
+  border-bottom: 0;
+}
+
+.room .deskbar__tag {
+  padding: 0 8px;
+  background: #000;
+  box-shadow: var(--m-frame);
+}
+
+.room__wood {
+  top: calc(var(--room-h) + 2px);
+  background: url("../assets/art/mono/desk.png") 50% 0 / 480px 960px no-repeat #000;
+  border-top: 0;
+}
+
+/* 승급 순간: 장면이 통째로 뒤집혔다 돌아온다 */
+.room__glow {
+  background: #fff;
+  mix-blend-mode: difference;
+  opacity: 0;
+}
+
+.room--ceremony:not([data-step="0"]) .room__glow {
+  opacity: 0;
+  animation: m-flash 560ms steps(1) both;
+}
+
+.envelope::before {
+  inset: 8px -8px -8px 8px;
+  background: #000;
+}
+
+.envelope__letter {
+  color: var(--m-w);
+  background: #000;
+  box-shadow: var(--m-frame);
+}
+
+.envelope__letter-title {
+  font-family: var(--m-font);
+  font-size: 16px;
+  color: var(--m-w);
+}
+
+.envelope__letter-rank {
+  font-family: var(--m-font);
+  font-size: 32px;
+}
+
+.envelope__letter i {
+  background: none;
+  border-top: 2px dotted var(--m-w);
+}
+
+/* 잠긴 봉투는 반만 찍힌다. 안의 시험지가 비쳐 보이지 않게 숨긴다. */
+.envelope[data-state="locked"] .envelope__letter {
+  visibility: hidden;
+}
+
+.envelope[data-state="locked"] > .sprite:not(.envelope__lid) {
+  filter: none;
+  -webkit-mask: var(--m-ghost2);
+  mask: var(--m-ghost2);
+}
+
+.roomnote {
+  background: #000;
+  box-shadow: var(--m-frame);
+}
+
+.roomnote__lead {
+  font-size: 16px;
+  line-height: 22px;
+  color: var(--m-w);
+}
+
+.roomnote__facts {
+  border-top: 2px solid var(--m-w);
+}
+
+.roomnote__facts > div {
+  grid-template-columns: 76px minmax(0, 1fr);
+  font-size: 16px;
+  line-height: 22px;
+  border-bottom: 2px dotted var(--m-w);
+}
+
+.roomnote__facts dt {
+  padding-top: 0;
+  font-family: var(--m-cap);
+  font-size: 12px;
+  color: var(--m-w);
+}
+
+.roomnote__reqs {
+  border-top: 2px solid var(--m-w);
+}
+
+.roomnote__title {
+  font-family: var(--m-font);
+  font-size: 32px;
+  line-height: 36px;
+}
+
+/* 승급 증서: 겹줄 창 */
+.diploma {
+  gap: 2px;
+  padding: 14px 14px 12px;
+  background-color: #000;
+  box-shadow: var(--m-frame), inset 0 0 0 4px #000, inset 0 0 0 6px var(--m-w);
+}
+
+.diploma__kind {
+  font-family: var(--m-font);
+  font-size: 16px;
+  letter-spacing: 8px;
+  color: var(--m-w);
+}
+
+.diploma__marks {
+  height: 76px;
+  margin-top: 2px;
+}
+
+.diploma__title {
+  margin-top: 0;
+  font-family: var(--m-font);
+  font-size: 32px;
+  line-height: 36px;
+}
+
+.diploma__lead {
+  font-size: 16px;
+  line-height: 20px;
+  color: var(--m-w);
+}
+
+.ceremony__reward {
+  color: var(--m-w);
+  background: #000;
+  box-shadow: var(--m-frame);
+}
+
+/* ───────── 탐정 신분증 화면 ───────── */
+
+.rename {
+  background: #000;
+  box-shadow: var(--m-frame);
+}
+
+.rename__label {
+  font-family: var(--m-cap);
+  font-size: 12px;
+  color: var(--m-w);
+}
+
+.rename input {
+  font-family: var(--m-cap);
+  font-size: 24px;
+  color: var(--m-w);
+  caret-color: var(--m-w);
+  border-bottom: 2px solid var(--m-w);
+}
+
+.ledger {
+  background: #000;
+  box-shadow: var(--m-frame);
+}
+
+.ledger__title {
+  font-family: var(--m-font);
+  font-size: 32px;
+  line-height: 36px;
+  border-bottom: 2px solid var(--m-w);
+}
+
+.ranks__id {
+  font-family: var(--m-cap);
+  font-size: 12px;
+}
+
+.ranks__ladder li[data-state="locked"] .ranks__mark {
+  opacity: 1;
+  filter: none;
+  -webkit-mask: var(--m-ghost2);
+  mask: var(--m-ghost2);
+}
+
+.ranks__ladder li[data-state="locked"] .ranks__id {
+  color: var(--m-w);
+}
+
+.ranks__note {
+  font-size: 16px;
+  color: var(--m-w);
+}
+
+.records li {
+  border-bottom: 2px dotted var(--m-w);
+}
+
+.records__cat {
+  font-family: var(--m-cap);
+  font-size: 12px;
+  color: var(--m-w);
+}
+
+.records__title {
+  font-size: 16px;
+}
+
+.records__line {
+  font-family: var(--m-cap);
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--m-w);
+}
+
+.soundswitch {
+  color: var(--m-w);
+  background: #000;
+  box-shadow: var(--m-frame);
+}
+
+.soundswitch:active {
+  transform: none;
+  box-shadow: var(--m-frame);
+  filter: invert(1);
+}
+
+.soundswitch__text span {
+  font-size: 16px;
+}
+
+.soundswitch__text small {
+  font-family: var(--m-cap);
+  font-size: 12px;
+  color: var(--m-w);
+}
+
+/* ───────── 낮은 화면 ───────── */
+
+@media (max-height: 740px) {
+  .admit .hall__scene {
+    height: clamp(64px, 12dvh, 110px);
+    max-height: none;
+  }
+
+  /* 원서가 화면보다 길면 위가 잘리지 않고 아래로 넘긴다 */
+  .admit__scroll {
+    justify-content: flex-start;
+    padding-top: 8px;
+  }
+
+  .admit__form {
+    padding: 8px 12px;
+  }
+
+  .admit__title {
+    padding-bottom: 4px;
+    font-family: var(--m-font);
+    font-size: 32px;
+    line-height: 32px;
+  }
+
+  .admit__lead {
+    margin-top: 4px;
+    line-height: 20px;
+  }
+
+  .admit__card,
+  .admit__note,
+  .admit__grant {
+    margin-top: 8px;
+  }
+
+  .conditions li {
+    line-height: 20px;
+  }
+
+  .slot__time {
+    line-height: 28px;
+  }
+
+  .board {
+    gap: 6px;
+  }
+
+  /* 시간 아래의 순서 글자는 시간과 같은 뜻이라 낮은 화면에서는 접는다 */
+  .slot__ordinal {
+    display: none;
+  }
+
+  .board__slots,
+  .board__tray {
+    padding: 4px 8px 6px;
+  }
+
+  .board__seats {
+    margin-top: 4px;
+  }
+
+  .schedule__tools .minibtn.leaf {
+    min-height: 38px;
+  }
+
+  .diploma {
+    padding: 10px 14px;
+  }
+
+  .diploma__marks {
+    height: 68px;
+  }
+}

@@ -1,0 +1,6 @@
+/* 격자 규칙의 바탕(pixel.css · pixel-rooms.css: 2px 점, 끊기는 움직임, 부품의 크기)을 한 층(skin)으로 깐다.
+   그 위에 층 밖의 mono.css · mono-rooms.css 가 입혀진다.
+   층으로 감싸 두면 빌드에서 파일이 실리는 순서가 바뀌어도 mono*.css 가 항상 이긴다. */
+@layer layout, skin;
+@import "./pixel.css" layer(skin);
+@import "./pixel-rooms.css" layer(skin);

@@ -1,0 +1,11 @@
+node_modules/
+dist/
+test-results/
+playwright-report/
+.DS_Store
+*.log
+
+# 로컬 설정·실험물
+.claude/settings.local.json
+*.tsbuildinfo
+.env*
