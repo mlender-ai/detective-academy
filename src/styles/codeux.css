@@ -30,6 +30,23 @@
   gap: 2px;
 }
 
+/* 작은 칸에서는 펜 자국 대신 칸 자체로 메모를 나타낸다: 제외한 숫자는 점선 칸에 줄을 긋고, 후보는 칸을 뒤집는다 */
+.cluestrip .pxmark {
+  display: none;
+}
+
+.cluestrip .clue__digit[data-memo="out"] {
+  box-shadow: none;
+  outline: 2px dotted var(--m-w);
+  text-decoration: line-through;
+  text-decoration-thickness: 2px;
+}
+
+.cluestrip .clue__digit[data-memo="maybe"] {
+  color: #000;
+  background: var(--m-w);
+}
+
 /* ───────── A안 · 접기·펼치기 ─────────
    위: 접고 펴는 패널 세 칸(사건 · 시도 기록 · 숫자 메모). 아래: 자물쇠와 단추 줄(항상 고정).
    패널을 접은 만큼 자물쇠 자리가 넓어지고, 드럼의 창이 그 높이를 따라 길어진다. */
