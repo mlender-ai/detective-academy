@@ -121,7 +121,12 @@ test.describe("B안 · 장면 전개", () => {
     await expect(screen).toHaveAttribute("data-at", "desk");
     const canvas = (await page.locator('[data-testid="live-scene"] canvas').boundingBox())!;
     // 금고는 방의 오른쪽(x 152~194점, y 28~72점), 책상은 가운데(x 60~118점)
-    await page.touchscreen.tap(canvas.x + 173 * 2, canvas.y + 50 * 2);
+    const safe = { x: canvas.x + 173 * 2, y: canvas.y + 50 * 2 };
+    // 화면 전환이 끝날 때까지는 전환 층이 위에 있어 눌리지 않는다. 좌표로 누르는 것은 스스로 기다리지 않으므로 여기서 기다린다.
+    await expect
+      .poll(() => page.evaluate(({ x, y }) => !!document.elementFromPoint(x, y)?.closest('[data-testid="live-scene"]'), safe))
+      .toBe(true);
+    await page.touchscreen.tap(safe.x, safe.y);
     await expect(screen).toHaveAttribute("data-at", "safe");
     await expect(page.getByTestId("dial-0")).toBeVisible();
     await page.waitForTimeout(900);
