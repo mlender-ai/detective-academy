@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>GATE 02 · 옆에서 본 복도 전체</title>
+    <style>
+      body { margin: 0; padding: 16px; background: #000; color: #f1f1ea; font: 14px/1.5 ui-monospace, monospace; }
+      canvas { display: block; image-rendering: pixelated; margin-bottom: 12px; }
+      a { color: inherit; margin-right: 12px; }
+    </style>
+  </head>
+  <body>
+    <p>
+      B안 복도 전체(340×150점, 3배). 제품 화면은 이 가운데 195~216점을 비춘다.
+      <a href="?">기본</a><a href="?exam=1">시험 가능</a><a href="?solved=1">오늘 해결</a><a href="?at=practice">연습실 앞</a><a href="?at=exam&exam=1">시험실 앞</a><a href="?at=archive">보관함 앞</a><a href="?at=board">게시판 앞</a>
+    </p>
+    <canvas id="c"></canvas>
+    <script type="module" src="./side.ts"></script>
+  </body>
+</html>

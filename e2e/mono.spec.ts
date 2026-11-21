@@ -1,33 +1,5 @@
-import { expect, test, type Page } from "@playwright/test";
-import { expectLayoutOk, placeByTap, preset, setCode, shot, stored } from "./helpers";
-
-/**
- * 화면에서 검정(#000)도 흰색(#f1f1ea)도 아닌 화소의 비율(0~1).
- * 회색·투명도·흐림을 쓰면 이 값이 커진다. 점선의 끝처럼 반 화소에 걸린 자리는 조금 남을 수 있다.
- */
-async function offToneRatio(page: Page): Promise<number> {
-  await page.evaluate(() => document.fonts.ready.then(() => undefined));
-  const png = await page.screenshot({ animations: "disabled", style: ".demo { visibility: hidden !important; }" });
-  return page.evaluate(async (base64) => {
-    const image = new Image();
-    image.src = `data:image/png;base64,${base64}`;
-    await image.decode();
-    const canvas = document.createElement("canvas");
-    canvas.width = image.naturalWidth;
-    canvas.height = image.naturalHeight;
-    const ctx = canvas.getContext("2d")!;
-    ctx.drawImage(image, 0, 0);
-    const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
-    let off = 0;
-    for (let i = 0; i < data.length; i += 4) {
-      const [r, g, b] = [data[i], data[i + 1], data[i + 2]];
-      const black = r < 16 && g < 16 && b < 16;
-      const white = Math.abs(r - 241) < 16 && Math.abs(g - 241) < 16 && Math.abs(b - 234) < 16;
-      if (!black && !white) off++;
-    }
-    return off / (data.length / 4);
-  }, png.toString("base64"));
-}
+import { expect, test } from "@playwright/test";
+import { expectLayoutOk, offToneRatio, placeByTap, preset, setCode, shot, stored } from "./helpers";
 
 /**
  * 1비트 흑백 도트로 그렸는지 확인한다: 비트맵 글꼴, 스프라이트, 점으로 찍는 표시, 두 가지 색, 자막 화면.

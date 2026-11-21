@@ -1,8 +1,9 @@
+import { LiveScene, type LiveSceneHandle } from "../components/LiveScene";
 import { Narration } from "../components/Narration";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { nextStep, type NextStep } from "../app/flow";
 import { prefersReducedMotion } from "../app/motion";
-import { navigate } from "../app/router";
+import { navigate, type Route } from "../app/router";
 import { playSound } from "../app/sound";
 import { useGame } from "../app/store";
 import { CORRIDOR } from "../app/backdrop";
@@ -14,6 +15,15 @@ import { RANK_BY_ID, rankLabel } from "../data/ranks";
 import { examStatus, getProgress } from "../engine/progressEngine";
 import { formatElapsed, seoulDateKey, seoulDateLabel } from "../engine/time";
 import type { PuzzleProgress } from "../engine/types";
+import type { SpotId } from "../scene/homeScene";
+
+/** 복도의 네 곳과 그곳에서 열리는 화면 (A안의 살아 있는 장면이 쓴다) */
+const SPOT_ROUTE: Record<SpotId, Route> = {
+  board: { name: "daily" },
+  practice: { name: "practice" },
+  exam: { name: "exam" },
+  archive: { name: "profile" },
+};
 
 function postingCta(progress: PuzzleProgress): string {
   if (progress.status === "solved") return "채점 기록 보기";
@@ -42,14 +52,41 @@ function postingStatus(progress: PuzzleProgress): string {
 /**
  * 학원 복도. 벽의 게시판에 오늘의 시험 공고가 붙어 있고,
  * 공고를 누르면 그 종이가 그대로 책상 위 시험지로 펼쳐진다.
+ *
+ * live 를 주면 A안 · 시네마틱 복도다(V3 GATE 02 비교안, ?home=a): 구성은 그대로이고 복도 그림만 살아 움직인다.
+ * 갈 곳을 고르면 탐정이 그쪽으로 짧게 걸어가고(0.5~1.2초) 카메라가 따라간 뒤 화면이 바뀐다. 한 번 더 누르면 건너뛴다.
  */
-export function AcademyHome() {
+export function AcademyHome({ live = false }: { live?: boolean }) {
   const game = useGame();
   const daily = getDailyPuzzle(seoulDateKey());
   const dailyProgress = getProgress(game, daily.id);
   const exam = examStatus(game);
   const step = nextStep(game);
   const [lifting, setLifting] = useState(false);
+  const sceneRef = useRef<LiveSceneHandle>(null);
+  /** 탐정이 걸어가고 있는 곳. 도착하면 그 화면으로 바뀐다. */
+  const heading = useRef<SpotId | null>(null);
+
+  /** 그곳으로 간다. 살아 있는 장면이 없으면(확정된 홈) 곧바로 화면을 바꾼다. */
+  const head = (id: SpotId) => {
+    const scene = sceneRef.current;
+    if (!live || !scene) {
+      navigate(SPOT_ROUTE[id]);
+      return;
+    }
+    if (heading.current === id) {
+      // 가는 중에 한 번 더 누르면 걷기를 건너뛴다
+      scene.skip();
+      return;
+    }
+    heading.current = id;
+    scene.go(id);
+  };
+
+  const onArrive = (id: SpotId) => {
+    if (heading.current !== id) return;
+    navigate(SPOT_ROUTE[id]);
+  };
 
   const practiceSolved = PRACTICE_PUZZLES.filter((p) => getProgress(game, p.id).status === "solved").length;
   const examPuzzle = exam.rule ? PUZZLE_BY_ID[exam.rule.examPuzzleIds[0]] : null;
@@ -58,6 +95,12 @@ export function AcademyHome() {
 
   // 공고를 누르면 압정이 빠지며 종이가 떠오르고, 곧바로 책상 위 시험지로 이어진다.
   const openDaily = () => {
+    if (live) {
+      if (!lifting) playSound("place");
+      setLifting(true);
+      head("board");
+      return;
+    }
     if (lifting) return;
     if (prefersReducedMotion()) {
       navigate({ name: "daily" });
@@ -69,12 +112,22 @@ export function AcademyHome() {
   };
 
   return (
-    <div className="screen hall inkworld" data-testid="home-screen" data-next={step}>
+    <div className="screen hall inkworld" data-testid="home-screen" data-home={live ? "a" : undefined} data-next={step}>
       <h1 className="sr-only">탐정학원 복도</h1>
 
-      <div className="hall__scene" aria-hidden="true">
-        <img src={CORRIDOR.src} alt="" width={CORRIDOR.width} height={CORRIDOR.height} decoding="async" />
-      </div>
+      {live ? (
+        <LiveScene
+          ref={sceneRef}
+          kind="depth"
+          className="hall__scene"
+          state={{ dailySolved: solved, examRank: exam.rule ? exam.rule.to : game.rank, examOpen: exam.unlocked }}
+          onArrive={onArrive}
+        />
+      ) : (
+        <div className="hall__scene" aria-hidden="true">
+          <img src={CORRIDOR.src} alt="" width={CORRIDOR.width} height={CORRIDOR.height} decoding="async" />
+        </div>
+      )}
 
       <header className="hall__top">
         <div className="hall__sign">
@@ -164,7 +217,7 @@ export function AcademyHome() {
                 <button
                   type="button"
                   className={`inkbtn inkbtn--sm inkbtn--block ${step === "exam" ? "inkbtn--wine" : ""}`}
-                  onClick={() => navigate({ name: "exam" })}
+                  onClick={() => head("exam")}
                   data-testid="exam-cta"
                 >
                   {examInProgress ? "시험 이어서 풀기" : "승급 시험 응시"}
@@ -193,7 +246,7 @@ export function AcademyHome() {
               <button
                 type="button"
                 className="inkbtn inkbtn--sm inkbtn--block"
-                onClick={() => navigate({ name: "exam" })}
+                onClick={() => head("exam")}
                 data-testid="exam-record"
               >
                 합격 기록 보기
@@ -209,7 +262,7 @@ export function AcademyHome() {
           type="button"
           className="ledge__item"
           data-primary={step === "practice"}
-          onClick={() => navigate({ name: "practice" })}
+          onClick={() => head("practice")}
           data-testid="practice-entry"
         >
           <span className="ledge__art">
@@ -225,7 +278,7 @@ export function AcademyHome() {
         <button
           type="button"
           className="ledge__item"
-          onClick={() => navigate({ name: "profile" })}
+          onClick={() => head("archive")}
           aria-label={`${rankLabel(game.rank)} ${game.nickname}, 탐정 신분증 보기`}
           data-testid="identity"
         >

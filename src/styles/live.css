@@ -1,0 +1,291 @@
+/* 살아 있는 복도 장면과 메인 홈 비교안 (V3 GATE 02).
+   확정된 홈의 스타일은 건드리지 않는다. 여기의 규칙은 ?home=a · ?home=b 로 열었을 때만 쓰인다.
+   색은 검정과 흰색(--m-w) 두 가지, 점 하나는 2px, 글자는 16·32px 이라는 mono.css 의 약속을 그대로 따른다. */
+
+.livescene {
+  position: relative;
+  overflow: hidden;
+  background: #000;
+}
+
+.livescene canvas {
+  position: absolute;
+  display: block;
+  image-rendering: pixelated;
+}
+
+/* ───────── A안 · 시네마틱 복도 ─────────
+   지금 홈의 복도 그림과 같은 자리(가로 가운데, 세로 44%)에 같은 크기로 놓는다. 점이 2px 격자에서 벗어나지 않게 자리를 맞춘다. */
+
+.livescene[data-kind="depth"] canvas {
+  left: calc(50% - 240px);
+  left: round(down, calc(50% - 240px), 2px);
+  top: calc((100% - 320px) * 0.44);
+  top: round(nearest, calc((100% - 320px) * 0.44), 2px);
+  width: 480px;
+  height: 320px;
+}
+
+/* 살아 있는 장면에는 두 장을 겹쳐 깜빡이던 정지 그림을 쓰지 않는다 */
+.hall__scene.livescene::before,
+.hall__scene.livescene::after {
+  content: none;
+  animation: none;
+}
+
+/* ───────── B안 · 플레이 가능한 복도 ─────────
+   위에서부터: 학원 이름과 등급 → 복도(누를 수 있는 게임 장면) → 서술 한 줄 → 갈 곳(명령 창) */
+
+.hall--play {
+  overflow-y: auto;
+}
+
+.playscene {
+  flex: 0 1 300px;
+  min-height: 232px;
+  border-bottom: 2px solid var(--m-w);
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* 복도는 바닥을 창 아래에 붙인다. 화면이 낮으면 천장부터 가려진다. */
+.livescene[data-kind="side"] canvas {
+  left: calc(50% - 216px);
+  left: round(down, calc(50% - 216px), 2px);
+  bottom: 0;
+  width: 432px;
+  height: 300px;
+}
+
+/* 서술은 두 줄 자리를 미리 잡아 둔다: 문장이 바뀌어도 아래 창이 밀리지 않는다 */
+.hall--play .narr {
+  min-height: 62px;
+}
+
+.hall__purse {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: 6px;
+  font-family: var(--m-font);
+  font-size: 16px;
+  line-height: 20px;
+  color: var(--m-w);
+}
+
+.hall__purse i {
+  font-family: var(--m-cap);
+  font-size: 12px;
+  font-style: normal;
+  line-height: 16px;
+}
+
+.hall__side {
+  display: grid;
+  justify-items: end;
+}
+
+/* 갈 곳: 줄마다 한 곳. 탐정이 선 곳(또는 가는 곳)의 줄은 창으로 펼쳐진다. */
+.cmd {
+  flex: 1 0 auto;
+  display: flex;
+  flex-direction: column;
+  margin: 0 10px;
+  padding-bottom: calc(10px + env(safe-area-inset-bottom));
+}
+
+/* 조작 안내: 화면 아래에 남는 자리가 있을 때만 보인다 */
+.cmd__hint {
+  margin: auto 0 0;
+  padding-top: 12px;
+  font-family: var(--m-cap);
+  font-size: 12px;
+  line-height: 16px;
+  text-align: center;
+  color: var(--m-w);
+}
+
+.cmd__row {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: var(--m-font);
+  font-size: 16px;
+  line-height: 22px;
+  text-align: left;
+  color: var(--m-w);
+  background: #000;
+  border: 0;
+  border-radius: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.cmd__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 52px;
+  padding: 0 10px 0 6px;
+}
+
+.cmd__row + .cmd__row .cmd__head {
+  background: linear-gradient(var(--m-w), var(--m-w)) 0 0 / 100% 2px no-repeat;
+  -webkit-mask: none;
+}
+
+/* 줄 사이의 금은 점선이다 */
+.cmd__row + .cmd__row:not([data-on="true"]) .cmd__head {
+  background: repeating-linear-gradient(90deg, var(--m-w) 0 2px, #000 2px 6px) 0 0 / 100% 2px no-repeat;
+}
+
+.cmd__cursor {
+  flex: none;
+  width: 16px;
+  visibility: hidden;
+}
+
+.cmd__name {
+  flex: none;
+}
+
+.cmd__state {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-align: right;
+  text-overflow: clip;
+  white-space: nowrap;
+}
+
+.cmd__row:active:not([data-on="true"]) .cmd__head {
+  color: #000;
+  background: var(--m-w);
+}
+
+/* 펼쳐진 줄: 흰 줄을 두른 창. 머리줄은 뒤집힌다. */
+.cmd__row[data-on="true"] {
+  margin: 4px 0 6px;
+  box-shadow: var(--m-frame);
+  animation: m-open 160ms steps(2) both;
+}
+
+.cmd__row[data-on="true"] .cmd__head {
+  min-height: 32px;
+  color: #000;
+  background: var(--m-w);
+}
+
+.cmd__row[data-on="true"] .cmd__cursor {
+  visibility: visible;
+}
+
+.cmd__row[data-on="true"] + .cmd__row .cmd__head {
+  background: none;
+}
+
+.cmd__body {
+  display: grid;
+  gap: 2px;
+  padding: 8px 10px 10px;
+}
+
+.cmd__subject {
+  font-size: 32px;
+  line-height: 36px;
+}
+
+.cmd__line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 10px;
+}
+
+.cmd__line i {
+  font-family: var(--m-cap);
+  font-size: 12px;
+  font-style: normal;
+  line-height: 16px;
+}
+
+.cmd__reqs {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cmd__reqs li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.cmd__go {
+  margin-top: 8px;
+  margin-bottom: 0;
+}
+
+.cmd__row:active .cmd__go {
+  color: var(--m-w);
+  background: #000;
+}
+
+@media (max-height: 740px) {
+  /* 낮은 화면: 복도 앞쪽의 어두운 바닥을 조금 잘라 내고, 안내 글은 뺀다 */
+  .livescene[data-kind="side"] canvas {
+    bottom: -20px;
+  }
+
+  .hall--play .narr {
+    min-height: 54px;
+  }
+
+  .cmd__head {
+    min-height: 44px;
+  }
+
+  .cmd__hint {
+    display: none;
+  }
+
+  .cmd__go {
+    min-height: 44px;
+    font-size: 16px;
+  }
+
+  .cmd__body {
+    padding: 6px 10px 8px;
+  }
+
+  .cmd__go {
+    margin-top: 6px;
+  }
+}
+
+/* 주소창이 보이는 작은 휴대폰(높이 640px 아래): 줄을 조금 더 조인다 */
+@media (max-height: 640px) {
+  .hall--play .hall__name span:last-child {
+    display: none;
+  }
+
+  .cmd__subject {
+    font-size: 16px;
+    line-height: 22px;
+  }
+}
+
+/* 긴 화면: 줄을 넉넉하게 */
+@media (min-height: 880px) {
+  .cmd__head {
+    min-height: 60px;
+  }
+
+  .cmd__row[data-on="true"] .cmd__head {
+    min-height: 36px;
+  }
+}

@@ -3,16 +3,19 @@ import { AcademyHome } from "../screens/AcademyHome";
 import { AdmissionScreen } from "../screens/AdmissionScreen";
 import { DailyChallenge } from "../screens/DailyChallenge";
 import { DetectiveProfile } from "../screens/DetectiveProfile";
+import { HomePlayable } from "../screens/HomePlayable";
 import { PracticePlay, PracticeRoom } from "../screens/PracticeRoom";
 import { PromotionExam } from "../screens/PromotionExam";
 import { DemoPanel, isDemoMode } from "./DemoPanel";
 import { navigate, toHash, useRoute, type Route } from "./router";
 import { useGame } from "./store";
+import { HOME_VARIANT } from "./variant";
 
 function Screen({ route }: { route: Route }) {
   switch (route.name) {
     case "home":
-      return <AcademyHome />;
+      // 확정된 홈이 기본이다. ?home=a · ?home=b 는 V3 GATE 02 의 비교안이다.
+      return HOME_VARIANT === "b" ? <HomePlayable /> : <AcademyHome live={HOME_VARIANT === "a"} />;
     case "daily":
       return <DailyChallenge />;
     case "practice":

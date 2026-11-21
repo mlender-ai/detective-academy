@@ -1,5 +1,5 @@
 // 개발 서버 화면을 찍는다 (그림 검수용).
-//   node scripts/shot.mjs <out.png> <preset|-> [#/route] [--w 390] [--h 844] [--click a,b] [--wait 600] [--engine webkit] [--base http://localhost:5183]
+//   node scripts/shot.mjs <out.png> <preset|-> [#/route] [--w 390] [--h 844] [--click a,b] [--wait 600] [--engine webkit] [--q home=b] [--base http://localhost:5183]
 import { chromium, webkit } from "@playwright/test";
 
 const args = process.argv.slice(2);
@@ -13,7 +13,8 @@ const height = Number(opt("h", 844));
 const base = opt("base", "http://localhost:5183");
 const clicks = (opt("click", "") || "").split(",").filter(Boolean);
 const wait = Number(opt("wait", 700));
-const query = "?demo=1";
+// --q home=b 처럼 주소에 덧붙일 것
+const query = "?demo=1" + (opt("q", "") ? `&${opt("q", "")}` : "");
 
 const browser = await (opt("engine", "chromium") === "webkit" ? webkit : chromium).launch();
 const context = await browser.newContext({

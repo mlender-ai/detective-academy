@@ -13,6 +13,7 @@ import "./styles/rooms.css";
 import "./styles/mono-pixel.css";
 import "./styles/mono.css";
 import "./styles/mono-rooms.css";
+import "./styles/live.css";
 
 import { App } from "./app/App";
 import { PUZZLES } from "./data/puzzles";

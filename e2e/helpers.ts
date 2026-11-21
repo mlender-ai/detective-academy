@@ -152,3 +152,31 @@ export async function expectLayoutOk(page: Page, primarySelector: string) {
   expect(box.x + box.width, "주 버튼이 오른쪽으로 잘린다").toBeLessThanOrEqual(viewport.width);
   expect(box.height, "주 버튼 터치 영역이 44px 보다 작다").toBeGreaterThanOrEqual(44);
 }
+
+/**
+ * 화면에서 검정(#000)도 흰색(#f1f1ea)도 아닌 화소의 비율(0~1).
+ * 회색·투명도·흐림을 쓰면 이 값이 커진다. 점선의 끝처럼 반 화소에 걸린 자리는 조금 남을 수 있다.
+ */
+export async function offToneRatio(page: Page): Promise<number> {
+  await page.evaluate(() => document.fonts.ready.then(() => undefined));
+  const png = await page.screenshot({ animations: "disabled", style: ".demo { visibility: hidden !important; }" });
+  return page.evaluate(async (base64) => {
+    const image = new Image();
+    image.src = `data:image/png;base64,${base64}`;
+    await image.decode();
+    const canvas = document.createElement("canvas");
+    canvas.width = image.naturalWidth;
+    canvas.height = image.naturalHeight;
+    const ctx = canvas.getContext("2d")!;
+    ctx.drawImage(image, 0, 0);
+    const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+    let off = 0;
+    for (let i = 0; i < data.length; i += 4) {
+      const [r, g, b] = [data[i], data[i + 1], data[i + 2]];
+      const black = r < 16 && g < 16 && b < 16;
+      const white = Math.abs(r - 241) < 16 && Math.abs(g - 241) < 16 && Math.abs(b - 234) < 16;
+      if (!black && !white) off++;
+    }
+    return off / (data.length / 4);
+  }, png.toString("base64"));
+}
