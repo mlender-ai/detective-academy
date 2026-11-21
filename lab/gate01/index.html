@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>탐정학원 V3 · GATE 01 실험</title>
+<style>
+@font-face { font-family: "NeoDGM"; src: url("../../node_modules/@kfonts/neodgm/neodgm.woff2") format("woff2"); }
+@font-face { font-family: "Galmuri11"; src: url("../../node_modules/galmuri/dist/Galmuri11.woff2") format("woff2"); }
+* { box-sizing: border-box; }
+html, body { margin: 0; background: #000; color: #f1f1ea; }
+body { font: 16px/1.5 "NeoDGM", monospace; -webkit-font-smoothing: none; }
+main { max-width: 760px; margin: 0 auto; padding: 20px 16px 48px; }
+h1 { font-size: 32px; line-height: 40px; font-weight: 400; margin: 0 0 6px; }
+h2 { display: inline-block; font-size: 16px; font-weight: 400; margin: 26px 0 10px; padding: 0 6px; color: #000; background: #f1f1ea; }
+p { margin: 0 0 8px; }
+a { color: inherit; }
+.list { display: grid; gap: 12px; }
+.item { display: block; padding: 10px 12px; text-decoration: none; box-shadow: 0 -2px 0 0 #f1f1ea, 0 2px 0 0 #f1f1ea, -2px 0 0 0 #f1f1ea, 2px 0 0 0 #f1f1ea; }
+.item:active { color: #000; background: #f1f1ea; }
+.item b { font-weight: 400; font-size: 16px; }
+.item b::before { content: "▶ "; }
+.item span { display: block; font: 12px/1.5 "Galmuri11", monospace; }
+.note { font: 12px/1.6 "Galmuri11", monospace; }
+table { border-collapse: collapse; width: 100%; font: 12px/1.5 "Galmuri11", monospace; }
+th, td { text-align: left; padding: 4px 8px 4px 0; border-bottom: 2px dotted #f1f1ea; vertical-align: top; font-weight: 400; }
+</style>
+</head>
+<body>
+<main>
+  <h1>탐정학원 V3 · GATE 01</h1>
+  <p>오픈소스와 아트 실험. 모두 실제로 움직이는 데모다. 확정된 화면(D안)은 바꾸지 않았다.</p>
+  <p class="note">기준 화면: <a href="../../index.html">지금의 탐정학원(D안)</a> · 배포본 <a href="https://mlender-ai.github.io/detective-academy/">mlender-ai.github.io/detective-academy</a></p>
+
+  <h2>복도 이동 — 같은 장면, 세 가지 렌더러</h2>
+  <div class="list">
+    <a class="item" href="./corridor-canvas.html"><b>Canvas 2D</b><span>게임 엔진 없이 캔버스만. 점묘는 CPU. 지금 프로젝트의 방식에 가장 가깝다.</span></a>
+    <a class="item" href="./corridor-pixi.html"><b>PixiJS</b><span>WebGL 2D 렌더러. 점묘는 셰이더.</span></a>
+    <a class="item" href="./corridor-phaser.html"><b>Phaser</b><span>WebGL 게임 엔진. 점묘는 셰이더.</span></a>
+  </div>
+  <p class="note" style="margin-top:10px">장면의 물건(게시판 · 연습실 · 승급 시험실 · 기록 보관함)을 직접 누르거나 아래 단추를 누르면 탐정이 걸어간다. 걷는 중에 다시 누르면 건너뛴다. 복도는 층으로 나뉘어 있어 전등이 깜빡이면 빛만 빠지고, 문이 열리면 빛이 새며, 끝 방의 사람이 지나간다.</p>
+
+  <h2>탐정 캐릭터</h2>
+  <div class="list">
+    <a class="item" href="./character.html"><b>세 가지 제작 방식 비교</b><span>직접 찍은 스프라이트 · 코드 기반 관절 모형 · 입체 모형을 구운 스프라이트. 서기, 걷기, 돌아서기, 짚기, 살피기, 모자 인사, 앉기.</span></a>
+  </div>
+
+  <h2>입체를 도트로</h2>
+  <div class="list">
+    <a class="item" href="./object.html"><b>회전하는 물건</b><span>Ink Studio 로 빚은 승급 휘장, pixelart-gaussiansplat 로 빚은 금고. 두 색으로만.</span></a>
+  </div>
+
+  <h2>결과 요약</h2>
+  <table>
+    <tr><th></th><th>Canvas 2D</th><th>PixiJS</th><th>Phaser</th></tr>
+    <tr><td>초당 장면 (보통 / CPU 4배 감속)</td><td>60 / 58.5</td><td>60 / 59.5</td><td>60 / 60</td></tr>
+    <tr><td>한 장면 ms (보통 / 4배 감속)</td><td>1.8 / 4.95</td><td>0.68 / 2.76</td><td>0.74 / 3.09</td></tr>
+    <tr><td>JS 용량 (gzip)</td><td>9KB</td><td>165KB</td><td>356KB</td></tr>
+    <tr><td>첫 장면까지 (4배 감속)</td><td>130~230ms</td><td>390~450ms</td><td>490ms</td></tr>
+    <tr><td>Canvas 판과의 화소 차이</td><td>기준</td><td>0</td><td>0</td></tr>
+    <tr><td>판단</td><td>채택</td><td>제외(지금은)</td><td>제외</td></tr>
+  </table>
+  <p class="note" style="margin-top:10px">헤드리스 크로미움에서 잰 값이다. WebGL 두 판의 "한 장면 ms"에는 GPU 가 칠하는 시간이 빠져 있다. 실제 휴대폰에서는 재지 못했다.</p>
+  <p class="note">캐릭터는 코드 기반 관절 모형을 채택했고, Ink Studio 와 pixelart-gaussiansplat 는 실행 중이 아니라 그림을 굽는 도구로만 쓴다. 이유와 나머지 측정값은 <code>lab/README.md</code> 에 있다.</p>
+</main>
+</body>
+</html>

@@ -1,0 +1,26 @@
+diff --git a/src/authoring/scenes/index.js b/src/authoring/scenes/index.js
+index 85d0083..e98be0e 100644
+--- a/src/authoring/scenes/index.js
++++ b/src/authoring/scenes/index.js
+@@ -4,5 +4,7 @@ import * as hello from "./hello.js";
+ import * as caravan from "./caravan.js";
+ import * as lighthouse from "./lighthouse.js";
+ import * as shrine from "./shrine.js";
++import * as safe from "./safe.js";
++import * as emblem from "./emblem.js";
+ 
+-export const SCENES = { hello, caravan, lighthouse, shrine };
++export const SCENES = { hello, caravan, lighthouse, shrine, safe, emblem };
+diff --git a/src/viewer.js b/src/viewer.js
+index 239c896..e0236a6 100644
+--- a/src/viewer.js
++++ b/src/viewer.js
+@@ -196,7 +196,7 @@ hud.count((model?.count || 0) + (world?.count || 0));
+ 
+ // ?capture=1 stops the clock: drive frames yourself with window.viewer.renderAt(t)
+ // (rendered twice, so Spark's asynchronous sort catches up with the new camera)
+-window.viewer = { state, play: (clip) => rig?.play(clip), renderAt: async (t) => { step(t); await new Promise((r) => setTimeout(r, 30)); step(t); } };
++window.viewer = { camera, controls, post, canvas: renderer.domElement, /* ← 캡처용으로 추가(임시 사본) */ state, play: (clip) => rig?.play(clip), renderAt: async (t) => { step(t); await new Promise((r) => setTimeout(r, 30)); step(t); } };
+ if (!params.has("capture")) {
+   const clock = new THREE.Timer();
+   const frame = () => { clock.update(); step(clock.getElapsed()); requestAnimationFrame(frame); };

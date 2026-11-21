@@ -9,3 +9,6 @@ playwright-report/
 .claude/settings.local.json
 *.tsbuildinfo
 .env*
+
+# 실험실의 의존성
+lab/node_modules/
