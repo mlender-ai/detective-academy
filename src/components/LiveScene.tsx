@@ -1,46 +1,49 @@
-import { forwardRef, useEffect, useImperativeHandle, useRef, type PointerEvent } from "react";
+import { useEffect, useImperativeHandle, useRef, type PointerEvent, type Ref } from "react";
 import { prefersReducedMotion } from "../app/motion";
-import { DepthScene } from "../scene/depthScene";
-import type { HomeScene, SceneState, SpotId } from "../scene/homeScene";
-import { SideScene } from "../scene/sideScene";
+import type { Scene } from "../scene/homeScene";
 import { Stage, runLoop } from "../scene/stage";
 
-export interface LiveSceneHandle {
+export interface LiveSceneHandle<Id extends string = string> {
   /** 그곳으로 걸어간다. 도착하면 onArrive 가 불린다. 모션 줄이기 설정이면 곧바로 도착한다. */
-  go(id: SpotId): void;
+  go(id: Id): void;
   /** 걷는 중이면 곧바로 도착시킨다 */
   skip(): void;
   busy(): boolean;
 }
 
-interface Props {
-  /** depth: 깊이 방향으로 본 복도(A안) · side: 옆에서 본 복도(B안) */
-  kind: "depth" | "side";
-  state: SceneState;
-  onArrive?: (id: SpotId) => void;
+interface Props<Id extends string, S> {
+  /** 장면의 종류. 스타일이 캔버스를 놓는 자리를 이것으로 가른다: depth(깊이 방향 복도) · side(옆에서 본 복도) · vault(자료실) */
+  kind: string;
+  /** 장면을 만든다. 화면에 올라올 때 한 번 불린다. */
+  make: () => Scene<Id, S>;
+  state: S;
+  onArrive?: (id: Id) => void;
   /** 장면 안의 물건을 눌렀을 때. 주지 않으면 장면은 누를 수 없다(장식). */
-  onPick?: (id: SpotId) => void;
+  onPick?: (id: Id) => void;
   className?: string;
+  ref?: Ref<LiveSceneHandle<Id>>;
 }
 
 /**
- * 살아 있는 복도 장면. 캔버스 하나에 층으로 나눈 복도와 탐정을 그린다.
+ * 살아 있는 장면. 캔버스 하나에 층으로 나눈 배경과 탐정을 그린다.
  * 화면을 떠나면 그리기를 멈추고, 내려갈 때 루프를 정리한다.
  */
-export const LiveScene = forwardRef<LiveSceneHandle, Props>(function LiveScene({ kind, state, onArrive, onPick, className }, ref) {
+export function LiveScene<Id extends string, S>({ kind, make, state, onArrive, onPick, className, ref }: Props<Id, S>) {
   const hostRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const sceneRef = useRef<HomeScene | null>(null);
+  const sceneRef = useRef<Scene<Id, S> | null>(null);
   const stageRef = useRef<Stage | null>(null);
   const arriveRef = useRef(onArrive);
   arriveRef.current = onArrive;
   const stateRef = useRef(state);
   stateRef.current = state;
+  const makeRef = useRef(make);
+  makeRef.current = make;
 
   useEffect(() => {
     const host = hostRef.current!;
     const canvas = canvasRef.current!;
-    const scene: HomeScene = kind === "depth" ? new DepthScene() : new SideScene();
+    const scene = makeRef.current();
     scene.state = stateRef.current;
     scene.onArrive = (id) => arriveRef.current?.(id);
     const stage = new Stage(canvas, scene.w, scene.h);
@@ -125,10 +128,8 @@ export const LiveScene = forwardRef<LiveSceneHandle, Props>(function LiveScene({
     const scene = sceneRef.current;
     const canvas = canvasRef.current;
     if (!scene || !canvas || !onPick) return;
-    if (scene.busy) {
-      scene.skip();
-      return;
-    }
+    // 걷는 중에 누르면 먼저 그 걸음을 끝낸다. 누른 자리에 물건이 있으면 곧바로 그쪽으로 다시 간다.
+    if (scene.busy) scene.skip();
     const rect = canvas.getBoundingClientRect();
     const id = scene.hit(((event.clientX - rect.left) / rect.width) * scene.w, ((event.clientY - rect.top) / rect.height) * scene.h);
     if (id) onPick(id);
@@ -147,4 +148,4 @@ export const LiveScene = forwardRef<LiveSceneHandle, Props>(function LiveScene({
       <canvas ref={canvasRef} />
     </div>
   );
-});
+}

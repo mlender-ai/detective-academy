@@ -1,8 +1,9 @@
 // B안 · 플레이 가능한 복도의 장면. 옆에서 본 복도를 탐정이 좌우로 걷는다.
 // 물건을 누르면 그 앞까지 걸어가(0.45~0.9초) 벽 쪽으로 돌아서고, 카메라가 따라간다.
 import { detectiveSprite, shadowRadius, type Action } from "./detective";
-import { makeSprite, rectDots, spriteCanvas } from "./dot";
+import { spriteCanvas } from "./dot";
 import { easeInOut, turnToward, type HomeScene, type SceneState, type SpotId } from "./homeScene";
+import { bracketSpots, cornerBrackets } from "./marks";
 import { BOX, WALK, WH, WW, clockHands, paintSide, rankPlate, type Placed, type SideArt } from "./sideArt";
 import type { InkOp, StageFrame, ToneOp } from "./stage";
 
@@ -38,20 +39,6 @@ const VIEW_W = 216;
 const HEIGHT = 60;
 const TAU = Math.PI * 2;
 
-/** 지금 할 일이 있는 곳에 두르는 모서리 괄호 (0 왼쪽 위 · 1 오른쪽 위 · 2 왼쪽 아래 · 3 오른쪽 아래) */
-const BRACKET = 11;
-function bracket(corner: number): HTMLCanvasElement {
-  const s = makeSprite(BRACKET, BRACKET);
-  const right = corner % 2 === 1;
-  const bottom = corner >= 2;
-  // 검은 받침 위에 두 점 굵기의 흰 ㄱ자
-  rectDots(s, 0, bottom ? BRACKET - 4 : 0, BRACKET, 4, -1);
-  rectDots(s, right ? BRACKET - 4 : 0, 0, 4, BRACKET, -1);
-  rectDots(s, 1, bottom ? BRACKET - 3 : 1, BRACKET - 2, 2, 1);
-  rectDots(s, right ? BRACKET - 3 : 1, 1, 2, BRACKET - 2, 1);
-  return spriteCanvas(s);
-}
-
 export class SideScene implements HomeScene {
   readonly w: number;
   readonly h = WH;
@@ -74,7 +61,7 @@ export class SideScene implements HomeScene {
   private sprites = new Map<string, HTMLCanvasElement>();
   private plates = new Map<string, Placed>();
   private clock: { key: string; art: Placed } | null = null;
-  private brackets = [0, 1, 2, 3].map(bracket);
+  private brackets = cornerBrackets();
   private glass = [document.createElement("canvas"), document.createElement("canvas")];
   /** 실제로 보이는 폭(점). 카메라가 이만큼의 가운데에 탐정을 둔다. */
   private visible: { x0: number; x1: number };
@@ -251,14 +238,7 @@ export class SideScene implements HomeScene {
     // 지금 할 일이 있는 곳: 모서리 괄호가 끊어서 깜빡인다 (탐정이 그 앞에 있거나 가는 중이면 두르지 않는다)
     const mark = this.state.mark;
     if (mark && this.at !== mark && this.target !== mark && time % 1.2 < 0.8) {
-      const [fx, fy, fw, fh] = SPOTS[mark].frame;
-      const corners = [
-        [fx, fy],
-        [fx + fw - BRACKET, fy],
-        [fx, fy + fh - BRACKET],
-        [fx + fw - BRACKET, fy + fh - BRACKET],
-      ];
-      corners.forEach(([x, y], i) => ink.push({ canvas: this.brackets[i], x: x - cam, y }));
+      bracketSpots(SPOTS[mark].frame).forEach(([x, y], i) => ink.push({ canvas: this.brackets[i], x: x - cam, y }));
     }
 
     // 탐정

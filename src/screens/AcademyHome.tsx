@@ -15,6 +15,7 @@ import { RANK_BY_ID, rankLabel } from "../data/ranks";
 import { examStatus, getProgress } from "../engine/progressEngine";
 import { formatElapsed, seoulDateKey, seoulDateLabel } from "../engine/time";
 import type { PuzzleProgress } from "../engine/types";
+import { DepthScene } from "../scene/depthScene";
 import type { SpotId } from "../scene/homeScene";
 
 /** 복도의 네 곳과 그곳에서 열리는 화면 (A안의 살아 있는 장면이 쓴다) */
@@ -63,7 +64,7 @@ export function AcademyHome({ live = false }: { live?: boolean }) {
   const exam = examStatus(game);
   const step = nextStep(game);
   const [lifting, setLifting] = useState(false);
-  const sceneRef = useRef<LiveSceneHandle>(null);
+  const sceneRef = useRef<LiveSceneHandle<SpotId>>(null);
   /** 탐정이 걸어가고 있는 곳. 도착하면 그 화면으로 바뀐다. */
   const heading = useRef<SpotId | null>(null);
 
@@ -119,6 +120,7 @@ export function AcademyHome({ live = false }: { live?: boolean }) {
         <LiveScene
           ref={sceneRef}
           kind="depth"
+          make={() => new DepthScene()}
           className="hall__scene"
           state={{ dailySolved: solved, examRank: exam.rule ? exam.rule.to : game.rank, examOpen: exam.unlocked }}
           onArrive={onArrive}

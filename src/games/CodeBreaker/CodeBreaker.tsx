@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
 import { haptic, playSound } from "../../app/sound";
 import { PenMark, PX, Sprite } from "../../art/pixel";
 import type { CodeClue, CodeInput, CodePuzzle, DigitMemo } from "../../engine/types";
@@ -235,17 +235,13 @@ export function LockOpen({ digits }: { digits: number[] }) {
 const MEMO_CYCLE: (DigitMemo | undefined)[] = [undefined, "out", "maybe"];
 const MEMO_LABEL: Record<string, string> = { none: "표시 없음", out: "제외", maybe: "후보" };
 
-interface Props extends GameProps<CodePuzzle, CodeInput> {
-  /** 시험지 머리: 문제 제목과 설명, 열어 본 수사 지원 */
-  brief: ReactNode;
-}
+type Board = Pick<GameProps<CodePuzzle, CodeInput>, "input" | "onChange" | "verdict" | "wrongCount">;
 
 /**
- * 책상 위의 시험지(시도 기록 + 숫자 메모)와 암호 자물쇠.
- * 시험지를 읽으면서 바로 아래 자물쇠를 굴린다.
+ * 암호 퍼즐의 조작: 다이얼 맞추기, 숫자 메모 돌리기, 겹친 숫자 확인, 오답·정답의 반응.
+ * 화면 구성이 달라도(시험지 한 장, 접는 패널, 수사 수첩, 장면 전개) 같은 조작을 쓴다.
  */
-export function CodeBreaker({ puzzle, input, onChange, locked, verdict, wrongCount, brief }: Props) {
-  const { rules } = puzzle;
+export function useCodeBoard({ input, onChange, verdict, wrongCount }: Board) {
   const [shaking, setShaking] = useState(false);
 
   useEffect(() => {
@@ -288,112 +284,217 @@ export function CodeBreaker({ puzzle, input, onChange, locked, verdict, wrongCou
   const isDuplicate = (index: number) => input.dials.some((d, i) => i !== index && d === input.dials[index]);
   const hasDuplicate = input.dials.some((_, i) => isDuplicate(i));
 
+  return { shaking, setDial, cycleMemo, isDuplicate, hasDuplicate };
+}
+
+/** 숫자 메모를 한 줄로 줄인 것: 제외한 숫자와 후보로 둔 숫자 */
+export function memoSummary(puzzle: CodePuzzle, memo: CodeInput["memo"]) {
+  const out = puzzle.rules.digits.filter((d) => memo[String(d)] === "out");
+  const maybe = puzzle.rules.digits.filter((d) => memo[String(d)] === "maybe");
+  return { out, maybe };
+}
+
+/** 시도 기록 한 줄의 숫자 칸: 메모한 숫자에는 가위표·동그라미가 겹친다 */
+function ClueDigits({ clue, memo }: { clue: CodeClue; memo: CodeInput["memo"] }) {
+  return (
+    <span className="clue__digits num" aria-label={`입력 ${clue.guess.join("")}`}>
+      {clue.guess.map((digit, j) => {
+        const state = memo[String(digit)] ?? "none";
+        return (
+          <span className="clue__digit" key={j} data-memo={state} aria-hidden="true">
+            {digit}
+            {state === "out" && <PenMark kind="cross" />}
+            {state === "maybe" && <PenMark kind="circle" />}
+          </span>
+        );
+      })}
+    </span>
+  );
+}
+
+function CluePegs({ clue, length }: { clue: CodeClue; length: number }) {
+  return (
+    <span className="clue__pegs" aria-hidden="true">
+      {Array.from({ length }, (_, k) => (
+        <i key={k} className="peg" data-kind={k < clue.inPlace ? "place" : k < clue.match ? "digit" : "none"} />
+      ))}
+    </span>
+  );
+}
+
+export function ClueLegend() {
+  return (
+    <p className="clues__legend">
+      <i className="peg" data-kind="place" aria-hidden="true" />
+      숫자·위치 일치
+      <i className="peg" data-kind="digit" aria-hidden="true" />
+      숫자만 일치
+    </p>
+  );
+}
+
+/**
+ * 시도 기록: 앞서 시도한 암호와 그 결과. 숫자 메모가 그대로 겹쳐 보인다.
+ * head 를 끄면 제목 없이 범례와 목록만 놓는다(제목을 바깥 패널이 맡을 때).
+ */
+export function ClueList({ puzzle, memo, head = true }: { puzzle: CodePuzzle; memo: CodeInput["memo"]; head?: boolean }) {
+  const titleId = useId();
+  const { rules } = puzzle;
+  return (
+    <section className="clues" aria-labelledby={head ? titleId : undefined} aria-label={head ? undefined : "시도 기록"}>
+      <div className="clues__head">
+        {head && <h2 id={titleId}>시도 기록</h2>}
+        <ClueLegend />
+      </div>
+      <ol className="clues__list">
+        {rules.clues.map((clue, i) => (
+          <li className="clue" key={i}>
+            <ClueDigits clue={clue} memo={memo} />
+            <CluePegs clue={clue} length={rules.length} />
+            <span className="clue__text">{clueText(clue)}</span>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+/**
+ * 시도 기록의 간편 보기: 글 없이 숫자와 표시만 촘촘히 놓는다. 접힌 패널이나 수첩의 귀퉁이에서 쓴다.
+ * 글로 된 풀이는 화면 낭독기에만 준다.
+ */
+export function ClueStrip({ puzzle, memo }: { puzzle: CodePuzzle; memo: CodeInput["memo"] }) {
+  const { rules } = puzzle;
+  return (
+    <ol className="cluestrip" aria-label="시도 기록 간편 보기">
+      {rules.clues.map((clue, i) => (
+        <li className="cluestrip__item" key={i}>
+          <ClueDigits clue={clue} memo={memo} />
+          <CluePegs clue={clue} length={rules.length} />
+          <span className="sr-only">{clueText(clue)}</span>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+interface MemoPadProps {
+  puzzle: CodePuzzle;
+  memo: CodeInput["memo"];
+  locked: boolean;
+  onCycle: (digit: number) => void;
+  /** 끄면 제목 없이 쓰는 법 한 줄과 숫자만 놓는다 */
+  head?: boolean;
+}
+
+/** 숫자 메모: 누를 때마다 제외 → 후보 → 지움 */
+export function MemoPad({ puzzle, memo, locked, onCycle, head = true }: MemoPadProps) {
+  const titleId = useId();
+  return (
+    <section className="memo" aria-labelledby={head ? titleId : undefined} aria-label={head ? undefined : "숫자 메모"}>
+      <div className="memo__head">
+        {head && (
+          <h2 id={titleId} className="hand">
+            숫자 메모
+          </h2>
+        )}
+        <p>누를 때마다 제외, 후보, 지움</p>
+      </div>
+      <div className="memo__grid">
+        {puzzle.rules.digits.map((digit) => {
+          const state = memo[String(digit)] ?? "none";
+          return (
+            <button
+              key={digit}
+              type="button"
+              className="memo__chip hand"
+              data-state={state}
+              data-testid={`memo-${digit}`}
+              aria-label={`숫자 ${digit} 메모: ${MEMO_LABEL[state]}`}
+              disabled={locked}
+              onClick={() => onCycle(digit)}
+            >
+              {digit}
+              {state === "out" && <PenMark kind="cross" draw />}
+              {state === "maybe" && <PenMark kind="circle" draw />}
+            </button>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
+interface CodeLockProps {
+  puzzle: CodePuzzle;
+  input: CodeInput;
+  locked: boolean;
+  verdict: GameProps<CodePuzzle, CodeInput>["verdict"];
+  board: ReturnType<typeof useCodeBoard>;
+}
+
+/** 암호 자물쇠: 숫자 드럼 세 개와 상태 한 줄 */
+export function CodeLock({ puzzle, input, locked, verdict, board }: CodeLockProps) {
+  const { shaking, setDial, isDuplicate, hasDuplicate } = board;
+  return (
+    <section
+      className="lock"
+      data-verdict={verdict}
+      data-shaking={shaking}
+      aria-label="암호 자물쇠"
+      style={{ viewTransitionName: "code-lock" }}
+    >
+      <Shackle />
+      <div className="lock__body">
+        <LockPlate />
+        <div className="lock__dials">
+          <span className="lock__sight" aria-hidden="true" />
+          {input.dials.map((value, index) => (
+            <Dial
+              key={index}
+              index={index}
+              value={value}
+              digits={puzzle.rules.digits}
+              disabled={locked}
+              duplicate={isDuplicate(index)}
+              onChange={(next) => setDial(index, next)}
+            />
+          ))}
+        </div>
+      </div>
+
+      <p className="lock__status" role="status" data-warn={hasDuplicate && verdict === "idle"}>
+        {verdict === "correct"
+          ? "잠금이 풀렸습니다"
+          : hasDuplicate
+            ? "같은 숫자가 겹쳐 있습니다. 암호는 서로 다른 숫자 3개입니다."
+            : "숫자를 굴리거나 눌러서 맞추세요"}
+      </p>
+    </section>
+  );
+}
+
+interface Props extends GameProps<CodePuzzle, CodeInput> {
+  /** 시험지 머리: 문제 제목과 설명, 열어 본 수사 지원 */
+  brief: ReactNode;
+}
+
+/**
+ * 책상 위의 시험지(시도 기록 + 숫자 메모)와 암호 자물쇠.
+ * 시험지를 읽으면서 바로 아래 자물쇠를 굴린다.
+ */
+export function CodeBreaker({ puzzle, input, onChange, locked, verdict, wrongCount, brief }: Props) {
+  const board = useCodeBoard({ input, onChange, verdict, wrongCount });
+
   return (
     <div className="code">
       <article className="exampaper leaf" style={{ viewTransitionName: "exam-sheet" }}>
         {brief}
-
-        <section className="clues" aria-labelledby="clues-title">
-          <div className="clues__head">
-            <h2 id="clues-title">시도 기록</h2>
-            <p className="clues__legend">
-              <i className="peg" data-kind="place" aria-hidden="true" />
-              숫자·위치 일치
-              <i className="peg" data-kind="digit" aria-hidden="true" />
-              숫자만 일치
-            </p>
-          </div>
-          <ol className="clues__list">
-            {rules.clues.map((clue, i) => (
-              <li className="clue" key={i}>
-                <span className="clue__digits num" aria-label={`입력 ${clue.guess.join("")}`}>
-                  {clue.guess.map((digit, j) => {
-                    const memo = input.memo[String(digit)] ?? "none";
-                    return (
-                      <span className="clue__digit" key={j} data-memo={memo} aria-hidden="true">
-                        {digit}
-                        {memo === "out" && <PenMark kind="cross" />}
-                        {memo === "maybe" && <PenMark kind="circle" />}
-                      </span>
-                    );
-                  })}
-                </span>
-                <span className="clue__pegs" aria-hidden="true">
-                  {Array.from({ length: rules.length }, (_, k) => (
-                    <i key={k} className="peg" data-kind={k < clue.inPlace ? "place" : k < clue.match ? "digit" : "none"} />
-                  ))}
-                </span>
-                <span className="clue__text">{clueText(clue)}</span>
-              </li>
-            ))}
-          </ol>
-        </section>
-
-        <section className="memo" aria-labelledby="memo-title">
-          <div className="memo__head">
-            <h2 id="memo-title" className="hand">
-              숫자 메모
-            </h2>
-            <p>누를 때마다 제외, 후보, 지움</p>
-          </div>
-          <div className="memo__grid">
-            {rules.digits.map((digit) => {
-              const state = input.memo[String(digit)] ?? "none";
-              return (
-                <button
-                  key={digit}
-                  type="button"
-                  className="memo__chip hand"
-                  data-state={state}
-                  data-testid={`memo-${digit}`}
-                  aria-label={`숫자 ${digit} 메모: ${MEMO_LABEL[state]}`}
-                  disabled={locked}
-                  onClick={() => cycleMemo(digit)}
-                >
-                  {digit}
-                  {state === "out" && <PenMark kind="cross" draw />}
-                  {state === "maybe" && <PenMark kind="circle" draw />}
-                </button>
-              );
-            })}
-          </div>
-        </section>
+        <ClueList puzzle={puzzle} memo={input.memo} />
+        <MemoPad puzzle={puzzle} memo={input.memo} locked={locked} onCycle={board.cycleMemo} />
       </article>
 
-      <section
-        className="lock"
-        data-verdict={verdict}
-        data-shaking={shaking}
-        aria-label="암호 자물쇠"
-        style={{ viewTransitionName: "code-lock" }}
-      >
-        <Shackle />
-        <div className="lock__body">
-          <LockPlate />
-          <div className="lock__dials">
-            <span className="lock__sight" aria-hidden="true" />
-            {input.dials.map((value, index) => (
-              <Dial
-                key={index}
-                index={index}
-                value={value}
-                digits={rules.digits}
-                disabled={locked}
-                duplicate={isDuplicate(index)}
-                onChange={(next) => setDial(index, next)}
-              />
-            ))}
-          </div>
-        </div>
-
-        <p className="lock__status" role="status" data-warn={hasDuplicate && verdict === "idle"}>
-          {verdict === "correct"
-            ? "잠금이 풀렸습니다"
-            : hasDuplicate
-              ? "같은 숫자가 겹쳐 있습니다. 암호는 서로 다른 숫자 3개입니다."
-              : "숫자를 굴리거나 눌러서 맞추세요"}
-        </p>
-      </section>
+      <CodeLock puzzle={puzzle} input={input} locked={locked} verdict={verdict} board={board} />
     </div>
   );
 }

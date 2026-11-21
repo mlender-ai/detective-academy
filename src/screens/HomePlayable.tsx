@@ -13,6 +13,7 @@ import { rankLabel } from "../data/ranks";
 import { examStatus, getProgress } from "../engine/progressEngine";
 import { formatElapsed, seoulDateKey } from "../engine/time";
 import type { SpotId } from "../scene/homeScene";
+import { SideScene } from "../scene/sideScene";
 
 /** 복도의 네 곳과 그곳에서 열리는 화면 */
 const ROUTE: Record<SpotId, Route> = {
@@ -51,7 +52,7 @@ export function HomePlayable() {
   const step = nextStep(game);
   const stepSpot = STEP_SPOT[step];
 
-  const sceneRef = useRef<LiveSceneHandle>(null);
+  const sceneRef = useRef<LiveSceneHandle<SpotId>>(null);
   /** 탐정이 서 있는 곳 */
   const [here, setHere] = useState<SpotId | null>(null);
   /** 걸어가는 곳. 처음에는 오늘 할 일이 있는 곳으로 간다. */
@@ -308,6 +309,7 @@ export function HomePlayable() {
       <LiveScene
         ref={sceneRef}
         kind="side"
+        make={() => new SideScene()}
         className="playscene"
         state={{
           dailySolved: dailyProgress.status === "solved",

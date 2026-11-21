@@ -1,4 +1,4 @@
-// 홈 장면의 공통 약속. 깊이 복도(A안)와 옆에서 본 복도(B안)가 같은 모양으로 움직인다.
+// 장면의 공통 약속. 홈의 복도(깊이 방향 · 옆에서 본 것)와 퍼즐의 자료실이 같은 모양으로 움직인다.
 import type { StageFrame } from "./stage";
 
 /** 홈에서 갈 수 있는 곳 */
@@ -16,28 +16,32 @@ export interface SceneState {
   mark?: SpotId | null;
 }
 
-export interface HomeScene {
+/** 장면 하나가 지키는 약속. Id 는 갈 수 있는 곳의 이름, S 는 장면에 비치는 상태다. */
+export interface Scene<Id extends string, S> {
   /** 점 화면의 크기 */
   readonly w: number;
   readonly h: number;
-  state: SceneState;
+  state: S;
   /** 걷는 중인가 */
   readonly busy: boolean;
   /** 지금 서 있는 곳 */
-  readonly at: SpotId | null;
+  readonly at: Id | null;
   /** 도착하면 불린다 */
-  onArrive: (id: SpotId) => void;
+  onArrive: (id: Id) => void;
   update(dt: number): void;
   frame(): StageFrame;
   /** 그곳으로 걸어간다. 걷는 중이면 지금 선 자리에서 방향을 바꾼다. 이미 그곳에 서 있으면 곧바로 onArrive 가 불린다. */
-  go(id: SpotId): void;
+  go(id: Id): void;
   /** 걷는 중이면 곧바로 도착시킨다 */
   skip(): void;
   /** 점 좌표를 눌렀을 때 그 자리의 물건 */
-  hit(x: number, y: number): SpotId | null;
+  hit(x: number, y: number): Id | null;
   /** 보이는 영역(점)이 바뀌었을 때: 탐정이 화면 안에 서도록 자리를 잡는다 */
   setView(view: { x0: number; y0: number; x1: number; y1: number }): void;
 }
+
+/** 홈의 복도 장면 */
+export type HomeScene = Scene<SpotId, SceneState>;
 
 export const SPOT_LABEL: Record<SpotId, string> = {
   board: "시험 게시판",

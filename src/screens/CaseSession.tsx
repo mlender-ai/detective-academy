@@ -3,6 +3,10 @@ import { withTransition } from "../app/router";
 import { useGame } from "../app/store";
 import { getProgress, type SubmitOutcome } from "../engine/progressEngine";
 import type { Puzzle } from "../engine/types";
+import { PLAY_VARIANT } from "../app/variant";
+import { FoldPlay } from "./codeux/FoldPlay";
+import { NotebookPlay } from "./codeux/NotebookPlay";
+import { ScenePlay } from "./codeux/ScenePlay";
 import { DeskPlay } from "./DeskPlay";
 import { DeskResult } from "./DeskResult";
 
@@ -30,18 +34,19 @@ export function CaseSession({ puzzle, onExit }: Props) {
     return <DeskResult puzzle={puzzle} outcome={null} onReplay={() => withTransition(() => setReplay(true))} />;
   }
 
-  return (
-    <DeskPlay
-      key={replay ? "replay" : "play"}
-      puzzle={puzzle}
-      replay={replay}
-      onExit={replay ? () => withTransition(() => setReplay(false), "back") : onExit}
-      onSolved={(result) =>
-        withTransition(() => {
-          setReplay(false);
-          setOutcome(result);
-        })
-      }
-    />
-  );
+  const exit = replay ? () => withTransition(() => setReplay(false), "back") : onExit;
+  const solved = (result: SubmitOutcome) =>
+    withTransition(() => {
+      setReplay(false);
+      setOutcome(result);
+    });
+  const key = replay ? "replay" : "play";
+
+  // 암호 풀이 화면의 비교안 (V3 GATE 03). 주소에 ?play=a·b·c 를 붙였을 때만 열리고, 판정·힌트·보상은 같은 엔진을 쓴다.
+  if (puzzle.type === "code" && PLAY_VARIANT !== "current") {
+    const Play = PLAY_VARIANT === "a" ? FoldPlay : PLAY_VARIANT === "b" ? ScenePlay : NotebookPlay;
+    return <Play key={key} puzzle={puzzle} replay={replay} onExit={exit} onSolved={solved} />;
+  }
+
+  return <DeskPlay key={key} puzzle={puzzle} replay={replay} onExit={exit} onSolved={solved} />;
 }

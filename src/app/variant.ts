@@ -12,3 +12,17 @@ export type HomeVariant = "b" | "a" | "old";
 const value = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("home") : null;
 
 export const HOME_VARIANT: HomeVariant = value === "a" ? "a" : value === "old" ? "old" : "b";
+
+/**
+ * 암호 풀이 화면의 갈래 (V3 GATE 03 비교안). 지금의 풀이 화면이 기본이고, 주소에 ?play= 를 붙이면 비교안으로 열린다.
+ * 암호 해독 문제에만 적용된다(진술 추리·순서 추론은 그대로다).
+ * - ?play=a : 접기·펼치기 — 한 화면에서 사건·시도 기록·숫자 메모를 접고 펴며 자물쇠를 크게 쓴다
+ * - ?play=b : 장면 전개 — 자료실에서 책상(기록)과 금고(자물쇠) 사이를 걸어 다니며 푼다
+ * - ?play=c : 혼합형 — 짧은 도입 장면 뒤, 자물쇠를 크게 두고 조건은 수사 수첩에 담는다
+ * 사용자가 고르면 고른 안을 기본으로 올리고 이 전환을 걷어낸다.
+ */
+export type PlayVariant = "current" | "a" | "b" | "c";
+
+const play = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("play") : null;
+
+export const PLAY_VARIANT: PlayVariant = play === "a" || play === "b" || play === "c" ? play : "current";
