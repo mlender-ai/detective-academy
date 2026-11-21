@@ -81,4 +81,6 @@
 ## 기타
 
 - 보고·문서는 한국어. 공유용 HTML 문서는 `html-standalone` 스킬로 단일 파일로 만든다.
-- git 저장소가 없다. 커밋·배포는 사용자가 요청할 때만 한다. 그래서 크게 지우기 전에는 `docs/archive/` 에 묶어 둔다.
+- 저장소: <https://github.com/mlender-ai/detective-academy> (공개, 2026-11-22). 커밋 작성자 메일은 깃허브 비공개 주소(`258184187+mlender-ai@users.noreply.github.com`, 이 저장소에만 설정)를 쓴다.
+- 배포: 깃허브 페이지 <https://mlender-ai.github.io/detective-academy/>. `main` 에 올리면 `.github/workflows/pages.yml` 이 단위 테스트·빌드 뒤 자동 배포한다. 그래서 **`main` 에 올리는 것이 곧 공개 배포다.** 커밋·푸시는 사용자가 요청할 때만 한다.
+- 공개 저장소이므로 사내 경로·개인 메일·토큰, AI 이미지 생성 기록(`*.ai.json`)을 올리지 않는다.
