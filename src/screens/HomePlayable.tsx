@@ -39,7 +39,7 @@ const ARRIVE_BEAT_MS = 200;
 const ENTRANCE_DELAY_MS = 420;
 
 /**
- * 메인 홈 B안 · 플레이 가능한 복도 (V3 GATE 02 비교안, ?home=b).
+ * 메인 홈 · 플레이 가능한 복도 (V3 GATE 02 에서 B안으로 골랐다, 2026-11-22).
  * 복도가 게임 장면이다. 장면의 물건을 누르면 탐정이 그 앞으로 걸어가 살펴보고,
  * 아래 명령 창의 줄을 누르면 걸어가서 곧바로 들어간다(빠른 진입). 걷는 중에 한 번 더 누르면 건너뛴다.
  */
@@ -64,22 +64,26 @@ export function HomePlayable() {
   const leaving = useRef(false);
   const timers = useRef<number[]>([]);
 
+  // 들어서면(그리고 오늘 할 일이 바뀌면) 탐정이 그곳으로 걸어가 그 앞에 선다.
+  // 기다릴 필요는 없다: 그동안에도 모든 것을 누를 수 있다. 사용자가 이미 다른 곳을 골랐으면 끼어들지 않는다.
+  useEffect(() => {
+    if (!stepSpot || touched.current || leaving.current) return;
+    setHeading((now) => (sceneRef.current?.busy() || here !== stepSpot ? stepSpot : now));
+    const id = window.setTimeout(() => {
+      if (!touched.current && !leaving.current) sceneRef.current?.go(stepSpot);
+    }, ENTRANCE_DELAY_MS);
+    return () => window.clearTimeout(id);
+    // 오늘 할 일이 있는 곳이 바뀔 때만 다시 한다
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stepSpot]);
+
+  // 화면을 떠날 때 남은 타이머를 정리한다
   useEffect(() => {
     const list = timers.current;
-    // 들어서면 탐정이 오늘 할 일이 있는 곳으로 걸어가 그 앞에 선다. 기다릴 필요는 없다: 그동안에도 모든 것을 누를 수 있다.
-    if (stepSpot) {
-      list.push(
-        window.setTimeout(() => {
-          if (!touched.current) sceneRef.current?.go(stepSpot);
-        }, ENTRANCE_DELAY_MS),
-      );
-    }
     return () => {
       list.forEach((id) => window.clearTimeout(id));
       list.length = 0;
     };
-    // 들어설 때 한 번만 한다
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const leave = (id: SpotId, beat: number) => {
@@ -175,9 +179,16 @@ export function HomePlayable() {
     return `기록 보관함. 서랍에 ${game.nickname}의 신분증이 들어 있다.`;
   })();
 
-  const rows: Record<SpotId, { state: string; body: ReactNode; go: string }> = {
+  // 줄마다: 테스트 이름(id), 낭독용 상태(label), 보이는 상태(state), 펼쳤을 때의 내용(body), 하는 일(go)
+  const rows: Record<SpotId, { id: string; label: string; state: ReactNode; body: ReactNode; go: string }> = {
     board: {
-      state: `오늘의 추리 [${dailyState}]`,
+      id: "daily-file",
+      label: `오늘의 추리 ${dailyState}`,
+      state: (
+        <>
+          오늘의 추리 [<span data-testid="daily-file-status">{dailyState}</span>]
+        </>
+      ),
       go: dailyProgress.status === "solved" ? "채점 기록 보기" : dailyProgress.status === "in_progress" ? "이어서 풀기" : "시험지 펼치기",
       body: (
         <>
@@ -195,6 +206,8 @@ export function HomePlayable() {
       ),
     },
     practice: {
+      id: "practice-entry",
+      label: `해결 ${practiceSolved}/${PRACTICE_PUZZLES.length}`,
       state: `해결 ${practiceSolved}/${PRACTICE_PUZZLES.length}`,
       go: "연습실 들어가기",
       body: (
@@ -212,7 +225,17 @@ export function HomePlayable() {
     },
     exam: exam.rule
       ? {
-          state: exam.unlocked ? `${exam.rule.to}급 응시 가능` : `${exam.rule.to}급 조건 ${exam.doneCount}/${exam.requirements.length}`,
+          // 시험을 볼 수 있을 때만 exam-cta 다(응시 조건을 채우기 전에는 exam-wait)
+          id: exam.unlocked ? "exam-cta" : "exam-wait",
+          label: exam.unlocked ? `${exam.rule.to}급 응시 가능` : `${exam.rule.to}급 조건 ${exam.doneCount}/${exam.requirements.length}`,
+          state: (
+            <>
+              {exam.unlocked ? `${exam.rule.to}급 응시 가능` : `${exam.rule.to}급 조건 ${exam.doneCount}/${exam.requirements.length}`}
+              <span className="sr-only">
+                , 응시 조건 <span data-testid="promo-count">{`${exam.doneCount}/${exam.requirements.length}`}</span> 완료
+              </span>
+            </>
+          ),
           go: exam.unlocked ? (examInProgress ? "시험 이어서 풀기" : "승급 시험 응시") : "시험실 들여다보기",
           body: exam.unlocked ? (
             <span className="cmd__line">
@@ -232,6 +255,8 @@ export function HomePlayable() {
           ),
         }
       : {
+          id: "exam-record",
+          label: `${game.rank}급 합격`,
           state: `${game.rank}급 합격`,
           go: "합격 기록 보기",
           body: (
@@ -241,6 +266,8 @@ export function HomePlayable() {
           ),
         },
     archive: {
+      id: "identity",
+      label: `탐정 신분증, ${rankLabel(game.rank)} ${game.nickname}`,
       state: "탐정 신분증",
       go: "신분증 보기",
       body: (
@@ -305,8 +332,9 @@ export function HomePlayable() {
               className="cmd__row"
               data-on={on}
               data-primary={stepSpot === id}
-              data-testid={`cmd-${id}`}
-              aria-label={`${PLACE[id]}, ${row.state}, ${row.go}`}
+              data-spot={id}
+              data-testid={row.id}
+              aria-label={`${PLACE[id]}, ${row.label}, ${row.go}`}
               onClick={() => command(id)}
             >
               <span className="cmd__head">
@@ -314,14 +342,12 @@ export function HomePlayable() {
                   ▶
                 </span>
                 <span className="cmd__name">{PLACE[id]}</span>
-                <span className="cmd__state" data-testid={`cmd-${id}-state`}>
-                  {row.state}
-                </span>
+                <span className="cmd__state">{row.state}</span>
               </span>
               {on && (
                 <span className="cmd__body">
                   {row.body}
-                  <span className="inkbtn inkbtn--block inkbtn--wine cmd__go" data-testid={`cmd-${id}-go`}>
+                  <span className="inkbtn inkbtn--block inkbtn--wine cmd__go" data-testid={id === "board" ? "daily-file-cta" : `${row.id}-go`}>
                     {row.go}
                   </span>
                 </span>

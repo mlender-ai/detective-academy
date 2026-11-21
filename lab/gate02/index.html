@@ -42,7 +42,7 @@ a { color: inherit; }
 <main>
   <h1>탐정학원 V3 · GATE 02</h1>
   <p>메인 홈 세 가지. 셋 다 실제로 플레이된다(입학 이후의 같은 상태, 같은 화면 크기에서 시작).</p>
-  <p class="note">확정된 홈은 바꾸지 않았다. A안과 B안은 주소에 <b>?home=a</b> · <b>?home=b</b> 를 붙였을 때만 열린다. 고른 뒤에 기본으로 올린다.</p>
+  <p class="note">2026-11-22 에 B안으로 골랐다. 그래서 지금의 기본 홈은 B안이다. 예전 홈과 A안은 걷어내기 전까지 주소에 <b>?home=old</b> · <b>?home=a</b> 를 붙이면 열린다.</p>
 
   <div class="bar">
     <span>진행 상태</span>
@@ -63,19 +63,19 @@ a { color: inherit; }
 
   <div class="row">
     <section class="col">
-      <h2>기존 홈 (확정된 D안)</h2>
+      <h2>예전 홈 (?home=old)</h2>
       <p class="note">복도는 정지 그림 두 장을 번갈아 보여 준다. 공고를 누르면 곧바로 시험지가 펼쳐진다.</p>
-      <iframe class="phone" data-home="" title="기존 홈"></iframe>
-      <a class="open" data-home="" href="#">기존 홈을 전체 화면으로 열기</a>
+      <iframe class="phone" data-home="old" title="예전 홈"></iframe>
+      <a class="open" data-home="old" href="#">예전 홈을 전체 화면으로 열기</a>
     </section>
     <section class="col">
-      <h2>A안 · 시네마틱 복도</h2>
+      <h2>A안 · 시네마틱 복도 (?home=a)</h2>
       <p class="note">구성은 그대로. 복도에 탐정이 서 있고, 등·문·끝 방의 사람·종이가 정해진 박자로 움직인다. 공고·연습실·시험·신분증을 누르면 탐정이 그쪽으로 걸어가고 카메라가 따라간 뒤 화면이 바뀐다. 한 번 더 누르면 건너뛴다.</p>
       <iframe class="phone" data-home="a" title="A안"></iframe>
       <a class="open" data-home="a" href="#">A안을 전체 화면으로 열기</a>
     </section>
     <section class="col">
-      <h2>B안 · 플레이 가능한 복도</h2>
+      <h2>B안 · 플레이 가능한 복도 — 고른 안, 지금의 홈</h2>
       <p class="note">복도가 게임 장면이다(옆에서 본 복도, 화면보다 넓다). 게시판·연습실 문·시험실 문·기록 보관함을 직접 누르면 걸어가서 살펴보고, 한 번 더 누르면 들어간다. 아래 줄을 누르면 걸어가서 바로 들어간다.</p>
       <iframe class="phone" data-home="b" title="B안"></iframe>
       <a class="open" data-home="b" href="#">B안을 전체 화면으로 열기</a>
@@ -89,8 +89,9 @@ a { color: inherit; }
   let state = "daily-unsolved";
   let size = "390x844";
   const url = (home, apply) => {
-    const q = new URLSearchParams({ demo: "1", save: `g2-${home || "cur"}`, preset: state });
-    if (home) q.set("home", home);
+    const q = new URLSearchParams({ demo: "1", save: `g2-${home}`, preset: state });
+    // B안은 기본 홈이므로 주소에 아무것도 붙이지 않는다
+    if (home !== "b") q.set("home", home);
     if (apply) q.set("apply", "1");
     return `../../index.html?${q}`;
   };

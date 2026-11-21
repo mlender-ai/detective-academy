@@ -28,7 +28,7 @@ const centre = (box: { x: number; y: number; width: number; height: number }) =>
 
 test("손가락으로 다이얼을 밀고 눌러서 숫자를 바꾼다", async ({ page }) => {
   await preset(page, "daily-unsolved");
-  await page.getByTestId("daily-file-cta").click();
+  await page.getByTestId("daily-file").click();
   await expect(page.getByTestId("dial-1")).toHaveAttribute("aria-valuenow", "2");
 
   // 위로 두 칸 밀기: 2 → 4

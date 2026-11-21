@@ -29,7 +29,7 @@ test("처음 방문한 사용자가 입학해서 문제를 풀고 D급으로 승
   await shot(page, "03-home");
 
   /* ── 오늘의 추리: 암호 해독 ── */
-  await page.getByTestId("daily-file-cta").click();
+  await page.getByTestId("daily-file").click();
   await expect(page.getByTestId("play-screen")).toBeVisible();
   await expect(page.getByTestId("dial-0")).toBeVisible();
   await shot(page, "04-code-breaker");
@@ -184,7 +184,8 @@ test("처음 방문한 사용자가 입학해서 문제를 풀고 D급으로 승
   await expect(page.getByTestId("home-screen")).toBeVisible();
   await expect(page.getByTestId("home-rank")).toHaveText("D급 초급 탐정");
   await expect(page.getByTestId("credit-balance")).toHaveText("350");
-  await expect(page.getByTestId("daily-file-cta")).toHaveText("채점 기록 보기");
+  // 더 할 일이 없으면 탐정은 복도 가운데에 서 있고, 게시판 줄은 접혀 있다(하는 일은 줄의 이름표에 남는다)
+  await expect(page.getByTestId("daily-file")).toHaveAttribute("aria-label", /채점 기록 보기/);
   await shot(page, "14-home-promoted");
 
   /* ── 신분증 ── */
@@ -204,7 +205,7 @@ test("처음 방문한 사용자가 입학해서 문제를 풀고 D급으로 승
 
 test("힌트는 크레딧을 차감하고, 모자라면 열리지 않으며 잔액은 음수가 되지 않는다", async ({ page }) => {
   await enroll(page);
-  await page.getByTestId("daily-file-cta").click();
+  await page.getByTestId("daily-file").click();
   await expect(page.getByTestId("play-screen")).toBeVisible();
 
   await page.getByTestId("hint-button").click();
@@ -241,7 +242,7 @@ test("힌트는 크레딧을 차감하고, 모자라면 열리지 않으며 잔�
 
 test("힌트 없이 한 번에 풀면 '힌트 미사용' 기록이 남는다", async ({ page }) => {
   await enroll(page);
-  await page.getByTestId("daily-file-cta").click();
+  await page.getByTestId("daily-file").click();
   await setCode(page, [4, 2, 6]);
   await page.getByTestId("submit").click();
   await expect(page.getByTestId("result-screen")).toBeVisible();
@@ -253,7 +254,7 @@ test("같은 문제를 다시 풀어도 보상은 다시 지급되지 않는다"
   await expect(page.getByTestId("credit-balance")).toHaveText("140");
   await expect(page.getByTestId("daily-file-status")).toHaveText("해결");
 
-  await page.getByTestId("daily-file-cta").click();
+  await page.getByTestId("daily-file").click();
   await expect(page.getByTestId("result-screen")).toBeVisible();
   await expect(page.getByTestId("reward-claimed")).toContainText("수령 완료");
 
@@ -274,7 +275,7 @@ test("같은 문제를 다시 풀어도 보상은 다시 지급되지 않는다"
 
 test("풀던 문제는 뒤로 갔다 와도, 새로고침해도 이어서 풀 수 있다", async ({ page }) => {
   await enroll(page);
-  await page.getByTestId("daily-file-cta").click();
+  await page.getByTestId("daily-file").click();
   await setDial(page, 0, 7);
   await page.getByTestId("memo-9").click();
   await page.getByTestId("memo-6").click();
@@ -285,7 +286,7 @@ test("풀던 문제는 뒤로 갔다 와도, 새로고침해도 이어서 풀 �
   await expect(page.getByTestId("daily-file-status")).toContainText("풀이 중");
   await expect(page.getByTestId("daily-file-cta")).toHaveText("이어서 풀기");
 
-  await page.getByTestId("daily-file-cta").click();
+  await page.getByTestId("daily-file").click();
   await expect(page.getByTestId("dial-0")).toHaveAttribute("aria-valuenow", "7");
   await expect(page.getByTestId("memo-9")).toHaveAttribute("data-state", "out");
   await expect(page.getByTestId("memo-6")).toHaveAttribute("data-state", "maybe");
@@ -296,7 +297,7 @@ test("풀던 문제는 뒤로 갔다 와도, 새로고침해도 이어서 풀 �
 
   // 브라우저 뒤로 가기도 홈으로 돌아간다
   await page.goto("/#/");
-  await page.getByTestId("daily-file-cta").click();
+  await page.getByTestId("daily-file").click();
   await expect(page.getByTestId("play-screen")).toBeVisible();
   await page.goBack();
   await expect(page.getByTestId("home-screen")).toBeVisible();
@@ -319,7 +320,7 @@ test("승급 조건을 채우기 전에는 시험이 잠겨 있다", async ({ pa
 
   await preset(page, "exam-ready");
   await expect(page.getByTestId("promo-count")).toHaveText("2/2");
-  await expect(page.getByTestId("exam-cta")).toHaveText("승급 시험 응시");
+  await expect(page.getByTestId("exam-cta")).toContainText("승급 시험 응시");
 });
 
 test("QA 패널은 ?demo=1 에서만 보이고 다섯 가지 상태를 만든다", async ({ page }) => {

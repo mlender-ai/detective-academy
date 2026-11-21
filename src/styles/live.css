@@ -1,5 +1,5 @@
-/* 살아 있는 복도 장면과 메인 홈 비교안 (V3 GATE 02).
-   확정된 홈의 스타일은 건드리지 않는다. 여기의 규칙은 ?home=a · ?home=b 로 열었을 때만 쓰인다.
+/* 살아 있는 복도 장면과 메인 홈 (V3 GATE 02).
+   기본 홈은 B안 · 플레이 가능한 복도다. A안의 규칙은 ?home=a 로 열었을 때만 쓰인다. 예전 홈의 스타일은 건드리지 않는다.
    색은 검정과 흰색(--m-w) 두 가지, 점 하나는 2px, 글자는 16·32px 이라는 mono.css 의 약속을 그대로 따른다. */
 
 .livescene {
@@ -33,7 +33,7 @@
   animation: none;
 }
 
-/* ───────── B안 · 플레이 가능한 복도 ─────────
+/* ───────── 메인 홈 (B안) · 플레이 가능한 복도 ─────────
    위에서부터: 학원 이름과 등급 → 복도(누를 수 있는 게임 장면) → 서술 한 줄 → 갈 곳(명령 창) */
 
 .hall--play {
@@ -253,6 +253,14 @@
     display: none;
   }
 
+  .cmd {
+    padding-bottom: calc(6px + env(safe-area-inset-bottom));
+  }
+
+  .cmd__subject {
+    line-height: 32px;
+  }
+
   .cmd__go {
     min-height: 44px;
     font-size: 16px;
@@ -267,10 +275,28 @@
   }
 }
 
-/* 주소창이 보이는 작은 휴대폰(높이 640px 아래): 줄을 조금 더 조인다 */
+/* 주소창이 보이는 작은 휴대폰(높이 640px 아래, 예: 375×629): 글자 크기는 지키고 여백을 더 조여 네 줄이 한 화면에 들어오게 한다 */
 @media (max-height: 640px) {
-  .hall--play .hall__name span:last-child {
-    display: none;
+  .hall--play .hall__top {
+    padding-top: calc(6px + env(safe-area-inset-top));
+    padding-bottom: 4px;
+  }
+
+  .playscene {
+    min-height: 224px;
+  }
+
+  .hall--play .narr {
+    min-height: 50px;
+    padding: 4px 12px 2px;
+  }
+
+  .cmd {
+    padding-bottom: calc(4px + env(safe-area-inset-bottom));
+  }
+
+  .cmd__row[data-on="true"] {
+    margin: 2px 0;
   }
 
   .cmd__subject {

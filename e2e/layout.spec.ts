@@ -30,7 +30,7 @@ for (const viewport of VIEWPORTS) {
 
     test("암호 해독: 시도 기록과 다이얼, 제출 버튼이 한 화면에 들어온다", async ({ page }) => {
       await preset(page, "daily-unsolved");
-      await page.getByTestId("daily-file-cta").click();
+      await page.getByTestId("daily-file").click();
       await expect(page.getByTestId("dial-0")).toBeVisible();
       await expectLayoutOk(page, '[data-testid="submit"]');
 
@@ -92,7 +92,7 @@ for (const viewport of VIEWPORTS) {
 
     test("결과와 신분증 화면", async ({ page }) => {
       await preset(page, "promoted");
-      await page.getByTestId("daily-file-cta").click();
+      await page.getByTestId("daily-file").click();
       await expect(page.getByTestId("result-screen")).toBeVisible();
       await expectLayoutOk(page, '[data-testid="result-home"]');
       await shot(page, `viewport-${tag}-record`);
@@ -112,24 +112,25 @@ for (const viewport of VIEWPORTS) {
 test.describe("낮은 화면 390x664 (주소창이 보이는 모바일 브라우저)", () => {
   test.use({ viewport: { width: 390, height: 664 } });
 
-  test("홈: 복도 그림, 시험 공고, 선반이 한 화면에 보인다", async ({ page }) => {
+  test("홈: 복도, 서술, 갈 곳 네 줄이 한 화면에 보인다", async ({ page }) => {
     await preset(page, "daily-unsolved");
     await expect(page.getByTestId("home-screen")).toBeVisible();
     await expectLayoutOk(page, '[data-testid="daily-file-cta"]');
 
     const home = page.getByTestId("home-screen");
     expect(await home.evaluate((el) => el.scrollHeight - el.clientHeight)).toBeLessThanOrEqual(1);
-    // 게시판이 복도 그림을 다 덮지 않는다
-    const board = (await page.locator(".bulletin").boundingBox())!;
-    expect(board.y).toBeGreaterThanOrEqual(150);
-    const shelf = (await page.getByTestId("practice-entry").boundingBox())!;
-    expect(shelf.y + shelf.height).toBeLessThanOrEqual(664);
+    // 복도 장면이 게시판과 문 위의 표찰까지 보일 만큼 남는다 (232px = 116점)
+    const scene = (await page.getByTestId("live-scene").boundingBox())!;
+    expect(scene.height).toBeGreaterThanOrEqual(232);
+    // 맨 아래 줄(기록 보관함)까지 화면 안에 있다
+    const last = (await page.getByTestId("identity").boundingBox())!;
+    expect(last.y + last.height).toBeLessThanOrEqual(664);
     await shot(page, "viewport-390x664-home");
   });
 
   test("암호 해독: 시도 기록을 읽으면서 드럼을 굴릴 수 있다", async ({ page }) => {
     await preset(page, "daily-unsolved");
-    await page.getByTestId("daily-file-cta").click();
+    await page.getByTestId("daily-file").click();
     await expect(page.getByTestId("dial-0")).toBeVisible();
     await expectLayoutOk(page, '[data-testid="submit"]');
 

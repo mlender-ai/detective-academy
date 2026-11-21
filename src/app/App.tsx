@@ -14,7 +14,7 @@ import { HOME_VARIANT } from "./variant";
 function Screen({ route }: { route: Route }) {
   switch (route.name) {
     case "home":
-      // 확정된 홈이 기본이다. ?home=a · ?home=b 는 V3 GATE 02 의 비교안이다.
+      // 기본 홈은 플레이 가능한 복도다(GATE 02 에서 고른 B안). 예전 홈(?home=old)과 A안(?home=a)은 걷어내기 전까지 주소로만 열린다.
       return HOME_VARIANT === "b" ? <HomePlayable /> : <AcademyHome live={HOME_VARIANT === "a"} />;
     case "daily":
       return <DailyChallenge />;

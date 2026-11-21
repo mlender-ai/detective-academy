@@ -19,7 +19,7 @@ test("공고를 펼쳐 암호를 풀고 채점 결과까지 간다", async ({ pa
   await expect(page.getByTestId("daily-file-status")).toHaveText("미해결");
   await shot(page, "mono-01-home");
 
-  await page.getByTestId("daily-file-cta").click();
+  await page.getByTestId("daily-file").click();
   await expect(page.getByTestId("play-screen")).toBeVisible();
   await expect(page.getByTestId("dial-0")).toBeVisible();
 
@@ -80,7 +80,7 @@ for (const viewport of [
       expect(tile.y + tile.height).toBeLessThanOrEqual(viewport.height);
       await shot(page, `mono-viewport-${tag}-home`);
 
-      await page.getByTestId("daily-file-cta").click();
+      await page.getByTestId("daily-file").click();
       await expect(page.getByTestId("dial-0")).toBeVisible();
       await expectLayoutOk(page, '[data-testid="submit"]');
       const submitTop = (await page.getByTestId("submit").boundingBox())!.y;
@@ -245,7 +245,7 @@ test("모든 화면이 검정과 흰색 두 가지로만 그려진다", async ({
   await preset(page, "daily-unsolved");
   await expect(page.getByTestId("home-screen")).toBeVisible();
   await check("홈");
-  await page.getByTestId("daily-file-cta").click();
+  await page.getByTestId("daily-file").click();
   await expect(page.getByTestId("dial-0")).toBeVisible();
   await check("암호 풀이");
   await page.getByTestId("submit").click();
@@ -289,7 +289,7 @@ test.describe("자막 화면", () => {
 
   test("사건을 열면 제목이 찍힌 검은 화면이 뜨고, 누르면 바로 걷힌다", async ({ page }) => {
     await preset(page, "daily-unsolved");
-    await page.getByTestId("daily-file-cta").click();
+    await page.getByTestId("daily-file").click();
     const card = page.getByTestId("cine-card");
     await expect(card).toBeVisible();
     await expect(card).toContainText("사건 기록");
@@ -302,7 +302,7 @@ test.describe("자막 화면", () => {
 
   test("누르지 않아도 제목이 다 찍히면 스스로 걷힌다", async ({ page }) => {
     await preset(page, "daily-unsolved");
-    await page.getByTestId("daily-file-cta").click();
+    await page.getByTestId("daily-file").click();
     const card = page.getByTestId("cine-card");
     await expect(card).toContainText("자료실 금고의 암호");
     await expect(card).toHaveCount(0, { timeout: 6_000 });
@@ -315,7 +315,7 @@ test.describe("자막 화면", () => {
     test("자막 화면이 뜨지 않고 서술은 한 번에 나온다", async ({ page }) => {
       await preset(page, "daily-unsolved");
       await expect(page.locator(".narr__line")).toContainText("붙어 있다.");
-      await page.getByTestId("daily-file-cta").click();
+      await page.getByTestId("daily-file").click();
       await expect(page.getByTestId("dial-0")).toBeVisible();
       await expect(page.getByTestId("cine-card")).toHaveCount(0);
     });
