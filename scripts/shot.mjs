@@ -45,7 +45,7 @@ for (const id of clicks) {
     continue;
   }
   if (id.startsWith("code:")) {
-    // 다이얼을 원하는 숫자로 맞춘다: code:426
+    // 다이얼을 원하는 숫자로 맞춘다: code:426 (자료실 장면에서는 먼저 금고 앞으로 간다: --click to-safe,code:426)
     const digits = id.slice(5).split("").map(Number);
     for (let i = 0; i < digits.length; i++) {
       for (let k = 0; k < 9; k++) {

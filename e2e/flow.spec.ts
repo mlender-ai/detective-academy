@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { dialValue, enroll, placeByDrag, placeByTap, preset, setCode, setDial, shot, stored } from "./helpers";
+import { dialValue, enroll, placeByDrag, placeByTap, preset, setCode, setDial, shot, stored, toDesk, toSafe } from "./helpers";
 
 test("처음 방문한 사용자가 입학해서 문제를 풀고 D급으로 승급한다", async ({ page }) => {
   /* ── 입학 ── */
@@ -28,23 +28,30 @@ test("처음 방문한 사용자가 입학해서 문제를 풀고 D급으로 승
   await expect(page.getByTestId("exam-cta")).toHaveCount(0);
   await shot(page, "03-home");
 
-  /* ── 오늘의 추리: 암호 해독 ── */
+  /* ── 오늘의 추리: 암호 해독 (자료실) ── */
   await page.getByTestId("daily-file").click();
   await expect(page.getByTestId("play-screen")).toBeVisible();
-  await expect(page.getByTestId("dial-0")).toBeVisible();
+  // 들어서면 책상 앞이다: 시도 기록과 숫자 메모가 놓여 있고, 자물쇠는 금고 앞에 있다
+  await expect(page.getByTestId("record")).toBeVisible();
+  await expect(page.locator(".clue")).toHaveCount(5);
+  await expect(page.getByTestId("dial-0")).toHaveCount(0);
   await shot(page, "04-code-breaker");
 
   // 오답: 정답은 드러나지 않는다
+  await toSafe(page);
   await page.getByTestId("submit").click();
   await expect(page.getByTestId("notice-wrong")).toBeVisible();
   await expect(page.getByTestId("solution")).toHaveCount(0);
   await expect(page.locator("body")).not.toContainText("426");
   expect((await stored(page)).credits).toBe(40);
 
-  // 메모는 시도 기록에 그대로 반영된다
+  // 책상으로 돌아가 메모한다. 메모는 시도 기록에 그대로 반영되고, 금고 앞에도 들고 간다.
+  await toDesk(page);
   await page.getByTestId("memo-5").click();
   await expect(page.getByTestId("memo-5")).toHaveAttribute("data-state", "out");
   await expect(page.locator('.clue__digit[data-memo="out"]')).toHaveCount(3);
+  await toSafe(page);
+  await expect(page.getByTestId("carry-memo")).toContainText("제외 5");
 
   // 다이얼: 밀어서(스와이프) 1 → 4
   const dial = (await page.getByTestId("dial-0").boundingBox())!;
@@ -232,6 +239,7 @@ test("힌트는 크레딧을 차감하고, 모자라면 열리지 않으며 잔�
   await expect(page.getByTestId("brief-hint-1")).toBeVisible();
 
   // 힌트를 쓰고 풀면 '힌트 미사용' 기록이 남지 않는다
+  await toSafe(page);
   await setCode(page, [4, 2, 6]);
   await page.getByTestId("submit").click();
   await expect(page.getByTestId("result-screen")).toBeVisible();
@@ -243,6 +251,7 @@ test("힌트는 크레딧을 차감하고, 모자라면 열리지 않으며 잔�
 test("힌트 없이 한 번에 풀면 '힌트 미사용' 기록이 남는다", async ({ page }) => {
   await enroll(page);
   await page.getByTestId("daily-file").click();
+  await toSafe(page);
   await setCode(page, [4, 2, 6]);
   await page.getByTestId("submit").click();
   await expect(page.getByTestId("result-screen")).toBeVisible();
@@ -260,6 +269,7 @@ test("같은 문제를 다시 풀어도 보상은 다시 지급되지 않는다"
 
   await page.getByTestId("replay").click();
   await expect(page.getByTestId("play-screen")).toBeVisible();
+  await toSafe(page);
   await setCode(page, [4, 2, 6]);
   await page.getByTestId("submit").click();
   await expect(page.getByTestId("result-screen")).toBeVisible();
@@ -276,24 +286,31 @@ test("같은 문제를 다시 풀어도 보상은 다시 지급되지 않는다"
 test("풀던 문제는 뒤로 갔다 와도, 새로고침해도 이어서 풀 수 있다", async ({ page }) => {
   await enroll(page);
   await page.getByTestId("daily-file").click();
-  await setDial(page, 0, 7);
   await page.getByTestId("memo-9").click();
   await page.getByTestId("memo-6").click();
   await page.getByTestId("memo-6").click();
+  await toSafe(page);
+  await setDial(page, 0, 7);
 
   await page.getByTestId("play-back").click();
   await expect(page.getByTestId("home-screen")).toBeVisible();
   await expect(page.getByTestId("daily-file-status")).toContainText("풀이 중");
   await expect(page.getByTestId("daily-file-cta")).toHaveText("이어서 풀기");
 
+  // 돌아오면 서 있던 금고 앞에서 잇는다. 돌리던 숫자와 메모가 그대로다.
   await page.getByTestId("daily-file").click();
+  await expect(page.getByTestId("play-screen")).toHaveAttribute("data-at", "safe");
   await expect(page.getByTestId("dial-0")).toHaveAttribute("aria-valuenow", "7");
+  await expect(page.getByTestId("carry-memo")).toContainText("제외 9");
+  await toDesk(page);
   await expect(page.getByTestId("memo-9")).toHaveAttribute("data-state", "out");
   await expect(page.getByTestId("memo-6")).toHaveAttribute("data-state", "maybe");
 
   await page.reload();
-  await expect(page.getByTestId("dial-0")).toHaveAttribute("aria-valuenow", "7");
+  await expect(page.getByTestId("play-screen")).toHaveAttribute("data-at", "desk");
   await expect(page.getByTestId("memo-9")).toHaveAttribute("data-state", "out");
+  await toSafe(page);
+  await expect(page.getByTestId("dial-0")).toHaveAttribute("aria-valuenow", "7");
 
   // 브라우저 뒤로 가기도 홈으로 돌아간다
   await page.goto("/#/");

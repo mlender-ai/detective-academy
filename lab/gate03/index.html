@@ -43,7 +43,7 @@ a { color: inherit; }
 <main>
   <h1>탐정학원 V3 · GATE 03</h1>
   <p>암호 풀이 화면 네 가지. 넷 다 같은 문제(오늘의 추리 · 자료실 금고의 암호)를 실제로 풀고 제출할 수 있다.</p>
-  <p class="note">지금의 풀이 화면은 바꾸지 않았다. A·B·C안은 주소에 <b>?play=a</b> · <b>?play=b</b> · <b>?play=c</b> 를 붙였을 때만 열린다. 판정·힌트·보상은 넷이 같은 엔진을 쓴다.</p>
+  <p class="note"><b>결정 (2026-11-22): B안 · 장면 전개.</b> 암호 해독의 기본 화면이 B안이 되었다. C안(수사 수첩)은 다른 문제에 쓸 UI 후보로 남겼다. 예전 화면 · A안 · C안은 주소에 <b>?play=old</b> · <b>?play=a</b> · <b>?play=c</b> 를 붙였을 때만 열린다. 판정·힌트·보상은 넷이 같은 엔진을 쓴다.</p>
 
   <div class="bar">
     <button class="again" id="again">네 화면 처음부터 다시</button>
@@ -58,10 +58,10 @@ a { color: inherit; }
 
   <div class="row">
     <section class="col">
-      <h2>기존 풀이 화면</h2>
-      <p class="note">시험지 한 장에 제목·설명·시도 기록·숫자 메모가 다 있고, 그 아래에 자물쇠가 있다.</p>
-      <iframe class="phone" data-play="" title="기존"></iframe>
-      <a class="open" data-play="" href="#">기존 화면을 전체 화면으로 열기</a>
+      <h2>예전 풀이 화면</h2>
+      <p class="note">시험지 한 장에 제목·설명·시도 기록·숫자 메모가 다 있고, 그 아래에 자물쇠가 있다. GATE 03 이전의 기본 화면.</p>
+      <iframe class="phone" data-play="old" title="예전"></iframe>
+      <a class="open" data-play="old" href="#">예전 화면을 전체 화면으로 열기</a>
     </section>
     <section class="col">
       <h2>A안 · 접기·펼치기</h2>
@@ -70,13 +70,13 @@ a { color: inherit; }
       <a class="open" data-play="a" href="#">A안을 전체 화면으로 열기</a>
     </section>
     <section class="col">
-      <h2>B안 · 장면 전개</h2>
+      <h2>B안 · 장면 전개 · 지금의 기본</h2>
       <p class="note">문제가 자료실의 장면으로 펼쳐진다. 들어서면 책상의 기록(시도 기록·메모)을 살피고, 금고 앞으로 가서 드럼을 돌린다. 장면의 책상·금고나 아래 단추로 언제든 오간다. 정답이면 금고가 열린다. 기록과 자물쇠를 한 화면에서 같이 볼 수는 없다.</p>
-      <iframe class="phone" data-play="b" title="B안"></iframe>
-      <a class="open" data-play="b" href="#">B안을 전체 화면으로 열기</a>
+      <iframe class="phone" data-play="" title="B안"></iframe>
+      <a class="open" data-play="" href="#">B안을 전체 화면으로 열기</a>
     </section>
     <section class="col">
-      <h2>C안 · 혼합형 (수사 수첩)</h2>
+      <h2>C안 · 혼합형 (수사 수첩) · 다른 문제용 후보</h2>
       <p class="note">짧은 도입 장면 뒤 바로 자물쇠 앞이다. 조건은 수사 수첩에 담겨 있다: 표지를 누르면 접히고, 간편 보기는 기록의 숫자와 표시만, 전체 보기는 사건·기록·메모·받은 수사 지원을 다 보여 준다. 기록에 '중요' 표시를 하면 간편 보기에 그것부터 글과 함께 나온다.</p>
       <iframe class="phone" data-play="c" title="C안"></iframe>
       <a class="open" data-play="c" href="#">C안을 전체 화면으로 열기</a>
@@ -89,7 +89,8 @@ a { color: inherit; }
   // 네 화면이 서로의 진행을 덮어쓰지 않게 저장 칸을 따로 쓴다(save). 열 때마다 "오늘의 추리 미해결" 상태에서 새로 시작한다.
   let size = "390x844";
   const url = (play) => {
-    const q = new URLSearchParams({ demo: "1", save: `g3-${play || "cur"}`, preset: "daily-unsolved", apply: "1" });
+    // play 가 비어 있으면 기본 화면(B안)이다
+    const q = new URLSearchParams({ demo: "1", save: `g3-${play || "b"}`, preset: "daily-unsolved", apply: "1" });
     if (play) q.set("play", play);
     return `../../index.html?${q}#/daily`;
   };

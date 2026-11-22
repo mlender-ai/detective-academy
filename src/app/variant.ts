@@ -14,15 +14,18 @@ const value = typeof window !== "undefined" ? new URLSearchParams(window.locatio
 export const HOME_VARIANT: HomeVariant = value === "a" ? "a" : value === "old" ? "old" : "b";
 
 /**
- * 암호 풀이 화면의 갈래 (V3 GATE 03 비교안). 지금의 풀이 화면이 기본이고, 주소에 ?play= 를 붙이면 비교안으로 열린다.
- * 암호 해독 문제에만 적용된다(진술 추리·순서 추론은 그대로다).
- * - ?play=a : 접기·펼치기 — 한 화면에서 사건·시도 기록·숫자 메모를 접고 펴며 자물쇠를 크게 쓴다
- * - ?play=b : 장면 전개 — 자료실에서 책상(기록)과 금고(자물쇠) 사이를 걸어 다니며 푼다
- * - ?play=c : 혼합형 — 짧은 도입 장면 뒤, 자물쇠를 크게 두고 조건은 수사 수첩에 담는다
- * 사용자가 고르면 고른 안을 기본으로 올리고 이 전환을 걷어낸다.
+ * 암호 풀이 화면의 갈래 (V3 GATE 03).
+ * 사용자가 B안 · 장면 전개를 골랐다(2026-11-22, "B안이 좋아"). 그래서 암호 해독 문제의 기본 화면은 B안이다.
+ * 암호 해독 문제에만 적용된다(진술 추리·순서 추론은 추리 책상 그대로다).
+ * - (없음) 또는 ?play=b : 장면 전개 — 자료실에서 책상(기록)과 금고(자물쇠) 사이를 걸어 다니며 푼다
+ * - ?play=c   : 혼합형(수사 수첩) — 짧은 도입 장면 뒤, 자물쇠를 크게 두고 조건은 수사 수첩에 담는다.
+ *               사용자가 "아이디어 차원에서 남겨놔 다른 문제에 쓰일수있는 UI로"라고 했다. 다른 유형에 쓸 후보로 남긴다.
+ * - ?play=old : 예전 풀이 화면 — 시험지 한 장에 기록·메모·자물쇠가 다 있다
+ * - ?play=a   : A안 접기·펼치기 — 한 화면에서 사건·시도 기록·숫자 메모를 접고 편다
+ * 예전 화면과 A안은 걷어내기 전까지 주소로만 열린다(걷어내기 전에 사용자에게 확인하고 보관한다).
  */
-export type PlayVariant = "current" | "a" | "b" | "c";
+export type PlayVariant = "b" | "a" | "c" | "old";
 
 const play = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("play") : null;
 
-export const PLAY_VARIANT: PlayVariant = play === "a" || play === "b" || play === "c" ? play : "current";
+export const PLAY_VARIANT: PlayVariant = play === "a" || play === "c" || play === "old" ? play : "b";

@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { expectLayoutOk, placeByTap, preset, shot } from "./helpers";
+import { expectLayoutOk, placeByTap, preset, shot, toSafe } from "./helpers";
 
 /** 지시서가 정한 최소 확인 화면 크기 */
 const VIEWPORTS = [
@@ -28,17 +28,26 @@ for (const viewport of VIEWPORTS) {
       await shot(page, `viewport-${tag}-home`);
     });
 
-    test("암호 해독: 시도 기록과 다이얼, 제출 버튼이 한 화면에 들어온다", async ({ page }) => {
+    test("암호 해독: 책상에서는 시도 기록과 메모가, 금고 앞에서는 다이얼과 제출 버튼이 한 화면에 들어온다", async ({ page }) => {
       await preset(page, "daily-unsolved");
       await page.getByTestId("daily-file").click();
-      await expect(page.getByTestId("dial-0")).toBeVisible();
-      await expectLayoutOk(page, '[data-testid="submit"]');
 
-      // 스크롤하지 않은 상태에서 시도 기록 전체와 다이얼이 제출 버튼 위에 다 보여야 한다.
-      const submitTop = (await page.getByTestId("submit").boundingBox())!.y;
+      // 책상 앞: 스크롤하지 않은 상태에서 시도 기록 전체와 숫자 메모가 단추 줄 위에 다 보여야 한다.
+      await expect(page.getByTestId("record")).toBeVisible();
+      await expectLayoutOk(page, '[data-testid="to-safe"]');
+      const goTop = (await page.getByTestId("to-safe").boundingBox())!.y;
       const clues = (await page.locator(".clues").boundingBox())!;
-      const dials = (await page.locator(".lock__dials").boundingBox())!;
+      const memo = (await page.getByTestId("memo-9").boundingBox())!;
       expect(clues.y).toBeGreaterThanOrEqual(0);
+      expect(memo.y + memo.height).toBeLessThanOrEqual(goTop);
+      expect(await page.locator(".sceneplay__panel").evaluate((el) => el.scrollHeight - el.clientHeight)).toBeLessThanOrEqual(1);
+      await shot(page, `viewport-${tag}-record-desk`);
+
+      // 금고 앞: 다이얼이 제출 버튼 위에 다 보여야 한다.
+      await toSafe(page);
+      await expectLayoutOk(page, '[data-testid="submit"]');
+      const submitTop = (await page.getByTestId("submit").boundingBox())!.y;
+      const dials = (await page.locator(".lock__dials").boundingBox())!;
       expect(dials.y + dials.height).toBeLessThanOrEqual(submitTop);
       for (const button of await page.locator(".dial__step").all()) {
         const box = (await button.boundingBox())!;
@@ -107,7 +116,7 @@ for (const viewport of VIEWPORTS) {
 
 /**
  * 주소창과 도구 막대가 보이는 모바일 브라우저에서는 화면 높이가 664px 안팎으로 줄어든다.
- * 그 높이에서도 오늘의 공고와 선반, 그리고 시험지·자물쇠·제출 단추가 스크롤 없이 한 화면에 들어와야 한다.
+ * 그 높이에서도 복도와 갈 곳 네 줄, 그리고 자료실의 기록·자물쇠·제출 단추가 스크롤 없이 한 화면에 들어와야 한다.
  */
 test.describe("낮은 화면 390x664 (주소창이 보이는 모바일 브라우저)", () => {
   test.use({ viewport: { width: 390, height: 664 } });
@@ -128,21 +137,33 @@ test.describe("낮은 화면 390x664 (주소창이 보이는 모바일 브라우
     await shot(page, "viewport-390x664-home");
   });
 
-  test("암호 해독: 시도 기록을 읽으면서 드럼을 굴릴 수 있다", async ({ page }) => {
+  test("암호 해독: 책상의 기록과 금고의 드럼이 각각 스크롤 없이 한 화면에 들어온다", async ({ page }) => {
     await preset(page, "daily-unsolved");
     await page.getByTestId("daily-file").click();
-    await expect(page.getByTestId("dial-0")).toBeVisible();
-    await expectLayoutOk(page, '[data-testid="submit"]');
 
-    const submitTop = (await page.getByTestId("submit").boundingBox())!.y;
+    // 책상 앞: 장면, 시도 기록 다섯 건, 숫자 메모, 단추 줄
+    await expect(page.getByTestId("record")).toBeVisible();
+    await expectLayoutOk(page, '[data-testid="to-safe"]');
+    const goTop = (await page.getByTestId("to-safe").boundingBox())!.y;
     const clues = (await page.locator(".clues").boundingBox())!;
-    const dials = (await page.locator(".lock__dials").boundingBox())!;
+    const memo = (await page.getByTestId("memo-9").boundingBox())!;
     expect(clues.y).toBeGreaterThanOrEqual(0);
-    expect(dials.y + dials.height).toBeLessThanOrEqual(submitTop);
-    expect(await page.locator(".play__scroll").evaluate((el) => el.scrollHeight - el.clientHeight)).toBeLessThanOrEqual(1);
+    expect(memo.y + memo.height).toBeLessThanOrEqual(goTop);
+    expect(await page.locator(".sceneplay__panel").evaluate((el) => el.scrollHeight - el.clientHeight)).toBeLessThanOrEqual(1);
     for (const chip of await page.locator(".memo__chip").all()) {
       expect((await chip.boundingBox())!.height).toBeGreaterThanOrEqual(40);
     }
+    // 장면이 책상과 금고가 보일 만큼 남는다 (124px = 62점)
+    expect((await page.getByTestId("live-scene").boundingBox())!.height).toBeGreaterThanOrEqual(124);
+    await shot(page, "viewport-390x664-record-desk");
+
+    // 금고 앞: 드럼과 제출 단추
+    await toSafe(page);
+    await expectLayoutOk(page, '[data-testid="submit"]');
+    const submitTop = (await page.getByTestId("submit").boundingBox())!.y;
+    const dials = (await page.locator(".lock__dials").boundingBox())!;
+    expect(dials.y + dials.height).toBeLessThanOrEqual(submitTop);
+    expect(await page.locator(".sceneplay__panel").evaluate((el) => el.scrollHeight - el.clientHeight)).toBeLessThanOrEqual(1);
     await shot(page, "viewport-390x664-code");
 
     // 숫자가 겹쳐 경고가 떠도 화살표 단추는 가려지지 않고 그대로 눌린다

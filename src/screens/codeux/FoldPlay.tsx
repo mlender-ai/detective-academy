@@ -63,7 +63,7 @@ function Fold({ id, title, summary, peek, aside, open, onToggle, children }: Fol
 }
 
 /**
- * 암호 풀이 A안 · 접기·펼치기 (V3 GATE 03 비교안, ?play=a).
+ * 암호 풀이 A안 · 접기·펼치기. ?play=a 로만 열린다 (V3 GATE 03 에서 고르지 않은 안. 걷어내기 전까지 남겨 둔다).
  * 한 화면에서 푼다. 사건·시도 기록·숫자 메모를 접고 펴며, 접어 둔 만큼 자물쇠가 넓어진다.
  * 자물쇠와 제출 단추는 항상 아래에 고정돼 있고, 패널이 길어지면 패널 쪽만 스크롤된다.
  */

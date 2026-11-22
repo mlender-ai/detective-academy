@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { preset, settledBox } from "./helpers";
+import { preset, settledBox, toSafe } from "./helpers";
 
 /**
  * 실제 손가락 입력(터치 이벤트)으로 조작이 되는지 확인한다.
@@ -29,6 +29,7 @@ const centre = (box: { x: number; y: number; width: number; height: number }) =>
 test("손가락으로 다이얼을 밀고 눌러서 숫자를 바꾼다", async ({ page }) => {
   await preset(page, "daily-unsolved");
   await page.getByTestId("daily-file").click();
+  await toSafe(page);
   await expect(page.getByTestId("dial-1")).toHaveAttribute("aria-valuenow", "2");
 
   // 위로 두 칸 밀기: 2 → 4
@@ -45,7 +46,7 @@ test("손가락으로 다이얼을 밀고 눌러서 숫자를 바꾼다", async 
   await expect(page.getByTestId("dial-1")).toHaveAttribute("aria-valuenow", "9");
 
   // 다이얼을 미는 동안 화면이 같이 스크롤되지 않는다
-  expect(await page.locator(".play__scroll").evaluate((el) => el.scrollTop)).toBe(0);
+  expect(await page.locator(".sceneplay__panel").evaluate((el) => el.scrollTop)).toBe(0);
 });
 
 test("손가락으로 카드를 끌어 시간표에 놓고, 눌러서도 배치한다", async ({ page }) => {

@@ -43,6 +43,27 @@ export async function preset(
   await expect(page.getByTestId("demo-toggle")).toHaveAttribute("aria-expanded", "false");
 }
 
+/**
+ * 암호 해독은 자료실 장면에서 푼다: 책상에 시도 기록·숫자 메모·수사 지원이 있고, 금고 앞에 자물쇠와 제출 단추가 있다.
+ * 금고 앞으로 간다. 이미 금고 앞이면(풀다가 나갔다 온 경우) 그대로 둔다.
+ */
+export async function toSafe(page: Page) {
+  const screen = page.getByTestId("play-screen");
+  await expect(screen).toHaveAttribute("data-ux", "b");
+  if ((await screen.getAttribute("data-at")) !== "safe") await page.getByTestId("to-safe").click();
+  await expect(screen).toHaveAttribute("data-at", "safe");
+  await expect(page.getByTestId("dial-0")).toBeVisible();
+}
+
+/** 책상 앞으로 간다(기록을 다시 본다). 이미 책상 앞이면 그대로 둔다. */
+export async function toDesk(page: Page) {
+  const screen = page.getByTestId("play-screen");
+  await expect(screen).toHaveAttribute("data-ux", "b");
+  if ((await screen.getAttribute("data-at")) !== "desk") await page.getByTestId("to-desk").click();
+  await expect(screen).toHaveAttribute("data-at", "desk");
+  await expect(page.getByTestId("record")).toBeVisible();
+}
+
 export async function dialValue(page: Page, index: number) {
   return Number(await page.getByTestId(`dial-${index}`).getAttribute("aria-valuenow"));
 }

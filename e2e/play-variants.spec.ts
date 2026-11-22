@@ -1,34 +1,69 @@
 import { expect, test, type Page } from "@playwright/test";
-import { dialValue, expectLayoutOk, offToneRatio, preset, setCode, setDial, stored } from "./helpers";
+import { dialValue, expectLayoutOk, offToneRatio, preset, setCode, setDial, stored, toSafe } from "./helpers";
 
 /**
- * 암호 풀이 화면의 비교안 (V3 GATE 03). 지금의 풀이 화면이 기본이고, 주소에 ?play=a · b · c 를 붙였을 때만 열린다.
- * - A안 접기·펼치기: 한 화면에서 사건·시도 기록·숫자 메모를 접고 편다.
- * - B안 장면 전개: 자료실에서 책상(기록)과 금고(자물쇠) 사이를 오가며 푼다.
- * - C안 혼합형: 자물쇠를 크게 두고 조건은 수사 수첩(접힘 · 간편 보기 · 전체 보기)에 담는다.
- * 세 안 모두 같은 엔진으로 판정하고 보상한다. 정답은 426 이다.
+ * 암호 풀이 화면 (V3 GATE 03). 사용자가 B안 · 장면 전개를 골라 암호 해독의 기본 화면이 되었다.
+ * - 기본(B안 장면 전개): 자료실에서 책상(기록)과 금고(자물쇠) 사이를 오가며 푼다.
+ * - ?play=c  C안 혼합형: 자물쇠를 크게 두고 조건은 수사 수첩(접힘 · 간편 보기 · 전체 보기)에 담는다. 다른 문제에 쓸 UI 후보로 남겨 두었다.
+ * - ?play=a  A안 접기·펼치기: 한 화면에서 사건·시도 기록·숫자 메모를 접고 편다. 걷어내기 전까지 주소로만 열린다.
+ * - ?play=old 예전 풀이 화면: 시험지 한 장에 기록·메모·자물쇠가 다 있다. 걷어내기 전까지 주소로만 열린다.
+ * 모두 같은 엔진으로 판정하고 보상한다. 정답은 426 이다.
  */
 
 type Ux = "a" | "b" | "c";
 
+/** 그 안으로 열 때 주소에 덧붙일 값. B안은 기본이라 아무것도 붙이지 않는다. */
+const query = (ux: Ux) => (ux === "b" ? "" : `&play=${ux}`);
+
 /** 오늘의 추리(암호 해독)를 그 안으로 연다 */
 async function open(page: Page, ux: Ux, id: Parameters<typeof preset>[1] = "daily-unsolved") {
-  await preset(page, id, `&play=${ux}`);
+  await preset(page, id, query(ux));
   await page.getByTestId("daily-file").click();
   await expect(page.getByTestId("play-screen")).toHaveAttribute("data-ux", ux);
 }
 
-test("기본 풀이 화면에는 비교안이 섞이지 않는다", async ({ page }) => {
+test("암호 해독의 기본 화면은 자료실 장면이다", async ({ page }) => {
   await preset(page, "daily-unsolved");
   await page.getByTestId("daily-file").click();
-  const screen = page.getByTestId("play-screen");
-  await expect(screen).toBeVisible();
-  expect(await screen.getAttribute("data-ux")).toBeNull();
-  await expect(page.locator(".exampaper")).toBeVisible();
-  await expect(page.getByTestId("dial-0")).toBeVisible();
+  await expect(page).not.toHaveURL(/play=/);
+  await expect(page.getByTestId("play-screen")).toHaveAttribute("data-ux", "b");
+  await expect(page.locator('[data-testid="live-scene"][data-kind="vault"] canvas')).toBeVisible();
+  await expect(page.getByTestId("record")).toBeVisible();
 });
 
-test.describe("A안 · 접기·펼치기", () => {
+test("진술 추리는 그대로 추리 책상에서 푼다", async ({ page }) => {
+  await preset(page, "daily-solved");
+  await page.getByTestId("practice-entry").click();
+  await page.getByTestId("practice-file-cta").click();
+  const screen = page.getByTestId("play-screen");
+  await expect(screen).toHaveAttribute("data-type", "truth");
+  expect(await screen.getAttribute("data-ux")).toBeNull();
+  await expect(page.getByTestId("live-scene")).toHaveCount(0);
+});
+
+test.describe("예전 풀이 화면 (?play=old)", () => {
+  test("시험지 한 장에 기록과 자물쇠가 같이 있고, 끝까지 풀린다", async ({ page }) => {
+    await preset(page, "daily-unsolved", "&play=old");
+    await page.getByTestId("daily-file").click();
+    const screen = page.getByTestId("play-screen");
+    await expect(screen).toBeVisible();
+    expect(await screen.getAttribute("data-ux")).toBeNull();
+    await expect(page.locator(".exampaper")).toBeVisible();
+    await expect(page.locator(".clue")).toHaveCount(5);
+    await expect(page.getByTestId("dial-0")).toBeVisible();
+    await expectLayoutOk(page, '[data-testid="submit"]');
+    expect(await offToneRatio(page)).toBeLessThan(0.005);
+
+    await page.getByTestId("submit").click();
+    await expect(page.getByTestId("notice-wrong")).toBeVisible();
+    await setCode(page, [4, 2, 6]);
+    await page.getByTestId("submit").click();
+    await expect(page.getByTestId("result-screen")).toBeVisible();
+    await expect(page.getByTestId("reward")).toContainText("+100");
+  });
+});
+
+test.describe("A안 · 접기·펼치기 (?play=a)", () => {
   test("패널을 접고 펴도 자물쇠와 메모가 그대로이고, 접힌 패널에 요약이 남는다", async ({ page }) => {
     await open(page, "a");
     // 처음: 사건은 한 줄 요약으로 접혀 있고, 시도 기록은 펴져 있고, 메모는 접혀 있다
@@ -80,7 +115,7 @@ test.describe("A안 · 접기·펼치기", () => {
   });
 });
 
-test.describe("B안 · 장면 전개", () => {
+test.describe("기본 · 장면 전개(자료실)", () => {
   test("책상의 기록과 금고의 자물쇠 사이를 오가도 다이얼과 메모가 그대로다", async ({ page }) => {
     await open(page, "b");
     const screen = page.getByTestId("play-screen");
@@ -150,7 +185,7 @@ test.describe("B안 · 장면 전개", () => {
   });
 });
 
-test.describe("C안 · 혼합형(수사 수첩)", () => {
+test.describe("C안 · 혼합형(수사 수첩) (?play=c)", () => {
   test("수첩을 접고, 간편 보기로 보고, 전체 보기로 펴도 자물쇠의 숫자가 그대로다", async ({ page }) => {
     await open(page, "c");
     const screen = page.getByTestId("play-screen");
@@ -225,9 +260,9 @@ test.describe("C안 · 혼합형(수사 수첩)", () => {
   });
 });
 
-test.describe("세 안의 공통 약속", () => {
+test.describe("세 화면의 공통 약속", () => {
   for (const ux of ["a", "b", "c"] as const) {
-    test(`${ux.toUpperCase()}안: 두 가지 색으로만 그려진다`, async ({ page }) => {
+    test(`${ux === "b" ? "기본(자료실)" : `${ux.toUpperCase()}안`}: 두 가지 색으로만 그려진다`, async ({ page }) => {
       await open(page, ux);
       await page.waitForTimeout(900);
       expect(await offToneRatio(page)).toBeLessThan(0.005);
@@ -243,13 +278,13 @@ test.describe("세 안의 공통 약속", () => {
       }
     });
 
-    test(`${ux.toUpperCase()}안: 이미 해결한 사건은 기록으로 열리고, 다시 풀어도 보상은 한 번이다`, async ({ page }) => {
-      await preset(page, "daily-solved", `&play=${ux}`);
+    test(`${ux === "b" ? "기본(자료실)" : `${ux.toUpperCase()}안`}: 이미 해결한 사건은 기록으로 열리고, 다시 풀어도 보상은 한 번이다`, async ({ page }) => {
+      await preset(page, "daily-solved", query(ux));
       await page.getByTestId("daily-file").click();
       await expect(page.getByTestId("result-screen")).toBeVisible();
       await page.getByTestId("replay").click();
       await expect(page.getByTestId("play-screen")).toHaveAttribute("data-ux", ux);
-      if (ux === "b") await page.getByTestId("to-safe").click();
+      if (ux === "b") await toSafe(page);
       await setCode(page, [4, 2, 6]);
       await page.getByTestId("submit").click();
       await expect(page.getByTestId("result-screen")).toBeVisible();
@@ -260,7 +295,7 @@ test.describe("세 안의 공통 약속", () => {
   test.describe("모션 줄이기 설정", () => {
     test.use({ reducedMotion: "reduce" });
 
-    test("B안: 걷는 연출 없이도 오가고 풀 수 있다", async ({ page }) => {
+    test("기본(자료실): 걷는 연출 없이도 오가고 풀 수 있다", async ({ page }) => {
       await open(page, "b");
       await expect(page.getByTestId("play-screen")).toHaveAttribute("data-at", "desk");
       await page.getByTestId("to-safe").click();
@@ -291,7 +326,7 @@ for (const size of [
       expect(last.y + last.height, "시도 기록이 자물쇠에 가려진다").toBeLessThanOrEqual(dials.y);
     });
 
-    test("B안: 책상에서는 기록 다섯 건과 메모가, 금고 앞에서는 드럼과 제출 단추가 화면 안에 있다", async ({ page }) => {
+    test("기본(자료실): 책상에서는 기록 다섯 건과 메모가, 금고 앞에서는 드럼과 제출 단추가 화면 안에 있다", async ({ page }) => {
       await open(page, "b");
       await expectLayoutOk(page, '[data-testid="to-safe"]');
       const go = (await page.getByTestId("to-safe").boundingBox())!.y;

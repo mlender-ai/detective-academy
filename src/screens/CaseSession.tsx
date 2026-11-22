@@ -16,7 +16,8 @@ interface Props {
 }
 
 /**
- * 문제 하나의 흐름: 풀이 → 결과. 둘 다 추리 책상에서 벌어지고, 같은 시험지가 이어진다.
+ * 문제 하나의 흐름: 풀이 → 결과. 진술 추리·순서 추론은 추리 책상에서, 암호 해독은 자료실 장면에서 풀고,
+ * 결과는 모두 추리 책상의 채점 기록으로 이어진다.
  * 이미 해결한 문제는 기록을 먼저 보여 주고, 원하면 보상 없이 다시 풀 수 있다.
  */
 export function CaseSession({ puzzle, onExit }: Props) {
@@ -42,9 +43,10 @@ export function CaseSession({ puzzle, onExit }: Props) {
     });
   const key = replay ? "replay" : "play";
 
-  // 암호 풀이 화면의 비교안 (V3 GATE 03). 주소에 ?play=a·b·c 를 붙였을 때만 열리고, 판정·힌트·보상은 같은 엔진을 쓴다.
-  if (puzzle.type === "code" && PLAY_VARIANT !== "current") {
-    const Play = PLAY_VARIANT === "a" ? FoldPlay : PLAY_VARIANT === "b" ? ScenePlay : NotebookPlay;
+  // 암호 해독은 자료실 장면에서 푼다 (V3 GATE 03 에서 사용자가 B안을 골랐다).
+  // 수사 수첩(C안)·예전 화면·A안은 주소에 ?play=c · old · a 를 붙였을 때만 열린다. 판정·힌트·보상은 같은 엔진을 쓴다.
+  if (puzzle.type === "code" && PLAY_VARIANT !== "old") {
+    const Play = PLAY_VARIANT === "a" ? FoldPlay : PLAY_VARIANT === "c" ? NotebookPlay : ScenePlay;
     return <Play key={key} puzzle={puzzle} replay={replay} onExit={exit} onSolved={solved} />;
   }
 

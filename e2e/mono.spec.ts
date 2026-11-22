@@ -1,5 +1,5 @@
-import { expect, test } from "@playwright/test";
-import { expectLayoutOk, offToneRatio, placeByTap, preset, setCode, shot, stored } from "./helpers";
+import { expect, test, type Page } from "@playwright/test";
+import { expectLayoutOk, offToneRatio, placeByTap, preset, setCode, shot, stored, toDesk, toSafe } from "./helpers";
 
 /**
  * 1비트 흑백 도트로 그렸는지 확인한다: 비트맵 글꼴, 스프라이트, 점으로 찍는 표시, 두 가지 색, 자막 화면.
@@ -21,17 +21,22 @@ test("공고를 펼쳐 암호를 풀고 채점 결과까지 간다", async ({ pa
 
   await page.getByTestId("daily-file").click();
   await expect(page.getByTestId("play-screen")).toBeVisible();
-  await expect(page.getByTestId("dial-0")).toBeVisible();
-
-  // 오답: 정답은 드러나지 않는다
-  await page.getByTestId("submit").click();
-  await expect(page.getByTestId("notice-wrong")).toBeVisible();
-  await expect(page.getByTestId("solution")).toHaveCount(0);
+  // 암호 사건은 자료실 장면에서 푼다: 위에 살아 있는 장면, 그 아래 서술 한 줄, 그 아래 책상의 기록
+  await expect(page.locator('[data-testid="live-scene"][data-kind="vault"] canvas')).toBeVisible();
+  await expect(page.getByTestId("narration")).toContainText("기록");
+  await expect(page.getByTestId("record")).toBeVisible();
 
   // 메모는 시도 기록에 점 표시로 반영된다
   await page.getByTestId("memo-5").click();
   await expect(page.locator('.clue__digit[data-memo="out"]')).toHaveCount(3);
   await expect(page.locator('.clue__digit[data-memo="out"] .pxmark svg').first()).toBeVisible();
+  await shot(page, "mono-02-record");
+
+  // 금고 앞으로. 오답: 정답은 드러나지 않는다
+  await toSafe(page);
+  await page.getByTestId("submit").click();
+  await expect(page.getByTestId("notice-wrong")).toBeVisible();
+  await expect(page.getByTestId("solution")).toHaveCount(0);
 
   // 릴을 밀어서 1 → 4
   const dial = (await page.getByTestId("dial-0").boundingBox())!;
@@ -81,14 +86,24 @@ for (const viewport of [
       await shot(page, `mono-viewport-${tag}-home`);
 
       await page.getByTestId("daily-file").click();
-      await expect(page.getByTestId("dial-0")).toBeVisible();
+      // 책상 앞: 시도 기록 다섯 건과 숫자 메모가 스크롤 없이 단추 줄 위에 다 보인다
+      await expect(page.getByTestId("record")).toBeVisible();
+      await expectLayoutOk(page, '[data-testid="to-safe"]');
+      const goTop = (await page.getByTestId("to-safe").boundingBox())!.y;
+      const clues = (await page.locator(".clues").boundingBox())!;
+      const memo = (await page.getByTestId("memo-9").boundingBox())!;
+      expect(clues.y).toBeGreaterThanOrEqual(0);
+      expect(memo.y + memo.height).toBeLessThanOrEqual(goTop);
+      expect(await page.locator(".sceneplay__panel").evaluate((el) => el.scrollHeight - el.clientHeight)).toBeLessThanOrEqual(1);
+      await shot(page, `mono-viewport-${tag}-record`);
+
+      // 금고 앞: 드럼과 제출 단추가 한 화면에 있다
+      await toSafe(page);
       await expectLayoutOk(page, '[data-testid="submit"]');
       const submitTop = (await page.getByTestId("submit").boundingBox())!.y;
-      const clues = (await page.locator(".clues").boundingBox())!;
       const dials = (await page.locator(".lock__dials").boundingBox())!;
-      expect(clues.y).toBeGreaterThanOrEqual(0);
       expect(dials.y + dials.height).toBeLessThanOrEqual(submitTop);
-      expect(await page.locator(".play__scroll").evaluate((el) => el.scrollHeight - el.clientHeight)).toBeLessThanOrEqual(1);
+      expect(await page.locator(".sceneplay__panel").evaluate((el) => el.scrollHeight - el.clientHeight)).toBeLessThanOrEqual(1);
       await shot(page, `mono-viewport-${tag}-code`);
 
       // 숫자가 겹쳐 경고가 떠도 화살표 단추는 그대로 눌린다
@@ -246,11 +261,16 @@ test("모든 화면이 검정과 흰색 두 가지로만 그려진다", async ({
   await expect(page.getByTestId("home-screen")).toBeVisible();
   await check("홈");
   await page.getByTestId("daily-file").click();
-  await expect(page.getByTestId("dial-0")).toBeVisible();
-  await check("암호 풀이");
+  await expect(page.getByTestId("record")).toBeVisible();
+  await page.waitForTimeout(900); // 탐정이 책상 앞에 설 때까지
+  await check("암호 풀이 · 책상의 기록");
+  await toSafe(page);
+  await page.waitForTimeout(900); // 금고 앞에 설 때까지
+  await check("암호 풀이 · 금고 앞");
   await page.getByTestId("submit").click();
   await expect(page.getByTestId("notice-wrong")).toBeVisible();
   await check("오답 쪽지");
+  await toDesk(page);
   await page.getByTestId("hint-button").click();
   await expect(page.getByTestId("hint-drawer")).toBeVisible();
   await check("수사 지원 서랍");
@@ -287,26 +307,42 @@ test.describe("자막 화면", () => {
   // 다른 테스트에서는 꺼 둔 자막 화면을 여기서만 켠다 (저장소의 끔 표시를 비운다)
   test.use({ storageState: { cookies: [], origins: [] } });
 
+  /** 추리 책상에서 여는 사건(연습실의 진술 추리)을 연다 */
+  const openDeskCase = async (page: Page) => {
+    await preset(page, "daily-solved");
+    await page.getByTestId("practice-entry").click();
+    await page.getByTestId("practice-file-cta").click();
+  };
+
   test("사건을 열면 제목이 찍힌 검은 화면이 뜨고, 누르면 바로 걷힌다", async ({ page }) => {
-    await preset(page, "daily-unsolved");
-    await page.getByTestId("daily-file").click();
+    await openDeskCase(page);
     const card = page.getByTestId("cine-card");
     await expect(card).toBeVisible();
     await expect(card).toContainText("사건 기록");
     await card.click();
     await expect(card).toHaveCount(0);
     // 걷힌 뒤에는 바로 조작된다
-    await page.getByTestId("submit").click();
-    await expect(page.getByTestId("notice-wrong")).toBeVisible();
+    await page.getByTestId("suspect-hana").click();
+    await expect(page.getByTestId("truth-prompt")).toContainText("하나가 숨겼다면");
   });
 
   test("누르지 않아도 제목이 다 찍히면 스스로 걷힌다", async ({ page }) => {
+    await openDeskCase(page);
+    const card = page.getByTestId("cine-card");
+    await expect(card).toContainText("사라진 시험 답안지");
+    await expect(card).toHaveCount(0, { timeout: 6_000 });
+    await expect(page.getByTestId("suspect-hana")).toBeVisible();
+  });
+
+  test("암호 사건은 자막 화면 대신 자료실에 들어서는 장면으로 시작한다", async ({ page }) => {
     await preset(page, "daily-unsolved");
     await page.getByTestId("daily-file").click();
-    const card = page.getByTestId("cine-card");
-    await expect(card).toContainText("자료실 금고의 암호");
-    await expect(card).toHaveCount(0, { timeout: 6_000 });
-    await expect(page.getByTestId("dial-0")).toBeVisible();
+    await expect(page.getByTestId("play-screen")).toHaveAttribute("data-ux", "b");
+    await expect(page.getByTestId("cine-card")).toHaveCount(0);
+    await expect(page.getByTestId("narration")).toContainText("자료실");
+    // 들어서는 중에도 바로 조작된다
+    await page.getByTestId("memo-5").click();
+    await expect(page.getByTestId("memo-5")).toHaveAttribute("data-state", "out");
   });
 
   test.describe("모션 줄이기 설정", () => {
@@ -315,8 +351,8 @@ test.describe("자막 화면", () => {
     test("자막 화면이 뜨지 않고 서술은 한 번에 나온다", async ({ page }) => {
       await preset(page, "daily-unsolved");
       await expect(page.locator(".narr__line")).toContainText("붙어 있다.");
-      await page.getByTestId("daily-file").click();
-      await expect(page.getByTestId("dial-0")).toBeVisible();
+      await openDeskCase(page);
+      await expect(page.getByTestId("suspect-hana")).toBeVisible();
       await expect(page.getByTestId("cine-card")).toHaveCount(0);
     });
   });
