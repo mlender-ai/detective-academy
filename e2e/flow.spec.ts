@@ -1,5 +1,7 @@
 import { expect, test } from "@playwright/test";
+import { PUZZLE_BY_ID } from "../src/data/puzzles";
 import { dialValue, enroll, placeByDrag, placeByTap, preset, setCode, setDial, shot, stored, toDesk, toSafe } from "./helpers";
+import { solve } from "./solve";
 
 test("처음 방문한 사용자가 입학해서 문제를 풀고 D급으로 승급한다", async ({ page }) => {
   // 입학에서 승급·신분증까지 한 번에 가는 긴 흐름이다(혼자 돌면 30초쯤). 다른 테스트와 함께 돌 때를 위해 시간을 넉넉히 준다.
@@ -26,7 +28,7 @@ test("처음 방문한 사용자가 입학해서 문제를 풀고 D급으로 승
   await expect(page.getByTestId("credit-balance")).toHaveText("40");
   await expect(page.getByTestId("daily-file-status")).toHaveText("미해결");
   await expect(page.getByTestId("daily-file-cta")).toHaveText("시험지 펼치기");
-  await expect(page.getByTestId("promo-count")).toHaveText("0/2");
+  await expect(page.getByTestId("promo-count")).toHaveText("0/3");
   await expect(page.getByTestId("exam-cta")).toHaveCount(0);
   await shot(page, "03-home");
 
@@ -75,11 +77,11 @@ test("처음 방문한 사용자가 입학해서 문제를 풀고 D급으로 승
   await page.getByTestId("submit").dblclick();
   await expect(page.getByTestId("result-screen")).toBeVisible();
   await expect(page.getByTestId("result-lead")).toContainText("추론이 정확했습니다");
-  await expect(page.getByTestId("reward")).toContainText("+100");
+  await expect(page.getByTestId("reward")).toContainText("+60");
   // 오답이 한 번 있었어도 힌트를 쓰지 않았으므로 '힌트 미사용' 기록이 남는다
   await expect(page.getByTestId("no-hint")).toBeVisible();
   await expect(page.getByTestId("record-hints")).toHaveText("미사용");
-  expect((await stored(page)).credits).toBe(140);
+  expect((await stored(page)).credits).toBe(100);
   await page.getByTestId("explain-toggle").click();
   await expect(page.getByTestId("explain-steps").locator("li")).toHaveCount(5);
   await page.getByTestId("explain-toggle").click();
@@ -89,8 +91,11 @@ test("처음 방문한 사용자가 입학해서 문제를 풀고 D급으로 승
   await expect(page.getByTestId("result-next")).toHaveText("연습실로 이동");
   await page.getByTestId("result-next").click();
   await expect(page.getByTestId("practice-room")).toBeVisible();
+  // 지금 등급(F)의 서랍이 열려 있고, 과제 셋이 놓여 있다
+  await expect(page.getByTestId("drawer-F")).toHaveAttribute("aria-selected", "true");
+  await expect(page.locator(".taskrow")).toHaveCount(3);
   await shot(page, "07-practice-room");
-  await page.getByTestId("practice-file-cta").click();
+  await page.getByTestId("practice-file-practice-truth-001").click();
   await expect(page.getByTestId("play-screen")).toBeVisible();
 
   // 용의자를 고르기 전에는 메모할 수 없다
@@ -126,14 +131,27 @@ test("처음 방문한 사용자가 입학해서 문제를 풀고 D급으로 승
   await expect(page.locator(".statement__verdict")).toHaveCount(4);
   await expect(page.getByTestId("statement-daon").locator(".statement__verdict")).toHaveText("참");
   await expect(page.getByTestId("result-screen")).toBeVisible();
-  await expect(page.getByTestId("reward")).toContainText("+60");
-  expect((await stored(page)).credits).toBe(200);
+  await expect(page.getByTestId("reward")).toContainText("+30");
+  expect((await stored(page)).credits).toBe(130);
   await shot(page, "09-result-practice");
+
+  /* ── 연습실: 과제를 하나 더 (승급 시험은 과제 셋을 풀어야 열린다) ── */
+  await expect(page.getByTestId("result-next")).toHaveText("연습실로 이동");
+  await page.getByTestId("result-next").click();
+  await expect(page.getByTestId("practice-room")).toBeVisible();
+  await expect(page.getByTestId("practice-status-practice-truth-001")).toHaveText("해결");
+  await expect(page.getByTestId("drawer-count")).toHaveText("해결 1/3");
+  await page.getByTestId("practice-file-practice-code-f").click();
+  await solve(page, PUZZLE_BY_ID["practice-code-f"]);
+  await expect(page.getByTestId("result-screen")).toBeVisible();
+  await expect(page.getByTestId("reward")).toContainText("+30");
+  expect((await stored(page)).credits).toBe(160);
 
   /* ── 승급 시험: 발표 순서 재구성 ── */
   await expect(page.getByTestId("result-next")).toHaveText("승급 시험 응시");
   await page.getByTestId("result-next").click();
   await expect(page.getByTestId("exam-gate")).toBeVisible();
+  await expect(page.getByTestId("exam-facts")).toContainText("1문제");
   await shot(page, "10-exam-envelope");
   await page.getByTestId("open-envelope").click();
   await expect(page.getByTestId("play-screen")).toBeVisible();
@@ -183,18 +201,21 @@ test("처음 방문한 사용자가 입학해서 문제를 풀고 D급으로 승
   await expect(page.getByTestId("ceremony-title")).toHaveText("D급 초급 탐정");
   await expect(page.getByTestId("ceremony")).toHaveAttribute("data-done", "true", { timeout: 10_000 });
   await expect(page.getByTestId("id-rank")).toHaveText("D급 초급 탐정");
-  await expect(page.getByTestId("reward")).toContainText("+150");
+  await expect(page.getByTestId("reward")).toContainText("+80");
   await shot(page, "13-promotion");
   const afterExam = await stored(page);
   expect(afterExam.rank).toBe("D");
-  expect(afterExam.credits).toBe(350);
+  expect(afterExam.credits).toBe(240);
+  expect(afterExam.exam).toBeNull();
 
   await page.getByTestId("ceremony-done").click();
   await expect(page.getByTestId("home-screen")).toBeVisible();
   await expect(page.getByTestId("home-rank")).toHaveText("D급 초급 탐정");
-  await expect(page.getByTestId("credit-balance")).toHaveText("350");
-  // 더 할 일이 없으면 탐정은 복도 가운데에 서 있고, 게시판 줄은 접혀 있다(하는 일은 줄의 이름표에 남는다)
+  await expect(page.getByTestId("credit-balance")).toHaveText("240");
+  // 오늘의 사건은 끝났으니 게시판 줄은 접혀 있다(하는 일은 줄의 이름표에 남는다). 다음 할 일은 새로 열린 연습실 서랍이다.
   await expect(page.getByTestId("daily-file")).toHaveAttribute("aria-label", /채점 기록 보기/);
+  await expect(page.getByTestId("practice-entry")).toHaveAttribute("data-primary", "true");
+  await expect(page.getByTestId("exam-wait")).toContainText("C급 과제 3/5");
   await shot(page, "14-home-promoted");
 
   /* ── 신분증 ── */
@@ -202,14 +223,15 @@ test("처음 방문한 사용자가 입학해서 문제를 풀고 D급으로 승
   await expect(page.getByTestId("profile-screen")).toBeVisible();
   await expect(page.getByTestId("id-rank")).toHaveText("D급 초급 탐정");
   await expect(page.getByTestId("id-nickname")).toHaveText("서하윤");
-  await expect(page.getByTestId("record-exam")).toContainText("제출 2회");
+  await expect(page.getByTestId("record-exam")).toContainText("D급 승급 시험 합격");
+  await expect(page.getByTestId("record-practice")).toContainText("과제 2/15 해결");
   await shot(page, "15-profile");
 
   /* ── 새로고침해도 유지된다 ── */
   await page.reload();
   await expect(page.getByTestId("profile-screen")).toBeVisible();
   await expect(page.getByTestId("id-rank")).toHaveText("D급 초급 탐정");
-  await expect(page.getByTestId("credit-balance")).toHaveText("350");
+  await expect(page.getByTestId("credit-balance")).toHaveText("240");
 });
 
 test("힌트는 크레딧을 차감하고, 모자라면 열리지 않으며 잔액은 음수가 되지 않는다", async ({ page }) => {
@@ -247,7 +269,7 @@ test("힌트는 크레딧을 차감하고, 모자라면 열리지 않으며 잔�
   await expect(page.getByTestId("result-screen")).toBeVisible();
   await expect(page.getByTestId("record-hints")).toHaveText("1단계 사용");
   await expect(page.getByTestId("no-hint")).toHaveCount(0);
-  expect((await stored(page)).credits).toBe(120);
+  expect((await stored(page)).credits).toBe(80);
 });
 
 test("힌트 없이 한 번에 풀면 '힌트 미사용' 기록이 남는다", async ({ page }) => {
@@ -262,7 +284,7 @@ test("힌트 없이 한 번에 풀면 '힌트 미사용' 기록이 남는다", a
 
 test("같은 문제를 다시 풀어도 보상은 다시 지급되지 않는다", async ({ page }) => {
   await preset(page, "daily-solved");
-  await expect(page.getByTestId("credit-balance")).toHaveText("140");
+  await expect(page.getByTestId("credit-balance")).toHaveText("100");
   await expect(page.getByTestId("daily-file-status")).toHaveText("해결");
 
   await page.getByTestId("daily-file").click();
@@ -277,12 +299,12 @@ test("같은 문제를 다시 풀어도 보상은 다시 지급되지 않는다"
   await expect(page.getByTestId("result-screen")).toBeVisible();
   await expect(page.getByTestId("result-lead")).toContainText("한 번만 지급");
   await expect(page.getByTestId("reward")).toHaveCount(0);
-  expect((await stored(page)).credits).toBe(140);
+  expect((await stored(page)).credits).toBe(100);
 
   // 화면을 다시 열어도 그대로다
   await page.reload();
   await expect(page.getByTestId("result-screen")).toBeVisible();
-  expect((await stored(page)).credits).toBe(140);
+  expect((await stored(page)).credits).toBe(100);
 });
 
 test("풀던 문제는 뒤로 갔다 와도, 새로고침해도 이어서 풀 수 있다", async ({ page }) => {
@@ -333,16 +355,16 @@ test("승급 조건을 채우기 전에는 시험이 잠겨 있다", async ({ pa
   await shot(page, "17-exam-locked");
 
   await preset(page, "daily-solved");
-  await expect(page.getByTestId("promo-count")).toHaveText("1/2");
+  await expect(page.getByTestId("promo-count")).toHaveText("1/3");
   await expect(page.getByTestId("exam-cta")).toHaveCount(0);
   await expect(page.getByTestId("practice-entry")).toHaveAttribute("data-primary", "true");
 
   await preset(page, "exam-ready");
-  await expect(page.getByTestId("promo-count")).toHaveText("2/2");
+  await expect(page.getByTestId("promo-count")).toHaveText("3/3");
   await expect(page.getByTestId("exam-cta")).toContainText("승급 시험 응시");
 });
 
-test("QA 패널은 ?demo=1 에서만 보이고 다섯 가지 상태를 만든다", async ({ page }) => {
+test("QA 패널은 ?demo=1 에서만 보이고 진행 상태들을 만든다", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByTestId("demo-panel")).toHaveCount(0);
 
@@ -360,6 +382,16 @@ test("QA 패널은 ?demo=1 에서만 보이고 다섯 가지 상태를 만든다
 
   await preset(page, "promoted");
   await expect(page.getByTestId("home-rank")).toHaveText("D급 초급 탐정");
+  // D급에서는 다음 시험(C급)이 응시 전이다
+  await expect(page.getByTestId("exam-wait")).toContainText("C급 과제 3/5");
+
+  await preset(page, "ready-s");
+  await expect(page.getByTestId("home-rank")).toHaveText("A급 수석 탐정");
+  await expect(page.getByTestId("exam-cta")).toContainText("S급 응시 가능");
+
+  // 최고 등급에서는 시험실에 합격 기록이 남는다
+  await preset(page, "rank-s");
+  await expect(page.getByTestId("home-rank")).toHaveText("S급 명예 탐정");
   await page.getByTestId("exam-record").click();
   await expect(page.getByTestId("exam-passed")).toBeVisible();
 

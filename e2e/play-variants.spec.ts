@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { dialValue, expectLayoutOk, offToneRatio, preset, setCode, setDial, stored, toSafe } from "./helpers";
+import { CINE_ON, dialValue, expectLayoutOk, offToneRatio, preset, setCode, setDial, stored, toSafe } from "./helpers";
 
 /**
  * 암호 풀이 화면 (V3 GATE 03). 사용자가 B안 · 장면 전개를 골라 암호 해독의 기본 화면이 되었다.
@@ -42,7 +42,7 @@ test("걷어낸 화면의 주소(?play=old · ?play=a)로 열어도 자료실 �
 test("진술 추리는 그대로 추리 책상에서 푼다", async ({ page }) => {
   await preset(page, "daily-solved");
   await page.getByTestId("practice-entry").click();
-  await page.getByTestId("practice-file-cta").click();
+  await page.getByTestId("practice-file-practice-truth-001").click();
   const screen = page.getByTestId("play-screen");
   await expect(screen).toHaveAttribute("data-type", "truth");
   expect(await screen.getAttribute("data-ux")).toBeNull();
@@ -115,7 +115,7 @@ test.describe("기본 · 장면 전개(자료실)", () => {
     await page.getByTestId("submit").click();
     await expect(page.getByTestId("narration")).toContainText("금고가 열렸다");
     await expect(page.getByTestId("result-screen")).toBeVisible();
-    await expect(page.getByTestId("reward")).toContainText("+100");
+    await expect(page.getByTestId("reward")).toContainText("+60");
   });
 });
 
@@ -178,7 +178,7 @@ test.describe("C안 · 혼합형(수사 수첩) (?play=c)", () => {
 
   test.describe("도입 장면", () => {
     // 자막 화면을 켠 상태(일반 사용자의 기본)로 본다
-    test.use({ storageState: { cookies: [], origins: [] } });
+    test.use({ storageState: CINE_ON });
 
     test("처음 여는 사건은 자료실의 도입 장면으로 시작하고, 누르면 바로 넘어간다", async ({ page }) => {
       await preset(page, "daily-unsolved", "&play=c");
@@ -222,7 +222,7 @@ test.describe("두 화면의 공통 약속", () => {
       await setCode(page, [4, 2, 6]);
       await page.getByTestId("submit").click();
       await expect(page.getByTestId("result-screen")).toBeVisible();
-      expect((await stored(page)).credits).toBe(140);
+      expect((await stored(page)).credits).toBe(100);
     });
   }
 

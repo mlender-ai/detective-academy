@@ -1,6 +1,18 @@
 import { expect, type Page } from "@playwright/test";
 
 export const STORAGE_KEY = "detective-academy:v1";
+
+/** 테스트에서 고정해 둔 게임 날짜: 달력의 첫날. 오늘의 추리는 '자료실 금고의 암호'다. */
+export const TEST_DATE = "2026-11-22";
+
+/**
+ * 자막 화면을 켜고 돌릴 때의 저장소: 자막을 끄는 값만 빼고, 게임 날짜는 그대로 고정한다.
+ * (playwright.config.ts 의 기본값은 자막을 끄고 날짜를 고정한다)
+ */
+export const CINE_ON = {
+  cookies: [],
+  origins: [{ origin: "http://127.0.0.1:4183", localStorage: [{ name: "detective-academy:date", value: TEST_DATE }] }],
+};
 export const SHOTS = "docs/screenshots";
 
 /** 저장된 게임 상태를 그대로 읽는다 */
@@ -33,7 +45,7 @@ export async function enroll(page: Page, nickname?: string) {
 /** QA 패널(?demo=1)로 원하는 진행 상태를 만든다 */
 export async function preset(
   page: Page,
-  id: "first-run" | "daily-unsolved" | "daily-solved" | "exam-ready" | "promoted",
+  id: "first-run" | "daily-unsolved" | "daily-solved" | "exam-ready" | "promoted" | "ready-c" | "ready-b" | "ready-a" | "ready-s" | "rank-s",
   /** 주소에 덧붙일 값. 예: "&save=b" (다른 저장 칸으로 열기) */
   query = "",
 ) {

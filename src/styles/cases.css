@@ -13,6 +13,29 @@
   flex: none;
 }
 
+/* 늘 적어 두는 짧은 글(증거 조합의 "네 사람 · 세 곳"): 머리글의 윗테에 얹는 이름표라 자리를 차지하지 않는다 */
+.casebrief {
+  position: relative;
+}
+
+.casebrief__top {
+  display: block;
+}
+
+.casebrief__aside {
+  position: absolute;
+  top: -10px;
+  right: 12px;
+  margin: 0;
+  padding: 0 6px;
+  font-family: var(--m-cap);
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--m-w);
+  background: #000;
+  white-space: nowrap;
+}
+
 /* 두 번 뒤집히는 깜빡임: 새 사실을 얻었을 때, 시험 종이에 찍었을 때 */
 @keyframes case-blink {
   0%,

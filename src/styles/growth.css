@@ -1,0 +1,585 @@
+/*
+ * V3 GATE 05 · 성장 시스템의 화면: 등급별 연습실 서랍, 여러 문제짜리 승급 시험(남은 시간·남은 제출·실패),
+ * 응시 조건의 눈금, 등급마다 윤곽이 다른 휘장과 신분증.
+ * 1비트 규칙 그대로다: 검정과 --m-w 두 색, 점 하나 2px, 누를 수 없는 것은 점선이나 반만 찍는다.
+ */
+
+/* ───────── 눈금: 채운 만큼 찬 네모 ───────── */
+
+.meter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0;
+}
+
+.meter i {
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--m-w);
+  background: #000;
+}
+
+.meter i[data-on="true"] {
+  background: var(--m-w);
+}
+
+/* ───────── 풀이 화면의 위 막대: 남은 제출, 남은 시간 ───────── */
+
+.pips {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 32px;
+  margin: 0;
+  padding: 0 8px 0 6px;
+  font-family: var(--m-font);
+  font-size: 16px;
+  line-height: 1;
+  color: var(--m-w);
+  background: #000;
+  box-shadow: var(--m-frame);
+}
+
+.pips__label {
+  margin-right: 2px;
+}
+
+.pips i {
+  width: 10px;
+  height: 10px;
+  border: 2px solid var(--m-w);
+  background: #000;
+}
+
+.pips i[data-on="true"] {
+  background: var(--m-w);
+}
+
+/* 한 번 남으면 깜빡인다 */
+.pips[data-left="1"] i[data-on="true"] {
+  animation: g-blink 800ms steps(1) infinite;
+}
+
+/* 남은 시간이 1분 아래면 뒤집힌 칸으로 깜빡인다 */
+.deskbar__timer[data-low="true"] {
+  padding: 0 4px;
+  color: #000;
+  background: var(--m-w);
+  animation: g-blink 800ms steps(1) infinite;
+}
+
+@keyframes g-blink {
+  50% {
+    color: var(--m-w);
+    background: #000;
+  }
+}
+
+.slip__left {
+  margin: 4px 0 0;
+  padding-top: 4px;
+  border-top: 2px dotted #000;
+}
+
+/* 수사 지원을 쓸 수 없는 시험: 반만 찍힌 단추 */
+.inkbtn[data-off="true"],
+.inkbtn[data-off="true"]:disabled {
+  font-size: 16px;
+  color: var(--m-w);
+  background: #000;
+  box-shadow: none;
+  outline: 2px dotted var(--m-w);
+  outline-offset: -2px;
+  opacity: 1;
+  -webkit-mask: none;
+  mask: none;
+}
+
+/* 시험 종이가 없는 인장 문제 */
+.seal__notrial {
+  margin: 0 2px;
+  padding: 6px 8px;
+  font-family: var(--m-font);
+  font-size: 16px;
+  line-height: 20px;
+  text-align: center;
+  color: var(--m-w);
+  background: #000;
+  outline: 2px dotted var(--m-w);
+  outline-offset: -2px;
+}
+
+/* ───────── 시험실: 응시 안내, 응시 조건, 시험 종료 ───────── */
+
+.roomnote__rules {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* 줄이 꺾여도 마름모 뒤로 가지런히 */
+.roomnote__rules li {
+  padding-left: 24px;
+  text-indent: -24px;
+}
+
+.roomnote__rules li::before {
+  content: "◆ ";
+}
+
+.roomnote__need {
+  display: grid;
+  grid-template-columns: auto auto minmax(0, 1fr);
+  align-items: center;
+  gap: 4px 8px;
+  margin: 8px 0;
+  font-family: var(--m-font);
+  font-size: 16px;
+  line-height: 22px;
+  color: var(--m-w);
+}
+
+.roomnote__need b {
+  font-weight: 400;
+  padding: 0 4px;
+  color: #000;
+  background: var(--m-w);
+}
+
+.roomnote__need .meter {
+  grid-column: 1 / -1;
+}
+
+.roomnote--failed .roomnote__title {
+  margin: 0 0 4px;
+}
+
+.roomnote--failed .roomnote__title::before {
+  content: "! ";
+}
+
+.roomnote--record .roomnote__title {
+  margin: 0;
+  font-size: 16px;
+  line-height: 22px;
+}
+
+/* 떨어진 뒤의 봉투와 응시 전의 봉투는 같은 그림(반만 찍힌 봉투)이다 */
+.room[data-state="failed"] .envelope[data-state="locked"] {
+  animation: none;
+}
+
+@media (max-height: 700px) {
+  .room .room__envelope {
+    margin-bottom: -6px;
+  }
+
+  .roomnote__need {
+    margin: 4px 0;
+  }
+}
+
+/* ───────── 홈의 시험실 줄: 응시 조건 ───────── */
+
+.cmd__need {
+  display: grid;
+  gap: 4px;
+  font-family: var(--m-font);
+  font-size: 16px;
+  line-height: 22px;
+}
+
+.cmd__need b {
+  font-weight: 400;
+}
+
+/* 뒤집힌 줄(흰 바탕) 안에서는 눈금도 뒤집는다 */
+.cmd__row[data-on="true"] .meter i {
+  border-color: #000;
+  background: var(--m-w);
+}
+
+.cmd__row[data-on="true"] .meter i[data-on="true"] {
+  background: #000;
+}
+
+/* ───────── 연습실: 등급별 과제 서랍 ───────── */
+
+.practice__scroll {
+  gap: 10px;
+}
+
+.drawers {
+  flex: none;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+  margin: 0 2px;
+}
+
+.drawers__tab {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  min-height: 52px;
+  padding: 6px 0 4px;
+  font-family: var(--m-cap);
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--m-w);
+  background: #000;
+  box-shadow: var(--m-frame);
+}
+
+/* 열어 둔 서랍의 이름표는 뒤집힌다 */
+.drawers__tab[aria-selected="true"] {
+  color: #000;
+  background: var(--m-w);
+}
+
+.drawers__tab[aria-selected="true"] .pxrank {
+  color: var(--m-w);
+  background: #000;
+}
+
+/* 잠긴 서랍: 점선 테, 표식은 반만 찍힌다 */
+.drawers__tab[data-locked="true"] {
+  box-shadow: none;
+  outline: 2px dotted var(--m-w);
+  outline-offset: -2px;
+}
+
+/* 잠긴 서랍의 표식: 글자는 읽히게 두고, 칸을 비워 점선 테만 두른다 */
+.drawers__tab[data-locked="true"] .pxrank {
+  color: var(--m-w);
+  background: #000;
+  outline: 2px dotted var(--m-w);
+  outline-offset: -2px;
+}
+
+/* 잠긴 서랍을 들여다보는 중: 점선이 실선이 된다(뒤집지는 않는다. 열린 것이 아니므로) */
+.drawers__tab[data-locked="true"][aria-selected="true"] {
+  color: var(--m-w);
+  background: #000;
+  outline-style: solid;
+}
+
+.drawers__tab[data-locked="true"][aria-selected="true"] .pxrank {
+  color: var(--m-w);
+  background: #000;
+}
+
+.drawer {
+  flex: none;
+  padding: 8px 12px 10px;
+  color: var(--m-w);
+  background: #000;
+  box-shadow: var(--m-frame);
+  animation: m-open 160ms steps(2) both;
+}
+
+.drawer__head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 0 8px;
+  padding-bottom: 6px;
+  border-bottom: 2px solid var(--m-w);
+}
+
+.drawer__title {
+  margin: 0;
+  font-family: var(--m-font);
+  font-size: 32px;
+  font-weight: 400;
+  line-height: 36px;
+}
+
+.drawer__focus {
+  grid-column: 1;
+  margin: 0;
+  font-family: var(--m-cap);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.drawer__count {
+  grid-column: 2;
+  grid-row: 1;
+  font-family: var(--m-font);
+  font-size: 16px;
+}
+
+.drawer__shut {
+  margin: 10px 0 2px;
+  padding: 18px 10px;
+  font-family: var(--m-font);
+  font-size: 16px;
+  line-height: 22px;
+  text-align: center;
+  outline: 2px dotted var(--m-w);
+  outline-offset: -2px;
+}
+
+.tasklist {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.taskrow {
+  display: grid;
+  gap: 0;
+  width: 100%;
+  padding: 8px 2px 8px 18px;
+  font-family: var(--m-font);
+  font-size: 16px;
+  line-height: 22px;
+  text-align: left;
+  color: var(--m-w);
+  background: #000;
+  border-bottom: 2px dotted var(--m-w);
+  position: relative;
+}
+
+.tasklist li:last-child .taskrow {
+  border-bottom: 0;
+  padding-bottom: 2px;
+}
+
+/* 권하는 과제에는 ▶ 커서가 깜빡인다 */
+.taskrow[data-primary="true"]::before {
+  content: "▶";
+  position: absolute;
+  left: 0;
+  top: 30px;
+  font-size: 16px;
+  line-height: 32px;
+  animation: g-cursor 900ms steps(1) infinite;
+}
+
+@keyframes g-cursor {
+  50% {
+    visibility: hidden;
+  }
+}
+
+.taskrow:active {
+  color: #000;
+  background: var(--m-w);
+}
+
+.taskrow:active .diamonds i {
+  border-color: #000;
+}
+
+.taskrow:active .diamonds i[data-on="true"] {
+  background: #000;
+}
+
+.taskrow__top {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-family: var(--m-cap);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.taskrow__top .posting__status {
+  font-size: 16px;
+  line-height: 16px;
+}
+
+.taskrow__title {
+  font-size: 32px;
+  line-height: 36px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: clip;
+}
+
+/* 긴 제목(열 자 이상)은 한 단계 작은 글자로 두 줄까지 */
+.taskrow__title[data-long="true"] {
+  font-size: 16px;
+  line-height: 22px;
+  white-space: normal;
+}
+
+.taskrow__meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.taskrow__meta > :last-child {
+  margin-left: auto;
+}
+
+/* 푼 과제의 상태 꼬리표는 뒤집힌다 */
+.taskrow[data-status="solved"] .posting__status {
+  padding: 0 2px;
+  color: #000;
+  background: var(--m-w);
+}
+
+.taskrow:active[data-status="solved"] .posting__status {
+  color: var(--m-w);
+  background: #000;
+}
+
+.practice__note {
+  flex: none;
+  margin: 0 2px;
+  padding: 6px 10px;
+  font-family: var(--m-cap);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+@media (max-height: 700px) {
+  .practice__scroll {
+    gap: 8px;
+  }
+
+  .drawers__tab {
+    min-height: 44px;
+    padding: 4px 0 2px;
+  }
+
+  .drawer {
+    padding: 6px 12px 8px;
+  }
+
+  .taskrow {
+    padding-top: 6px;
+    padding-bottom: 6px;
+  }
+
+  .taskrow[data-primary="true"]::before {
+    top: 28px;
+  }
+}
+
+/* ───────── 등급 휘장: 윤곽마다 글자 자리가 다르다 ───────── */
+
+.pxmedal[data-rank="F"] b {
+  top: 16px;
+}
+
+.pxmedal[data-rank="C"] b {
+  top: 16px;
+}
+
+.pxmedal[data-rank="B"] b {
+  top: 14px;
+}
+
+.pxmedal[data-rank="A"] b {
+  top: 22px;
+}
+
+.pxmedal[data-rank="S"] b {
+  top: 18px;
+}
+
+/* ───────── 신분증: 등급이 오르면 카드의 윤곽이 달라진다 ─────────
+   F 한 줄 테 · D 겹줄 테 · C 겹줄 테에 네 귀의 못 · B 네 귀를 깎은 카드 · A 귀를 깎고 위에 고리 하나 · S 고리 셋에 표어 칸이 뒤집힌 카드
+   카드 안의 배치는 건드리지 않는다: 바깥 테(카드 둘레 2px)에 맞춘 덧그림으로만 윤곽을 바꾼다. */
+
+.idcard[data-rank="F"],
+.idcard[data-rank="none"] {
+  box-shadow: var(--m-frame);
+}
+
+.idcard[data-rank="C"],
+.idcard[data-rank="B"],
+.idcard[data-rank="A"],
+.idcard[data-rank="S"] {
+  position: relative;
+}
+
+/* 네 귀의 못 */
+.idcard[data-rank="C"]::before {
+  content: "";
+  position: absolute;
+  inset: 8px;
+  pointer-events: none;
+  background:
+    linear-gradient(var(--m-w), var(--m-w)) 0 0 / 4px 4px no-repeat,
+    linear-gradient(var(--m-w), var(--m-w)) 100% 0 / 4px 4px no-repeat,
+    linear-gradient(var(--m-w), var(--m-w)) 0 100% / 4px 4px no-repeat,
+    linear-gradient(var(--m-w), var(--m-w)) 100% 100% / 4px 4px no-repeat;
+}
+
+/* 귀를 깎은 카드: 검은 네모로 테의 귀를 지우고, 깎인 자리를 따라 계단 줄을 다시 긋는다.
+   (덧그림은 바깥 테의 바깥 가장자리에 맞춘다: 카드보다 사방 2px 크다) */
+.idcard[data-rank="B"]::before,
+.idcard[data-rank="A"]::before,
+.idcard[data-rank="S"]::before {
+  --w: linear-gradient(var(--m-w), var(--m-w));
+  --k: linear-gradient(#000, #000);
+  content: "";
+  position: absolute;
+  inset: -2px;
+  pointer-events: none;
+  background:
+    var(--w) 0 6px / 8px 2px no-repeat,
+    var(--w) 6px 0 / 2px 8px no-repeat,
+    var(--w) 100% 6px / 8px 2px no-repeat,
+    var(--w) calc(100% - 6px) 0 / 2px 8px no-repeat,
+    var(--w) 0 calc(100% - 6px) / 8px 2px no-repeat,
+    var(--w) 6px 100% / 2px 8px no-repeat,
+    var(--w) 100% calc(100% - 6px) / 8px 2px no-repeat,
+    var(--w) calc(100% - 6px) 100% / 2px 8px no-repeat,
+    var(--k) 0 0 / 6px 6px no-repeat,
+    var(--k) 100% 0 / 6px 6px no-repeat,
+    var(--k) 0 100% / 6px 6px no-repeat,
+    var(--k) 100% 100% / 6px 6px no-repeat;
+}
+
+/* 수석 이상: 카드 위에 고리가 붙는다(수석 하나, 명예 셋). 머리띠는 흰 줄 두 겹이 된다. */
+.idcard[data-rank="A"]::after,
+.idcard[data-rank="S"]::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: -8px;
+  height: 6px;
+  pointer-events: none;
+}
+
+.idcard[data-rank="A"]::after {
+  width: 28px;
+  margin-left: -14px;
+  background: var(--m-w);
+}
+
+.idcard[data-rank="S"]::after {
+  width: 52px;
+  margin-left: -26px;
+  background:
+    linear-gradient(var(--m-w), var(--m-w)) 0 0 / 12px 6px no-repeat,
+    linear-gradient(var(--m-w), var(--m-w)) 20px 0 / 12px 6px no-repeat,
+    linear-gradient(var(--m-w), var(--m-w)) 40px 0 / 12px 6px no-repeat;
+}
+
+.idcard[data-rank="A"] .idcard__band,
+.idcard[data-rank="S"] .idcard__band {
+  background:
+    linear-gradient(var(--m-w), var(--m-w)) 0 0 / 100% 2px no-repeat,
+    linear-gradient(var(--m-w), var(--m-w)) 0 6px / 100% 2px no-repeat,
+    #000;
+}
+
+/* 명예 탐정: 아래의 표어 칸이 뒤집힌다 */
+.idcard[data-rank="S"] .idcard__foot {
+  color: #000;
+  background: var(--m-w);
+  border-top-color: #000;
+}

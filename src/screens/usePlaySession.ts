@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from "react";
+import { gameNow } from "../app/clock";
 import { motionMs } from "../app/motion";
 import { haptic, playSound } from "../app/sound";
 import { gameStore, useGame } from "../app/store";
-import { getProgress, type SubmitOutcome } from "../engine/progressEngine";
+import { submitLimit } from "../data/ranks";
+import { examRemainingMs, examRuleOf, getProgress, hintsAllowed, type SubmitOutcome } from "../engine/progressEngine";
 import type { Puzzle, PuzzleInput } from "../engine/types";
 import { initialInput, josa, readiness, restoreInput, toAnswer, type Verdict } from "../games/logic";
 
@@ -36,6 +38,19 @@ interface Options {
   onSolved: (outcome: SubmitOutcome) => void;
 }
 
+/** 승급 시험으로 풀 때 화면에 보여 줄 것 */
+export interface ExamView {
+  /** 지금 문제의 순번(1부터)과 전체 문제 수 */
+  no: number;
+  total: number;
+  /** 남은 시간(ms). 제한이 없으면 null */
+  remainingMs: number | null;
+  /** 이 문제에 남은 제출 횟수와 한도. 제한이 없으면 null */
+  submitsLeft: number | null;
+  submitsMax: number | null;
+  hints: boolean;
+}
+
 /**
  * 문제 한 판의 진행: 입력 저장, 경과 시간, 제출과 판정, 힌트 서랍.
  * 화면(책상·시험실)은 이 값을 받아 그리기만 한다.
@@ -43,6 +58,25 @@ interface Options {
 export function usePlaySession(puzzle: Puzzle, { replay, reactionMs, onSolved }: Options) {
   const game = useGame();
   const progress = getProgress(game, puzzle.id);
+
+  /* ── 승급 시험: 이 문제가 나오는 시험의 규칙과, 치르고 있는 응시의 상태 ── */
+  const examRule = puzzle.category === "exam" ? examRuleOf(puzzle.id) : null;
+  const examNo = examRule ? examRule.examPuzzleIds.indexOf(puzzle.id) : -1;
+  // 정답 연출 중에는 엔진이 이미 다음 문제로 넘어가 있으므로, 순번은 이 문제의 것으로 보여 준다
+  const onThis = !!game.exam && game.exam.status === "active" && game.exam.index === examNo && game.exam.stage === "playing";
+  const submitsMax = examRule ? submitLimit(examRule.exam, puzzle.type) : null;
+  const liveExam: ExamView | null =
+    examRule && game.exam
+      ? {
+          no: examNo + 1,
+          total: examRule.examPuzzleIds.length,
+          remainingMs: examRemainingMs(game.exam, gameNow()),
+          submitsMax,
+          submitsLeft: submitsMax === null ? null : onThis ? Math.max(0, submitsMax - game.exam.submits) : null,
+          hints: examRule.exam.hints,
+        }
+      : null;
+  const canHint = hintsAllowed(puzzle);
 
   const [input, setInput] = useState<PuzzleInput>(() =>
     replay ? initialInput(puzzle) : restoreInput(puzzle, progress.input),
@@ -54,8 +88,14 @@ export function usePlaySession(puzzle: Puzzle, { replay, reactionMs, onSolved }:
   const outcomeRef = useRef<SubmitOutcome | null>(null);
   const finished = useRef(false);
 
+  // 정답 연출 중에는 맞히기 직전의 시험 정보(순번·남은 시간·남은 제출)를 그대로 보여 준다
+  const examSeen = useRef(liveExam);
+  if (phase === "playing" && liveExam) examSeen.current = liveExam;
+  const exam = phase === "checking" ? examSeen.current : liveExam;
+
   /* ── 경과 시간: 화면이 보이는 동안만 1초 단위로 쌓아 저장한다 ── */
   const timing = phase === "playing" && !replay && progress.status !== "solved";
+  const timed = exam?.remainingMs !== null && exam?.remainingMs !== undefined;
   useEffect(() => {
     if (!timing) return;
     let last = performance.now();
@@ -63,6 +103,8 @@ export function usePlaySession(puzzle: Puzzle, { replay, reactionMs, onSolved }:
       const now = performance.now();
       if (!document.hidden) gameStore.addElapsed(puzzle.id, now - last);
       last = now;
+      // 제한 시간이 있는 시험이면 끝났는지 본다(끝나면 시험실 화면이 실패로 바뀐다)
+      if (timed) gameStore.tickExam();
     };
     const interval = window.setInterval(flush, 1000);
     const onVisibility = () => {
@@ -75,7 +117,7 @@ export function usePlaySession(puzzle: Puzzle, { replay, reactionMs, onSolved }:
       window.clearInterval(interval);
       document.removeEventListener("visibilitychange", onVisibility);
     };
-  }, [timing, puzzle.id]);
+  }, [timing, timed, puzzle.id]);
 
   // 가장 최근 입력값. 같은 순간에 조작이 연달아 들어와도 앞선 변경을 잃지 않는다.
   const inputRef = useRef(input);
@@ -145,8 +187,11 @@ export function usePlaySession(puzzle: Puzzle, { replay, reactionMs, onSolved }:
     finish,
     locked,
     verdict,
-    hintsLeft: puzzle.hints.length - progress.hintsUsed,
+    /** 수사 지원을 쓸 수 있는 문제인가 (힌트 없는 시험이면 false) */
+    canHint,
+    hintsLeft: canHint ? puzzle.hints.length - progress.hintsUsed : 0,
     openedHints: puzzle.hints.slice(0, progress.hintsUsed),
     ready: readiness(puzzle, input),
+    exam,
   };
 }

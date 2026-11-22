@@ -36,6 +36,12 @@ const HOLD_MS = 800;
 const READ_MS = 42;
 const OUT_MS = 300;
 
+/** 자막 화면이 떠 있는 시간(ms). 뜨지 않는 설정이면 0. 시험의 시계를 그만큼 늦게 돌리는 데 쓴다. */
+export function cineDuration(title: string, text?: string): number {
+  if (!cineEnabled()) return 0;
+  return title.length * TYPE_MS + HOLD_MS + (text ? text.length * READ_MS : 0) + OUT_MS;
+}
+
 export function CineCard({ kicker, title, sub, text }: Props) {
   const [enabled] = useState(cineEnabled);
   const [count, setCount] = useState(0);

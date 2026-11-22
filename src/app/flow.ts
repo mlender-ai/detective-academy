@@ -1,19 +1,19 @@
 /** 지금 사용자가 해야 할 '다음 행동'. 홈과 결과 화면의 주 버튼이 이것을 따른다. */
 import { getDailyPuzzle, PRACTICE_PUZZLES } from "../data/puzzles";
-import { examStatus, getProgress } from "../engine/progressEngine";
-import { seoulDateKey } from "../engine/time";
+import { examStatus, getProgress, practiceUnlocked } from "../engine/progressEngine";
 import type { GameState } from "../engine/types";
+import { gameNow, todayKey } from "./clock";
 import type { Route } from "./router";
 
 export type NextStep = "daily" | "practice" | "exam" | "none";
 
 export function nextStep(state: GameState): NextStep {
-  const daily = getDailyPuzzle(seoulDateKey());
+  const daily = getDailyPuzzle(todayKey());
   if (getProgress(state, daily.id).status !== "solved") return "daily";
-  const exam = examStatus(state);
-  if (!exam.rule) return "none";
-  if (exam.unlocked) return "exam";
-  if (PRACTICE_PUZZLES.some((p) => getProgress(state, p.id).status !== "solved")) return "practice";
+  const exam = examStatus(state, gameNow());
+  // 치르던 시험이 있거나(떨어진 결과를 아직 보지 않은 것 포함), 지금 응시할 수 있으면 시험실이 먼저다
+  if (exam.session || exam.canStart) return "exam";
+  if (PRACTICE_PUZZLES.some((p) => practiceUnlocked(state, p) && getProgress(state, p.id).status !== "solved")) return "practice";
   return "none";
 }
 

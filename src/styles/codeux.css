@@ -165,6 +165,63 @@
   font-style: normal;
 }
 
+/* 금고 문에 새겨진 조건 (등급이 오르면 시도 기록에 더해진다). 뒤집힌 이름표 + 흰 글씨 줄 */
+.engraved {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 6px 0 4px;
+  border-top: 2px solid var(--m-w);
+  font-family: var(--m-font);
+  font-size: 16px;
+  line-height: 20px;
+  color: var(--m-w);
+}
+
+.engraved__title {
+  justify-self: start;
+  margin: 0;
+  padding: 0 4px;
+  font-size: 16px;
+  font-weight: 400;
+  color: #000;
+  background: var(--m-w);
+}
+
+.engraved__list {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.engraved__list li::before {
+  content: "◆ ";
+}
+
+/* 금고 앞에서 들고 보는 것: 이름표 없이 줄만, 테를 두른 한 덩이 */
+.engraved[data-compact="true"],
+.sceneplay__safe .engraved {
+  padding: 2px 10px;
+  border-top: 0;
+  background: #000;
+  box-shadow: var(--m-frame);
+}
+
+.engraved[data-compact="true"] .engraved__title {
+  display: none;
+}
+
+/* 새겨진 글의 줄 수만큼 드럼이 쓸 높이를 덜어 낸다 */
+.sceneplay__safe[data-engraved="1"] {
+  --lock-extra: 196px;
+}
+
+.sceneplay__safe[data-engraved="2"] {
+  --lock-extra: 218px;
+}
+
 /* ───────── C안 · 혼합형 (수사 수첩) ─────────
    위: 수사 수첩(접힘 · 간편 보기) → 자물쇠(남는 자리를 모두 쓴다) → 단추 줄. 전체 보기는 화면을 덮는다. */
 
@@ -512,4 +569,22 @@
   font-size: 12px;
   line-height: 16px;
   text-align: center;
+}
+
+/* 낮은 화면의 금고 앞: 새겨진 글이 있으면 메모·글·자물쇠 사이의 틈을 줄여 한 화면에 넣는다 */
+@media (max-height: 640px) {
+  .sceneplay__safe:not([data-engraved="0"]) {
+    gap: 2px;
+    padding-bottom: 0;
+  }
+
+  .sceneplay__safe .engraved {
+    padding: 0 10px;
+    line-height: 18px;
+  }
+
+  .sceneplay__safe:not([data-engraved="0"]) .carry {
+    padding: 0 10px;
+    line-height: 20px;
+  }
 }

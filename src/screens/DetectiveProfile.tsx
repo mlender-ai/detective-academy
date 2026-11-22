@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from "react";
+import { todayKey } from "../app/clock";
 import { goBack } from "../app/router";
 import { playSound } from "../app/sound";
 import { gameStore, useGame } from "../app/store";
@@ -8,17 +9,11 @@ import { Sprite } from "../art/pixel";
 import { DeskWood } from "../components/DeskWood";
 import { CreditTag } from "../components/CreditReward";
 import { IdCard } from "../components/IdCard";
-import { PUZZLES } from "../data/puzzles";
+import { ALL_PUZZLES, PRACTICE_PUZZLES, getDailyPuzzle } from "../data/puzzles";
 import { RANKS, nextRank, rankLabel } from "../data/ranks";
-import { NICKNAME_MAX, getProgress } from "../engine/progressEngine";
-import { formatDuration } from "../engine/time";
-import type { PuzzleCategory, PuzzleProgress } from "../engine/types";
-
-const CATEGORY_LABEL: Record<PuzzleCategory, string> = {
-  daily: "오늘의 추리",
-  practice: "연습실",
-  exam: "승급 시험",
-};
+import { NICKNAME_MAX, getProgress, solvedCount } from "../engine/progressEngine";
+import { dottedDate, formatDuration } from "../engine/time";
+import type { PuzzleProgress } from "../engine/types";
 
 function recordLine(progress: PuzzleProgress): string {
   if (progress.status === "solved") {
@@ -40,7 +35,16 @@ export function DetectiveProfile() {
   const [draft, setDraft] = useState(game.nickname);
   const rankIndex = RANKS.findIndex((r) => r.id === game.rank);
   const upcoming = nextRank(game.rank);
-  const issuedAt = game.promotions[game.promotions.length - 1]?.at ?? game.enrolledAt;
+  const lastPromotion = game.promotions[game.promotions.length - 1] ?? null;
+  const issuedAt = lastPromotion?.at ?? game.enrolledAt;
+  const daily = getDailyPuzzle(todayKey());
+  const dailyProgress = getProgress(game, daily.id);
+  const dailySolved = solvedCount(game, "daily");
+  const practiceSolved = solvedCount(game, "practice");
+  // 가장 최근에 해결한 연습 과제
+  const lastPractice =
+    ALL_PUZZLES.filter((p) => p.category === "practice" && getProgress(game, p.id).solvedAt)
+      .sort((x, y) => (getProgress(game, y.id).solvedAt ?? "").localeCompare(getProgress(game, x.id).solvedAt ?? ""))[0] ?? null;
 
   const save = (event: FormEvent) => {
     event.preventDefault();
@@ -144,19 +148,36 @@ export function DetectiveProfile() {
             수사 기록
           </h2>
           <ul className="records">
-            {PUZZLES.map((puzzle) => {
-              const progress = getProgress(game, puzzle.id);
-              return (
-                <li key={puzzle.id} data-status={progress.status} data-testid={`record-${puzzle.category}`}>
-                  <span className="tickbox" aria-hidden="true">
-                    {progress.status === "solved" && <PenMark kind="check" />}
-                  </span>
-                  <span className="records__cat">{CATEGORY_LABEL[puzzle.category]}</span>
-                  <span className="records__title">{puzzle.title}</span>
-                  <span className="records__line hand num">{recordLine(progress)}</span>
-                </li>
-              );
-            })}
+            <li data-status={dailyProgress.status} data-testid="record-daily">
+              <span className="tickbox" aria-hidden="true">
+                {dailyProgress.status === "solved" && <PenMark kind="check" />}
+              </span>
+              <span className="records__cat">오늘의 추리 · 지금까지 {dailySolved}개 해결</span>
+              <span className="records__title">{daily.title}</span>
+              <span className="records__line hand num">{recordLine(dailyProgress)}</span>
+            </li>
+            <li data-status={practiceSolved > 0 ? "solved" : "new"} data-testid="record-practice">
+              <span className="tickbox" aria-hidden="true">
+                {practiceSolved > 0 && <PenMark kind="check" />}
+              </span>
+              <span className="records__cat">연습실</span>
+              <span className="records__title">
+                과제 {practiceSolved}/{PRACTICE_PUZZLES.length} 해결
+              </span>
+              <span className="records__line hand num">{lastPractice ? `마지막으로 푼 과제 · ${lastPractice.title}` : "아직 풀지 않았습니다"}</span>
+            </li>
+            <li data-status={lastPromotion ? "solved" : game.exam ? "in_progress" : "new"} data-testid="record-exam">
+              <span className="tickbox" aria-hidden="true">
+                {lastPromotion && <PenMark kind="check" />}
+              </span>
+              <span className="records__cat">승급 시험</span>
+              <span className="records__title">
+                {lastPromotion ? `${lastPromotion.to}급 승급 시험 합격` : upcoming ? `${upcoming}급 승급 시험` : "승급 시험"}
+              </span>
+              <span className="records__line hand num">
+                {lastPromotion ? `${dottedDate(lastPromotion.at)} · 승급 ${game.promotions.length}번` : game.exam ? "시험을 치르는 중입니다" : "아직 치르지 않았습니다"}
+              </span>
+            </li>
           </ul>
         </section>
 

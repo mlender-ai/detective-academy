@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import { NEXT_STEP_ACTION, nextStep } from "../app/flow";
 import { prefersReducedMotion } from "../app/motion";
 import { navigate } from "../app/router";
@@ -228,7 +228,7 @@ function Solution({ puzzle }: { puzzle: Puzzle }) {
   return (
     <section className="solution leaf" data-testid="solution">
       <h2 className="solution__label hand">{puzzle.rules.title ?? "발표 순서"}</h2>
-      <ol className="solution__order">
+      <ol className="solution__order" style={{ "--cols": puzzle.solution.length } as CSSProperties}>
         {puzzle.solution.map((id, i) => {
           const person = puzzle.rules.people.find((p) => p.id === id)!;
           return (

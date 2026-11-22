@@ -279,7 +279,7 @@
 
   .suspects__rail {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(var(--cols, 4), minmax(0, 1fr));
   }
 
   .suspect {
@@ -424,7 +424,7 @@
   /* 시간표 */
   .board__slots {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(var(--cols, 4), minmax(0, 1fr));
     border-radius: 2px;
   }
 
@@ -471,7 +471,7 @@
 
   .board__seats {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(var(--cols, 4), minmax(0, 1fr));
   }
 
   .seat {
@@ -548,7 +548,7 @@
 
   .solution__order {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(var(--cols, 4), minmax(0, 1fr));
   }
 
   .solution__order li {

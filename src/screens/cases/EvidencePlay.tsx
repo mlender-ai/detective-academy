@@ -2,7 +2,7 @@ import { DeskWood } from "../../components/DeskWood";
 import type { SubmitOutcome } from "../../engine/progressEngine";
 import type { EvidenceInput, EvidencePuzzle } from "../../engine/types";
 import { EvidenceBoard, useEvidenceBoard } from "../../games/EvidenceBoard/EvidenceBoard";
-import type { GameProps } from "../../games/logic";
+import { countWord, type GameProps } from "../../games/logic";
 import { HintButton, PlayBar, PlayNotice, PlayOverlays, REACTION_MS, submitText } from "../playParts";
 import { usePlaySession } from "../usePlaySession";
 import { CaseBrief } from "./CaseBrief";
@@ -40,7 +40,13 @@ export function EvidencePlay({ puzzle, variant = "case", replay = false, onExit,
 
       <div className="screen__scroll play__scroll desk__scroll">
         {/* 할 일은 아래 '맞대어 보는 자리'가 비어 있을 때 거기에 적힌다 */}
-        <CaseBrief puzzle={puzzle} hints={session.openedHints} description={false} />
+        {/* 이 세계에 있는 사람과 갈 수 있는 곳의 수: 수를 세어 푸는 문제의 전제라 늘 보이게 둔다 */}
+        <CaseBrief
+          puzzle={puzzle}
+          hints={session.openedHints}
+          description={false}
+          aside={`${countWord(puzzle.rules.people.length)} 사람 · ${countWord(puzzle.rules.places.length)} 곳`}
+        />
         <EvidenceBoard puzzle={puzzle} board={board} locked={session.locked} verdict={session.verdict} wrongCount={session.wrongCount} />
       </div>
 

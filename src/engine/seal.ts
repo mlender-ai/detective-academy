@@ -98,7 +98,8 @@ export function auditSpatial(rules: SpatialRules): SealAudit {
     if (!wellFormed(stamp.face, "#.")) issues.push(`${stamp.name}: 도장 면의 격자가 반듯하지 않다`);
   });
   if (new Set(stamps.map((s) => s.id)).size !== stamps.length) issues.push("도장의 이름표가 겹친다");
-  if (rules.trials < 1) issues.push("시험 종이가 없다");
+  // 시험 종이가 0장인 문제도 있다(높은 등급의 시험: 머릿속으로만 돌리고 뒤집는다)
+  if (!Number.isInteger(rules.trials) || rules.trials < 0) issues.push("시험 종이의 수가 맞지 않는다");
   if (issues.length > 0) return { issues, minDifference: 0, mirrorTraps: [] };
 
   const counts = new Set(stamps.map((s) => dotCount(s.face)));

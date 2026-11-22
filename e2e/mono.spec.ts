@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { expectLayoutOk, offToneRatio, placeByTap, preset, setCode, shot, stored, toDesk, toSafe } from "./helpers";
+import { CINE_ON, expectLayoutOk, offToneRatio, placeByTap, preset, setCode, shot, stored, toDesk, toSafe } from "./helpers";
 
 /**
  * 1비트 흑백 도트로 그렸는지 확인한다: 비트맵 글꼴, 스프라이트, 점으로 찍는 표시, 두 가지 색, 자막 화면.
@@ -52,10 +52,10 @@ test("공고를 펼쳐 암호를 풀고 채점 결과까지 간다", async ({ pa
   await page.getByTestId("submit").click();
   await expect(page.getByTestId("result-screen")).toBeVisible();
   await expect(page.getByTestId("result-lead")).toContainText("추론이 정확했습니다");
-  await expect(page.getByTestId("reward")).toContainText("+100");
+  await expect(page.getByTestId("reward")).toContainText("+60");
   await expect(page.getByTestId("no-hint")).toBeVisible();
   await expect(page.getByTestId("solution")).toBeVisible();
-  expect((await stored(page)).credits).toBe(140);
+  expect((await stored(page)).credits).toBe(100);
   await expect(page.locator(".pxcaret")).toHaveCount(0); // 문구 출력이 끝났다
   await shot(page, "mono-03-result");
 
@@ -63,7 +63,7 @@ test("공고를 펼쳐 암호를 풀고 채점 결과까지 간다", async ({ pa
   await page.getByTestId("result-home").click();
   await expect(page.getByTestId("home-screen")).toBeVisible();
   await expect(page.getByTestId("daily-file-status")).toHaveText("해결");
-  await expect(page.getByTestId("credit-balance")).toHaveText("140");
+  await expect(page.getByTestId("credit-balance")).toHaveText("100");
 });
 
 for (const viewport of [
@@ -136,7 +136,7 @@ test("입학해서 진술 추리와 승급 시험을 풀고 신분증까지 확�
   await page.getByTestId("practice-entry").click();
   await expect(page.getByTestId("practice-room")).toBeVisible();
   await shot(page, "mono-12-practice");
-  await page.getByTestId("practice-file-cta").click();
+  await page.getByTestId("practice-file-practice-truth-001").click();
   await expect(page.getByTestId("play-screen")).toHaveAttribute("data-type", "truth");
   await expect(page.locator(".suspect .portrait.sprite")).toHaveCount(4);
 
@@ -155,11 +155,12 @@ test("입학해서 진술 추리와 승급 시험을 풀고 신분증까지 확�
   await page.getByTestId("submit").click();
   await expect(page.getByTestId("result-screen")).toBeVisible();
   await expect(page.getByTestId("solution")).toContainText("세라");
-  await expect(page.getByTestId("reward")).toContainText("+60");
+  await expect(page.getByTestId("reward")).toContainText("+30");
   await shot(page, "mono-14-truth-result");
 
-  /* 승급 시험 */
-  await page.getByTestId("result-next").click();
+  /* 승급 시험: 과제 셋을 풀어 둔 상태에서 */
+  await preset(page, "exam-ready");
+  await page.getByTestId("exam-cta").click();
   await expect(page.getByTestId("exam-gate")).toBeVisible();
   await expect(page.locator(".envelope .sprite")).toHaveCount(4);
   await shot(page, "mono-15-exam-gate");
@@ -177,14 +178,14 @@ test("입학해서 진술 추리와 승급 시험을 풀고 신분증까지 확�
   await expect(page.getByTestId("ceremony-title")).toHaveText("D급 초급 탐정");
   await expect(page.getByTestId("ceremony")).toHaveAttribute("data-done", "true", { timeout: 10_000 });
   await expect(page.getByTestId("id-rank")).toHaveText("D급 초급 탐정");
-  await expect(page.getByTestId("reward")).toContainText("+150");
+  await expect(page.getByTestId("reward")).toContainText("+80");
   await shot(page, "mono-17-ceremony");
   expect((await stored(page)).rank).toBe("D");
 
   /* 신분증 */
   await page.getByTestId("ceremony-card").click();
   await expect(page.getByTestId("profile-screen")).toBeVisible();
-  await expect(page.getByTestId("record-exam")).toContainText("제출 1회");
+  await expect(page.getByTestId("record-exam")).toContainText("D급 승급 시험 합격");
   await expect(page.getByTestId("rank-note")).toContainText("현재 D급 초급 탐정");
   expect(await page.getByTestId("rank-note").evaluate((el) => getComputedStyle(el).fontFamily)).toContain("NeoDGM");
   await shot(page, "mono-18-profile");
@@ -206,8 +207,8 @@ for (const viewport of [
 
       await preset(page, "daily-solved");
       await page.getByTestId("practice-entry").click();
-      await expectLayoutOk(page, '[data-testid="practice-file-cta"]');
-      await page.getByTestId("practice-file-cta").click();
+      await expectLayoutOk(page, '[data-testid="practice-file-practice-truth-001"]');
+      await page.getByTestId("practice-file-practice-truth-001").click();
       await page.getByTestId("suspect-junho").click();
       await expectLayoutOk(page, '[data-testid="submit"]');
       for (const button of await page.locator(".statement__memo button").all()) {
@@ -279,7 +280,7 @@ test("모든 화면이 검정과 흰색 두 가지로만 그려진다", async ({
   await page.getByTestId("practice-entry").click();
   await expect(page.getByTestId("practice-room")).toBeVisible();
   await check("연습실");
-  await page.getByTestId("practice-file-cta").click();
+  await page.getByTestId("practice-file-practice-truth-001").click();
   await expect(page.getByTestId("play-screen")).toHaveAttribute("data-type", "truth");
   await page.getByTestId("suspect-hana").click();
   await page.getByTestId("memo-junho-true").click();
@@ -305,13 +306,13 @@ test("모든 화면이 검정과 흰색 두 가지로만 그려진다", async ({
 
 test.describe("자막 화면", () => {
   // 다른 테스트에서는 꺼 둔 자막 화면을 여기서만 켠다 (저장소의 끔 표시를 비운다)
-  test.use({ storageState: { cookies: [], origins: [] } });
+  test.use({ storageState: CINE_ON });
 
   /** 추리 책상에서 여는 사건(연습실의 진술 추리)을 연다 */
   const openDeskCase = async (page: Page) => {
     await preset(page, "daily-solved");
     await page.getByTestId("practice-entry").click();
-    await page.getByTestId("practice-file-cta").click();
+    await page.getByTestId("practice-file-practice-truth-001").click();
   };
 
   test("사건을 열면 제목이 찍힌 검은 화면이 뜨고, 누르면 바로 걷힌다", async ({ page }) => {

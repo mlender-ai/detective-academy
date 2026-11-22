@@ -18,6 +18,30 @@ export function clueText(clue: CodeClue): string {
   return `${match}개 일치, ${inPlace}개만 위치 정확`;
 }
 
+/** "서로 다른 숫자 3개" */
+export function codeShape(puzzle: CodePuzzle): string {
+  return `서로 다른 숫자 ${puzzle.rules.length}개`;
+}
+
+/**
+ * 금고 문에 새겨진 조건. 시도 기록과 함께 모두 만족해야 한다(등급이 오르면 나온다).
+ * compact 는 금고 앞에서 들고 보는 한 줄짜리다.
+ */
+export function Engraved({ puzzle, compact = false }: { puzzle: CodePuzzle; compact?: boolean }) {
+  const list = puzzle.rules.conditions ?? [];
+  if (list.length === 0) return null;
+  return (
+    <section className="engraved" data-compact={compact} aria-label="금고 문에 새겨진 글" data-testid="engraved">
+      <h3 className="engraved__title">문에 새겨진 글</h3>
+      <ul className="engraved__list">
+        {list.map((condition, i) => (
+          <li key={i}>{condition.text}</li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 /* ───────── 숫자 드럼 한 자리 ───────── */
 
 interface DialProps {
@@ -205,6 +229,7 @@ export function LockOpen({ digits }: { digits: number[] }) {
   return (
     <section
       className="lock lock--open"
+      data-dials={digits.length}
       data-verdict="correct"
       aria-label={`풀린 자물쇠, 금고의 암호 ${digits.join("")}`}
       data-testid="solution"
@@ -355,6 +380,7 @@ export function ClueList({ puzzle, memo, head = true }: { puzzle: CodePuzzle; me
           </li>
         ))}
       </ol>
+      <Engraved puzzle={puzzle} />
     </section>
   );
 }
@@ -366,15 +392,18 @@ export function ClueList({ puzzle, memo, head = true }: { puzzle: CodePuzzle; me
 export function ClueStrip({ puzzle, memo }: { puzzle: CodePuzzle; memo: CodeInput["memo"] }) {
   const { rules } = puzzle;
   return (
-    <ol className="cluestrip" aria-label="시도 기록 간편 보기">
-      {rules.clues.map((clue, i) => (
-        <li className="cluestrip__item" key={i}>
-          <ClueDigits clue={clue} memo={memo} />
-          <CluePegs clue={clue} length={rules.length} />
-          <span className="sr-only">{clueText(clue)}</span>
-        </li>
-      ))}
-    </ol>
+    <>
+      <ol className="cluestrip" aria-label="시도 기록 간편 보기">
+        {rules.clues.map((clue, i) => (
+          <li className="cluestrip__item" key={i}>
+            <ClueDigits clue={clue} memo={memo} />
+            <CluePegs clue={clue} length={rules.length} />
+            <span className="sr-only">{clueText(clue)}</span>
+          </li>
+        ))}
+      </ol>
+      <Engraved puzzle={puzzle} compact />
+    </>
   );
 }
 
@@ -433,7 +462,7 @@ interface CodeLockProps {
   board: ReturnType<typeof useCodeBoard>;
 }
 
-/** 암호 자물쇠: 숫자 드럼 세 개와 상태 한 줄 */
+/** 암호 자물쇠: 숫자 드럼(자릿수만큼)과 상태 한 줄 */
 export function CodeLock({ puzzle, input, locked, verdict, board }: CodeLockProps) {
   const { shaking, setDial, isDuplicate, hasDuplicate } = board;
   return (
@@ -442,6 +471,7 @@ export function CodeLock({ puzzle, input, locked, verdict, board }: CodeLockProp
       data-verdict={verdict}
       data-shaking={shaking}
       aria-label="암호 자물쇠"
+      data-dials={input.dials.length}
       style={{ viewTransitionName: "code-lock" }}
     >
       <Shackle />
@@ -467,7 +497,7 @@ export function CodeLock({ puzzle, input, locked, verdict, board }: CodeLockProp
         {verdict === "correct"
           ? "잠금이 풀렸습니다"
           : hasDuplicate
-            ? "같은 숫자가 겹쳐 있습니다. 암호는 서로 다른 숫자 3개입니다."
+            ? `같은 숫자가 겹쳐 있습니다. 암호는 ${codeShape(puzzle)}입니다.`
             : "숫자를 굴리거나 눌러서 맞추세요"}
       </p>
     </section>

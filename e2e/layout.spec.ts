@@ -59,7 +59,7 @@ for (const viewport of VIEWPORTS) {
     test("거짓 진술 찾기: 진술 네 장과 제출 버튼이 한 화면에 들어온다", async ({ page }) => {
       await preset(page, "daily-solved");
       await page.getByTestId("practice-entry").click();
-      await page.getByTestId("practice-file-cta").click();
+      await page.getByTestId("practice-file-practice-truth-001").click();
       await expect(page.getByTestId("statement-daon")).toBeVisible();
       await page.getByTestId("suspect-junho").click();
       await expectLayoutOk(page, '[data-testid="submit"]');
@@ -184,8 +184,8 @@ test.describe("낮은 화면 390x664 (주소창이 보이는 모바일 브라우
 
     await preset(page, "daily-solved");
     await page.getByTestId("practice-entry").click();
-    await expectLayoutOk(page, '[data-testid="practice-file-cta"]');
-    await page.getByTestId("practice-file-cta").click();
+    await expectLayoutOk(page, '[data-testid="practice-file-practice-truth-001"]');
+    await page.getByTestId("practice-file-practice-truth-001").click();
     await page.getByTestId("suspect-junho").click();
     await expectLayoutOk(page, '[data-testid="submit"]');
 

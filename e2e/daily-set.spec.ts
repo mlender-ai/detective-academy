@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { expectLayoutOk, offToneRatio, placeByTap, preset, setCode, shot, stored, toSafe } from "./helpers";
+import { CINE_ON, expectLayoutOk, offToneRatio, placeByTap, preset, setCode, shot, stored, toSafe } from "./helpers";
 
 /**
  * 일일 문제 일곱 개 (V3 GATE 04). 아직 날짜에 배정하지 않았고, QA 주소의 ?day=1~7 로 오늘의 추리 자리에 놓는다.
@@ -101,14 +101,14 @@ test.describe("증거 조합", () => {
     await page.getByTestId("submit").click();
     await expect(page.getByTestId("evi-status")).toContainText("거짓 진술을 찾았다");
     await expect(page.getByTestId("result-screen")).toBeVisible();
-    await expect(page.getByTestId("reward")).toContainText("+100");
+    await expect(page.getByTestId("reward")).toContainText("+60");
     await expect(page.getByTestId("result-outro")).toContainText("세라의 말이 무너졌다");
     await expect(page.locator(".pxcaret")).toHaveCount(0);
     await shot(page, "day1-evidence-result");
     await expect(page.getByTestId("solution")).toContainText("조별 출석부 + 복도 사진");
     await expect(page.getByTestId("record-hints")).toHaveText("미사용");
     const state = await stored(page);
-    expect(state.credits).toBe(140);
+    expect(state.credits).toBe(100);
     expect(state.puzzles["daily-evidence-001"].solvedAttempts).toBe(2);
   });
 
@@ -205,7 +205,7 @@ test.describe("공간 추론 · 인장 대조", () => {
     await expect(page.getByTestId("solution")).toContainText("두 번 돌려 찍음");
     await expect(page.locator(".pxcaret")).toHaveCount(0);
     await shot(page, "day2-seal-result");
-    expect((await stored(page)).credits).toBe(140);
+    expect((await stored(page)).credits).toBe(100);
   });
 
   test("시험 종이를 다 쓰면 더 찍을 수 없다", async ({ page }) => {
@@ -250,7 +250,7 @@ test.describe("기존 유형의 새 문제", () => {
     await page.getByTestId("submit").click();
     await expect(page.getByTestId("narration")).toContainText("찢겨 나간 한 장");
     await expect(page.getByTestId("result-screen")).toBeVisible();
-    await expect(page.getByTestId("reward")).toContainText("+100");
+    await expect(page.getByTestId("reward")).toContainText("+60");
   });
 
   test("4일차 진술 추리: 참이 둘인 경우를 찾는다", async ({ page }) => {
@@ -321,7 +321,7 @@ test.describe("연출과 화풍", () => {
 
   test.describe("자막 화면", () => {
     // 자막 화면을 켠 상태(일반 사용자의 기본)로 본다
-    test.use({ storageState: { cookies: [], origins: [] } });
+    test.use({ storageState: CINE_ON });
 
     test("사건을 열면 제목 아래에 여는 글이 나오고, 누르면 바로 걷힌다", async ({ page }) => {
       await preset(page, "daily-unsolved", "&day=2");

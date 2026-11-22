@@ -29,11 +29,22 @@ export interface CodeClue {
   inPlace: number;
 }
 
+/** 금고 문에 새겨진 조건. 자리는 0부터 센다. */
+export type CodeCondition =
+  /** 모든 자리 숫자의 합이 value 다 */
+  | { kind: "sum"; value: number; text: string }
+  /** a 자리의 숫자가 b 자리의 숫자보다 크다 */
+  | { kind: "greater"; a: number; b: number; text: string }
+  /** 홀수가 정확히 count 개다 */
+  | { kind: "oddCount"; count: number; text: string };
+
 export interface CodeRules {
   length: number;
   /** 사용할 수 있는 숫자 (중복 없이 사용) */
   digits: number[];
   clues: CodeClue[];
+  /** 금고 문에 새겨진 조건. 시도 기록과 함께 모두 만족해야 한다. */
+  conditions?: CodeCondition[];
 }
 
 export type CodeFact =
@@ -47,7 +58,11 @@ export type CodeFact =
 export type TruthClaim =
   | { kind: "culpritIs"; who: string }
   | { kind: "culpritIsNot"; who: string }
-  | { kind: "culpritAmong"; who: string[] };
+  | { kind: "culpritAmong"; who: string[] }
+  /** who 의 진술은 참이다 (다른 사람의 진술을 가리킨다. 서로 물고 물리게 가리킬 수는 없다) */
+  | { kind: "speakerTruthful"; who: string }
+  /** who 의 진술은 거짓이다 */
+  | { kind: "speakerLying"; who: string };
 
 export interface TruthStatement {
   speaker: string;
@@ -76,7 +91,13 @@ export type ScheduleConstraint =
   | { kind: "notAtSlot"; who: string; slot: number; text: string }
   | { kind: "immediatelyAfter"; who: string; after: string; text: string }
   /** a 와 b 는 이웃한 순서가 아니다 */
-  | { kind: "notAdjacent"; a: string; b: string; text: string };
+  | { kind: "notAdjacent"; a: string; b: string; text: string }
+  /** a 와 b 사이에 정확히 between 명이 있다 (누가 먼저인지는 정하지 않는다) */
+  | { kind: "gap"; a: string; b: string; between: number; text: string }
+  /** who 의 순서는 slots 가운데 하나다 (예: 처음 아니면 마지막) */
+  | { kind: "slotAmong"; who: string; slots: number[]; text: string }
+  /** who 는 a 와 b 사이의 어딘가다 (a 와 b 의 순서는 정하지 않는다) */
+  | { kind: "between"; who: string; a: string; b: string; text: string };
 
 export interface ScheduleSlot {
   label: string;
@@ -325,6 +346,30 @@ export interface PromotionRecord {
   at: string;
 }
 
+/**
+ * 치르고 있는 승급 시험 한 번. 새로고침해도 남은 시간과 제출 횟수가 되돌아가지 않도록 저장한다.
+ * 시계는 문제를 푸는 동안에만 돈다(문제 사이의 장면에서는 멈춘다). 도는 중에 화면을 떠나도 시간은 흐른다.
+ */
+export interface ExamSession {
+  /** 응시하는 등급 (F 이면 F→D 시험) */
+  from: RankId;
+  startedAt: string;
+  /** 시작한 날 (Asia/Seoul). 하루 응시 횟수를 세는 기준 */
+  dateKey: string;
+  /** 지금 문제의 순번 (0부터) */
+  index: number;
+  /** ready: 다음 시험지를 펼치기 전(시계가 멈춰 있다) · playing: 문제를 푸는 중 */
+  stage: "ready" | "playing";
+  /** 지금 문제에서 쓴 제출 횟수 */
+  submits: number;
+  /** 남은 시간(ms). 시계가 도는 중이면 runningSince 부터 흐른 만큼이 아직 빠지지 않은 값이다. 제한이 없으면 null */
+  remainingMs: number | null;
+  /** 시계가 도는 중이면 돌기 시작한 시각(epoch ms) */
+  runningSince: number | null;
+  status: "active" | "failed";
+  failedBy: "time" | "submits" | null;
+}
+
 export interface GameState {
   version: 1;
   enrolled: boolean;
@@ -335,5 +380,9 @@ export interface GameState {
   credits: number;
   puzzles: Record<string, PuzzleProgress>;
   promotions: PromotionRecord[];
+  /** 치르고 있는(또는 방금 떨어진) 승급 시험. 없으면 null */
+  exam: ExamSession | null;
+  /** 등급별 오늘의 응시 횟수. 날짜가 바뀌면 다시 센다. */
+  examDays: Partial<Record<RankId, { dateKey: string; count: number }>>;
   settings: { sound: boolean };
 }

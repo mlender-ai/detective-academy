@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { motionMs } from "../../app/motion";
 import { playSound } from "../../app/sound";
 import { PenMark } from "../../art/pixel";
@@ -6,11 +6,12 @@ import { Pushpin } from "../../art/objects";
 import { Portrait } from "../../art/portraits";
 import { truthValues } from "../../engine/puzzleValidator";
 import type { TruthClaim, TruthInput, TruthPuzzle } from "../../engine/types";
-import { josa, type GameProps } from "../logic";
+import { countWord, josa, type GameProps } from "../logic";
 
 /** 진술이 하나씩 밝혀지는 간격 */
 export const TRUTH_REVEAL_STEP_MS = 300;
 
+/** 진술이 입에 올린 사람. 남의 말을 가리키는 진술이면 그 사람이다. */
 function mentionedIn(claim: TruthClaim): string[] {
   return claim.kind === "culpritAmong" ? claim.who : [claim.who];
 }
@@ -102,7 +103,7 @@ export function TruthDeduction({ puzzle, input, onChange, locked, verdict, wrong
           <h2 id="suspects-title" className="hand">
             누가 숨겼다고 가정할까요?
           </h2>
-          <div className="suspects__rail" role="radiogroup" aria-labelledby="suspects-title">
+          <div className="suspects__rail" role="radiogroup" aria-labelledby="suspects-title" style={{ "--cols": people.length } as CSSProperties}>
             {people.map((person) => {
               const marks = Object.values(input.memos[person.id] ?? {});
               const trueCount = marks.filter((v) => v).length;
@@ -141,7 +142,9 @@ export function TruthDeduction({ puzzle, input, onChange, locked, verdict, wrong
       <section className="statements" aria-labelledby="statements-title">
         <h2 id="statements-title" className="truth__prompt leaf" data-testid="truth-prompt">
           {verdict === "correct" ? (
-            puzzle.rules.trueCount === 1 ? "네 진술 가운데 참은 하나뿐이었습니다" : `네 진술 가운데 참은 ${puzzle.rules.trueCount}개뿐이었습니다`
+            puzzle.rules.trueCount === 1
+              ? `${countWord(statements.length)} 진술 가운데 참은 하나뿐이었습니다`
+              : `${countWord(statements.length)} 진술 가운데 참은 ${puzzle.rules.trueCount}개뿐이었습니다`
           ) : suspect ? (
             <>
               <b className="truth__who">{suspect.name}</b>

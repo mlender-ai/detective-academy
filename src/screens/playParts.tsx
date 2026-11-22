@@ -3,7 +3,7 @@ import { Sprite } from "../art/pixel";
 import { CineCard } from "../components/CineCard";
 import { CreditTag } from "../components/CreditReward";
 import { HintDrawer } from "../components/HintDrawer";
-import { formatElapsed } from "../engine/time";
+import { formatCountdown, formatElapsed } from "../engine/time";
 import type { Puzzle } from "../engine/types";
 import { submitLabel } from "../games/logic";
 import { TRUTH_REVEAL_STEP_MS } from "../games/TruthDeduction/TruthDeduction";
@@ -53,22 +53,57 @@ interface BarProps {
   onExit: () => void;
 }
 
+/** 남은 제출 횟수: 남은 만큼 찬 네모, 쓴 만큼 빈 네모 */
+export function SubmitPips({ left, max }: { left: number; max: number }) {
+  return (
+    <p className="pips leaf" data-testid="submits-left" data-left={left} aria-label={`남은 제출 ${left}번`}>
+      <span className="pips__label" aria-hidden="true">
+        제출
+      </span>
+      {Array.from({ length: max }, (_, i) => (
+        <i key={i} data-on={i < left} aria-hidden="true" />
+      ))}
+    </p>
+  );
+}
+
 export function PlayBar({ puzzle, session, variant, replay, onExit }: BarProps) {
-  const { progress, game } = session;
+  const { progress, game, exam } = session;
+  const title =
+    variant === "exam" ? (exam && exam.total > 1 ? `승급 시험 ${exam.no}/${exam.total}` : "승급 시험") : `${replay ? "다시 풀기 · " : ""}${puzzle.typeLabel}`;
+  // 제한 시간이 있는 시험은 남은 시간을, 아니면 흐른 시간을 보여 준다
+  const countdown = variant === "exam" && exam && exam.remainingMs !== null ? exam.remainingMs : null;
   return (
     <header className="deskbar">
       <button type="button" className="tilebtn" aria-label="뒤로" onClick={onExit} data-testid="play-back">
         <Sprite name="arrow-left" />
       </button>
       <p className="deskbar__tag leaf">
-        <span className="deskbar__type">{variant === "exam" ? "승급 시험" : `${replay ? "다시 풀기 · " : ""}${puzzle.typeLabel}`}</span>
-        {!replay && (
-          <span className="deskbar__timer num" data-testid="timer" aria-label={`경과 시간 ${formatElapsed(progress.elapsedMs)}`}>
-            {formatElapsed(progress.elapsedMs)}
-          </span>
-        )}
+        <span className="deskbar__type" data-testid="play-title">
+          {title}
+        </span>
+        {!replay &&
+          (countdown !== null ? (
+            <span
+              className="deskbar__timer num"
+              data-testid="countdown"
+              data-low={countdown <= 60_000}
+              aria-label={`남은 시간 ${formatCountdown(countdown)}`}
+            >
+              {formatCountdown(countdown)}
+            </span>
+          ) : (
+            <span className="deskbar__timer num" data-testid="timer" aria-label={`경과 시간 ${formatElapsed(progress.elapsedMs)}`}>
+              {formatElapsed(progress.elapsedMs)}
+            </span>
+          ))}
       </p>
-      <CreditTag credits={game.credits} />
+      {/* 힌트를 쓸 수 없는 시험에서는 크레딧 대신 남은 제출 횟수를 놓는다 */}
+      {variant === "exam" && exam && exam.submitsMax !== null && exam.submitsLeft !== null ? (
+        <SubmitPips left={exam.submitsLeft} max={exam.submitsMax} />
+      ) : (
+        <CreditTag credits={game.credits} />
+      )}
     </header>
   );
 }
@@ -87,6 +122,11 @@ export function PlayNotice({ puzzle, session }: { puzzle: Puzzle; session: PlayS
         <div className="slip slip--wrong leaf" role="alert" data-testid="notice-wrong">
           <strong>{WRONG_TITLE[puzzle.type]}</strong>
           <p>{wrongText(puzzle)}</p>
+          {session.exam && session.exam.submitsLeft !== null && (
+            <p className="slip__left" data-testid="notice-left">
+              이 문제에 남은 제출은 {session.exam.submitsLeft}번입니다.
+            </p>
+          )}
           {wrongCount >= 2 && hintsLeft > 0 && (
             <button type="button" className="slip__action" onClick={() => setHintsOpen(true)}>
               수사 지원을 받아 볼까요?
@@ -107,7 +147,14 @@ interface FootProps {
 
 /** 수사 지원 단추: 남은 힌트 수가 붙는다 */
 export function HintButton({ session }: { session: PlaySession }) {
-  const { setHintsOpen, locked, hintsLeft } = session;
+  const { setHintsOpen, locked, hintsLeft, canHint } = session;
+  if (!canHint) {
+    return (
+      <button type="button" className="inkbtn deskfoot__hint" disabled data-testid="hint-button" data-off="true">
+        수사 지원 없음
+      </button>
+    );
+  }
   return (
     <button type="button" className="inkbtn deskfoot__hint" onClick={() => setHintsOpen(true)} disabled={locked} data-testid="hint-button">
       수사 지원

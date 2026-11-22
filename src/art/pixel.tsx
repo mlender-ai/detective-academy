@@ -769,22 +769,143 @@ function monoCoin(): Grid {
   return outline(g, "K");
 }
 
-/** 큰 등급 휘장 (1비트): 검은 방패에 흰 안쪽 테. 등급이 오를수록 아래의 흰 점이 는다. */
+/**
+ * 큰 등급 휘장 (1비트). 등급마다 윤곽이 다르다: 올라갈수록 뿔이 돋고, 날개가 붙고, 관을 쓰고, 끝내 별이 된다.
+ * 가운데(가로 9~20, 세로 6~22)는 등급 글자가 얹히는 자리라 검게 비워 둔다.
+ *  F 무쇠 꼬리표 · D 청동 방패 · C 뿔 돋은 강철 방패 · B 날개 단 은 방패 · A 관을 쓴 금 방패 · S 여덟 갈래 별
+ */
 function monoMedal(rank: RankId): Grid {
   const g = grid(30, 34);
-  const half = [13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 12, 12, 11, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1];
-  half.forEach((hw, row) => rect(g, 15 - hw, row + 1, hw * 2, 1, "K"));
-  // 안쪽 테: 방패 모양을 따라 두 점 안쪽에 흰 줄
-  half.forEach((hw, row) => {
-    const y = row + 1;
-    if (hw < 4 || y < 3) return;
-    set(g, 15 - hw + 2, y, "W");
-    set(g, 15 + hw - 3, y, "W");
-  });
-  rect(g, 4, 3, 22, 1, "W");
-  const pips = { F: 0, D: 1, C: 2, B: 3, A: 4, S: 5 }[rank];
-  for (let i = 0; i < pips; i++) rect(g, 15 - pips * 2 + i * 4 + 1, 22, 2, 2, "W");
+  /** 가운데 줄을 기준으로 한 줄씩 채운다: rows[i] 는 top + i 번째 줄의 반폭 */
+  const body = (top: number, rows: number[]) => rows.forEach((hw, i) => hw > 0 && rect(g, 15 - hw, top + i, hw * 2, 1, "K"));
+  /** 윤곽에서 inset 점 안쪽에 흰 테를 두른다 (좌우만. 위아래는 따로 긋는다) */
+  const rim = (top: number, rows: number[], inset: number, from = 0, to = rows.length) =>
+    rows.forEach((hw, i) => {
+      if (i < from || i >= to || hw <= inset + 2) return;
+      set(g, 15 - hw + inset, top + i, "W");
+      set(g, 15 + hw - inset - 1, top + i, "W");
+    });
+  const heater = [13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 12, 12, 11, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1];
+
+  switch (rank) {
+    case "F": {
+      // 무쇠 꼬리표: 귀를 접은 네모 판에 못 구멍 하나
+      const plate = [9, 10, ...new Array<number>(24).fill(11), 10, 9];
+      body(3, plate);
+      rim(3, plate, 2, 2, 26);
+      rect(g, 7, 5, 16, 1, "W");
+      rect(g, 7, 28, 16, 1, "W");
+      rect(g, 14, 1, 2, 2, "K");
+      break;
+    }
+    case "D": {
+      // 청동 방패: 가장 흔한 방패꼴. 아래에 갈매기 줄 하나
+      body(1, heater);
+      rim(1, heater, 2, 2);
+      rect(g, 4, 3, 22, 1, "W");
+      for (let i = 0; i < 4; i++) {
+        set(g, 11 + i, 24 + i, "W");
+        set(g, 18 - i, 24 + i, "W");
+      }
+      break;
+    }
+    case "C": {
+      // 강철 방패: 어깨에 뿔이 돋고 윗변이 패였다
+      const horned = [0, 0, 0, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 13, 12, 12, 11, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1];
+      body(1, horned);
+      // 양 어깨의 뿔과 가운데의 봉우리
+      for (const [x, h] of [[2, 3], [3, 3], [4, 2], [5, 1], [27, 3], [26, 3], [25, 2], [24, 1]] as const) rect(g, x, 4 - h, 1, h, "K");
+      rect(g, 13, 1, 4, 3, "K");
+      rect(g, 14, 0, 2, 1, "K");
+      rim(1, horned, 2, 5);
+      rect(g, 4, 6, 22, 1, "W");
+      rect(g, 13, 24, 4, 2, "W");
+      rect(g, 14, 26, 2, 1, "W");
+      break;
+    }
+    case "B": {
+      // 은 방패: 양옆으로 날개(깃 세 장)가 뻗는다. 깃은 아래로 갈수록 짧다.
+      const slim = [9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 8, 8, 7, 7, 6, 5, 4, 3, 2, 1];
+      body(2, slim);
+      const feathers: [len: number, y: number][] = [
+        [6, 4],
+        [4, 9],
+        [2, 14],
+      ];
+      for (const [len, y] of feathers) {
+        rect(g, 6 - len, y, len, 3, "K");
+        rect(g, 24, y, len, 3, "K");
+        // 깃 끝은 한 점 깎는다
+        set(g, 6 - len, y, null);
+        set(g, 24 + len - 1, y, null);
+        if (len > 2) {
+          rect(g, 6 - len + 1, y + 1, len - 2, 1, "W");
+          rect(g, 25, y + 1, len - 2, 1, "W");
+        }
+      }
+      rim(2, slim, 2, 2);
+      rect(g, 8, 4, 14, 1, "W");
+      rect(g, 12, 25, 2, 2, "W");
+      rect(g, 16, 25, 2, 2, "W");
+      break;
+    }
+    case "A": {
+      // 금 방패: 세 갈래 관을 썼다. 가운데 봉우리가 가장 높다.
+      const crowned = [0, 0, 0, 0, 0, 0, 0, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 12, 11, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1];
+      body(1, crowned);
+      // 관의 띠와 봉우리 셋
+      rect(g, 4, 5, 22, 3, "K");
+      rect(g, 4, 2, 3, 3, "K");
+      rect(g, 4, 1, 2, 1, "K");
+      rect(g, 23, 2, 3, 3, "K");
+      rect(g, 24, 1, 2, 1, "K");
+      rect(g, 12, 3, 6, 2, "K");
+      rect(g, 13, 1, 4, 2, "K");
+      rect(g, 14, 0, 2, 1, "K");
+      rect(g, 8, 4, 2, 1, "K");
+      rect(g, 20, 4, 2, 1, "K");
+      // 띠의 흰 줄과 가운데 구슬
+      rect(g, 6, 6, 18, 1, "W");
+      rect(g, 14, 2, 2, 2, "W");
+      rim(1, crowned, 2, 9);
+      rect(g, 5, 10, 20, 1, "W");
+      for (let i = 0; i < 3; i++) rect(g, 10 + i * 4, 25, 2, 2, "W");
+      break;
+    }
+    case "S": {
+      // 흑요석과 금: 여덟 갈래 별. 긴 살 넷과 짧은 살 넷
+      for (let y = 0; y < 34; y++) {
+        for (let x = 0; x < 30; x++) {
+          const dx = Math.abs(x + 0.5 - 15);
+          const dy = Math.abs(y + 0.5 - 17);
+          const long = dx / 15 + dy / 5 <= 1 || dx / 5 + dy / 17 <= 1;
+          const short = dx <= 9.5 && dy <= 9.5 && dx + dy <= 14.5;
+          if (long || short) set(g, x, y, "K");
+        }
+      }
+      oval(g, 15, 17, 10, 10, "K");
+      // 가운데 둥근 판의 흰 테 (글자가 얹히는 곳은 비운다)
+      for (let y = 0; y < 34; y++) {
+        for (let x = 0; x < 30; x++) {
+          const d = Math.hypot(x + 0.5 - 15, y + 0.5 - 17);
+          if (d > 8.4 && d <= 9.4) set(g, x, y, "W");
+        }
+      }
+      // 긴 살의 끝마다 흰 점
+      rect(g, 14, 2, 2, 2, "W");
+      rect(g, 14, 30, 2, 2, "W");
+      rect(g, 2, 16, 2, 2, "W");
+      rect(g, 26, 16, 2, 2, "W");
+      break;
+    }
+  }
   return outline(g, "K");
+}
+
+/** 검수·테스트용: 휘장의 점 그림을 글자로 */
+export function medalAscii(rank: RankId): string[] {
+  const g = monoMedal(rank);
+  return Array.from({ length: g.h }, (_, y) => Array.from({ length: g.w }, (_, x) => (g.px[y * g.w + x] === null ? " " : g.px[y * g.w + x] === "W" ? "o" : "#")).join(""));
 }
 
 /** 겹쳐 놓는 조각(봉투의 네 겹)과 사진틀 안의 초상에는 둘레 점을 두르지 않는다 */

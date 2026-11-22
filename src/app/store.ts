@@ -8,18 +8,23 @@ import {
   buildDemoState,
   DEMO_PRESETS,
   createInitialState,
+  dismissExam,
   enroll,
   hydrate,
   markOpened,
+  openExamSheet,
   recordInput,
   rename,
   requestHint,
+  startExam,
   submitAnswer,
+  tickExam,
   type DemoPreset,
   type HintOutcome,
   type SubmitOutcome,
 } from "../engine/progressEngine";
 import type { GameState, Puzzle, PuzzleInput } from "../engine/types";
+import { gameNow } from "./clock";
 
 /**
  * 저장 위치. 주소에 ?save=이름 이 있으면 그 이름의 별도 저장 칸을 쓴다.
@@ -54,7 +59,7 @@ function start(): GameState {
   const wanted = params.get("preset");
   if (params.get("demo") !== "1" || !DEMO_PRESETS.some((preset) => preset.id === wanted)) return saved;
   if (saved.enrolled && params.get("apply") !== "1") return saved;
-  const seeded = buildDemoState(wanted as DemoPreset);
+  const seeded = buildDemoState(wanted as DemoPreset, gameNow());
   try {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(seeded));
   } catch {
@@ -93,7 +98,7 @@ export const gameStore = {
   },
 
   enroll(nickname: string) {
-    commit(enroll(state, nickname, newDetectiveNo(), new Date()));
+    commit(enroll(state, nickname, newDetectiveNo(), gameNow()));
   },
 
   rename(nickname: string) {
@@ -119,9 +124,40 @@ export const gameStore = {
   },
 
   submit(puzzle: Puzzle, answer: unknown): SubmitOutcome {
-    const result = submitAnswer(state, puzzle, answer, new Date());
+    const result = submitAnswer(state, puzzle, answer, gameNow());
     commit(result.state);
     return result.outcome;
+  },
+
+  /** 승급 시험을 시작한다(봉투를 연다). graceMs 만큼 시계를 늦게 돌린다(도입 장면). */
+  startExam(graceMs = 0) {
+    commit(startExam(state, gameNow(), graceMs));
+  },
+
+  /** 다음 시험지를 펼친다 */
+  openExamSheet(graceMs = 0) {
+    commit(openExamSheet(state, gameNow(), graceMs));
+  },
+
+  /** 제한 시간이 끝났는지 본다 */
+  tickExam() {
+    commit(tickExam(state, gameNow()));
+  },
+
+  /** 떨어진 시험의 결과를 닫는다 */
+  dismissExam() {
+    commit(dismissExam(state));
+  },
+
+  /** 검수용: 오늘의 응시 횟수를 되돌린다 */
+  resetExamDays() {
+    commit({ ...state, examDays: {} });
+  },
+
+  /** 검수용: 날짜를 옮긴 뒤 화면을 다시 그리게 한다 */
+  refresh() {
+    state = { ...state };
+    listeners.forEach((listener) => listener());
   },
 
   setSound(on: boolean) {
@@ -129,7 +165,7 @@ export const gameStore = {
   },
 
   applyPreset(preset: DemoPreset) {
-    commit(buildDemoState(preset));
+    commit(buildDemoState(preset, gameNow()));
   },
 };
 

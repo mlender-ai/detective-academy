@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { LiveScene, type LiveSceneHandle } from "../../components/LiveScene";
 import { Narration } from "../../components/Narration";
 import type { CodeInput, CodePuzzle } from "../../engine/types";
-import { ClueList, CodeLock, MemoPad, memoSummary, useCodeBoard } from "../../games/CodeBreaker/CodeBreaker";
+import { ClueList, CodeLock, Engraved, MemoPad, memoSummary, useCodeBoard } from "../../games/CodeBreaker/CodeBreaker";
 import type { GameProps } from "../../games/logic";
 import { VaultScene, type VaultSpot } from "../../scene/vaultScene";
 import { HintButton, PlayBar, PlayFoot, PlayNotice, PlayOverlays } from "../playParts";
@@ -100,7 +100,7 @@ export function ScenePlay({ puzzle, variant = "case", replay = false, onExit, on
             <MemoPad puzzle={puzzle} memo={input.memo} locked={session.locked} onCycle={board.cycleMemo} />
           </article>
         ) : (
-          <div className="sceneplay__safe lockstage">
+          <div className="sceneplay__safe lockstage" data-engraved={puzzle.rules.conditions?.length ?? 0}>
             {/* 책상에서 적어 온 메모: 금고 앞에서도 내 손에 있다 */}
             <p className="carry" data-testid="carry-memo">
               <b>내 메모</b>
@@ -121,6 +121,8 @@ export function ScenePlay({ puzzle, variant = "case", replay = false, onExit, on
                 </>
               )}
             </p>
+            {/* 문에 새겨진 글은 금고 앞에서도 보인다 */}
+            <Engraved puzzle={puzzle} compact />
             <CodeLock puzzle={puzzle} input={input} locked={session.locked} verdict={session.verdict} board={board} />
           </div>
         )}

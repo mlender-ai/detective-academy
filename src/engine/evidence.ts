@@ -215,10 +215,12 @@ export function deriveFrom(rules: EvidenceRules, a: string, b: string): Evidence
 }
 
 /** 그 사실을 얻기까지 이어야 하는 것들을, 잇는 순서대로 돌려준다. 처음부터 있는 증거면 빈 목록이다. */
-export function derivationPath(rules: EvidenceRules, id: string): EvidenceDerivation[] {
-  const step = rules.derivations.find((d) => d.card.id === id);
+export function derivationPath(rules: EvidenceRules, id: string, seen: ReadonlySet<string> = new Set()): EvidenceDerivation[] {
+  // 같은 사실에 이르는 길이 여럿이면(되돌아가는 길 포함) 지금 따라가는 사실을 다시 거치지 않는 첫 길을 고른다
+  const visiting = new Set([...seen, id]);
+  const step = rules.derivations.find((d) => d.card.id === id && d.from.every((from) => !visiting.has(from)));
   if (!step) return [];
-  const before = step.from.flatMap((from) => derivationPath(rules, from));
+  const before = step.from.flatMap((from) => derivationPath(rules, from, visiting));
   return [...before.filter((d, i) => before.findIndex((other) => other.card.id === d.card.id) === i), step];
 }
 

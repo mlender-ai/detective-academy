@@ -132,7 +132,7 @@ export const DAILY_EVIDENCE_1: EvidencePuzzle = {
     },
   ],
   solution: { statement: "say-sera", against: "fact-sera" },
-  reward: 100,
+  reward: 60,
 };
 
 /* ───────── 2일차 · 공간 추론(인장 대조) ───────── */
@@ -194,7 +194,7 @@ export const DAILY_SEAL_1: SpatialPuzzle = {
     },
   ],
   solution: { stamp: "clerk", turn: 2 },
-  reward: 100,
+  reward: 60,
 };
 
 /* ───────── 3일차 · 암호 해독 ───────── */
@@ -270,7 +270,7 @@ export const DAILY_CODE_2: CodePuzzle = {
     },
   ],
   solution: [8, 3, 5],
-  reward: 100,
+  reward: 60,
 };
 
 /* ───────── 4일차 · 진실·거짓 추리 ───────── */
@@ -336,7 +336,7 @@ export const DAILY_TRUTH_1: TruthPuzzle = {
     },
   ],
   solution: "minjae",
-  reward: 100,
+  reward: 60,
 };
 
 /* ───────── 5일차 · 증거 조합 (두 번 잇기) ───────── */
@@ -496,7 +496,7 @@ export const DAILY_EVIDENCE_2: EvidencePuzzle = {
     },
   ],
   solution: { statement: "say-minjae", against: "fact-alone" },
-  reward: 100,
+  reward: 60,
 };
 
 /* ───────── 6일차 · 순서 추론 ───────── */
@@ -573,7 +573,7 @@ export const DAILY_SCHEDULE_1: SchedulePuzzle = {
     },
   ],
   solution: ["sera", "junho", "daon", "hana"],
-  reward: 100,
+  reward: 60,
 };
 
 /* ───────── 7일차 · 공간 추론(번진 인장) ───────── */
@@ -635,7 +635,7 @@ export const DAILY_SEAL_2: SpatialPuzzle = {
     },
   ],
   solution: { stamp: "vice", turn: 1 },
-  reward: 100,
+  reward: 60,
 };
 
 /** 일주일치. 순서가 곧 일차(1~7)다. */

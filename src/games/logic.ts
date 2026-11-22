@@ -17,6 +17,15 @@ import type {
 
 export type Verdict = "idle" | "wrong" | "correct";
 
+/** 유형의 짧은 이름 (연습실의 서랍, 시험 안내) */
+export const TYPE_NAME: Record<Puzzle["type"], string> = {
+  code: "암호 해독",
+  truth: "진술 추리",
+  schedule: "순서 추론",
+  evidence: "증거 조합",
+  spatial: "인장 대조",
+};
+
 export interface GameProps<P extends Puzzle, I extends PuzzleInput> {
   puzzle: P;
   input: I;
@@ -112,7 +121,7 @@ export type Readiness = { ok: true } | { ok: false; reason: string };
 export function readiness(puzzle: Puzzle, input: PuzzleInput): Readiness {
   if (puzzle.type === "code" && input.type === "code") {
     if (!isCodeWellFormed((puzzle as CodePuzzle).rules, input.dials)) {
-      return { ok: false, reason: "암호는 서로 다른 숫자 3개입니다. 겹치는 숫자를 바꿔 주세요." };
+      return { ok: false, reason: `암호는 서로 다른 숫자 ${puzzle.rules.length}개입니다. 겹치는 숫자를 바꿔 주세요.` };
     }
     return { ok: true };
   }
@@ -126,7 +135,7 @@ export function readiness(puzzle: Puzzle, input: PuzzleInput): Readiness {
   if (puzzle.type === "schedule" && input.type === "schedule") {
     const empty = input.placement.filter((id) => id === null).length;
     if (empty > 0) {
-      return { ok: false, reason: `아직 비어 있는 시간이 ${empty}개 있습니다. 네 명을 모두 배치하세요.` };
+      return { ok: false, reason: `아직 비어 있는 자리가 ${empty}개 있습니다. ${headCount(puzzle.rules.people.length)}을 모두 배치하세요.` };
     }
     return { ok: true };
   }
@@ -142,6 +151,19 @@ export function readiness(puzzle: Puzzle, input: PuzzleInput): Readiness {
     return { ok: true };
   }
   return { ok: false, reason: "입력값을 확인할 수 없습니다." };
+}
+
+const HEADS = ["", "한 명", "두 명", "세 명", "네 명", "다섯 명", "여섯 명"];
+const COUNTS = ["", "한", "두", "세", "네", "다섯", "여섯"];
+
+/** "네 명", "다섯 명" */
+export function headCount(n: number): string {
+  return HEADS[n] ?? `${n}명`;
+}
+
+/** "네", "다섯" (뒤에 단위가 붙는다: 네 진술) */
+export function countWord(n: number): string {
+  return COUNTS[n] ?? String(n);
 }
 
 /** 받침 유무에 따라 조사를 고른다: josa("다온", "이", "가") → "이" */

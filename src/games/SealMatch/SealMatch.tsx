@@ -178,37 +178,44 @@ export function SealMatch({ puzzle, input, onChange, locked, verdict, wrongCount
         })}
       </section>
 
-      <section className="seal__trials" aria-label="시험 종이">
-        <button type="button" className="seal__press" onClick={press} disabled={locked} data-testid="seal-press" data-left={left}>
-          찍어 보기
-          <span className="seal__left num" aria-label={`남은 시험 종이 ${left}장`}>
-            {left}
-          </span>
-        </button>
-        <ol className="seal__sheets">
-          {Array.from({ length: rules.trials }, (_, i) => {
-            const trial = input.trials[i];
-            const stamp = trial ? rules.stamps.find((s) => s.id === trial.stamp) : null;
-            return (
-              <li key={i} className="seal__sheet" data-used={!!trial} data-fresh={pressed === i} data-testid={`trial-${i}`}>
-                {trial && stamp ? (
-                  <>
-                    <DotGrid
-                      grid={pressSeal(stamp.face, trial.turn)}
-                      cell={print}
-                      plain
-                      label={`${stamp.name}을 ${TURN_WORD[trial.turn]}으로 찍은 자국. ${gridWords(pressSeal(stamp.face, trial.turn))}`}
-                    />
-                    <span className="seal__name">{stamp.name.replace(" 도장", "")}</span>
-                  </>
-                ) : (
-                  <span className="seal__blank" style={{ width: print * rules.size, height: print * rules.size }} aria-label="빈 시험 종이" />
-                )}
-              </li>
-            );
-          })}
-        </ol>
-      </section>
+      {rules.trials === 0 ? (
+        /* 시험 종이가 없는 문제: 머릿속으로만 돌리고 뒤집어 본다 */
+        <p className="seal__notrial" data-testid="seal-notrial">
+          시험 종이 없음 · 눈으로만 따져 본다
+        </p>
+      ) : (
+        <section className="seal__trials" aria-label="시험 종이">
+          <button type="button" className="seal__press" onClick={press} disabled={locked} data-testid="seal-press" data-left={left}>
+            찍어 보기
+            <span className="seal__left num" aria-label={`남은 시험 종이 ${left}장`}>
+              {left}
+            </span>
+          </button>
+          <ol className="seal__sheets">
+            {Array.from({ length: rules.trials }, (_, i) => {
+              const trial = input.trials[i];
+              const stamp = trial ? rules.stamps.find((s) => s.id === trial.stamp) : null;
+              return (
+                <li key={i} className="seal__sheet" data-used={!!trial} data-fresh={pressed === i} data-testid={`trial-${i}`}>
+                  {trial && stamp ? (
+                    <>
+                      <DotGrid
+                        grid={pressSeal(stamp.face, trial.turn)}
+                        cell={print}
+                        plain
+                        label={`${stamp.name}을 ${TURN_WORD[trial.turn]}으로 찍은 자국. ${gridWords(pressSeal(stamp.face, trial.turn))}`}
+                      />
+                      <span className="seal__name">{stamp.name.replace(" 도장", "")}</span>
+                    </>
+                  ) : (
+                    <span className="seal__blank" style={{ width: print * rules.size, height: print * rules.size }} aria-label="빈 시험 종이" />
+                  )}
+                </li>
+              );
+            })}
+          </ol>
+        </section>
+      )}
     </div>
   );
 }

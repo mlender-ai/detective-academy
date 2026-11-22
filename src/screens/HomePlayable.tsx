@@ -1,17 +1,17 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { gameNow, todayKey } from "../app/clock";
 import { nextStep, type NextStep } from "../app/flow";
 import { prefersReducedMotion } from "../app/motion";
 import { navigate, type Route } from "../app/router";
 import { playSound } from "../app/sound";
 import { useGame } from "../app/store";
-import { PenMark } from "../art/pixel";
 import { Crest, RankMark } from "../art/objects";
 import { LiveScene, type LiveSceneHandle } from "../components/LiveScene";
 import { Narration } from "../components/Narration";
-import { getDailyPuzzle, PRACTICE_PUZZLES, PUZZLE_BY_ID } from "../data/puzzles";
-import { rankLabel } from "../data/ranks";
-import { examStatus, getProgress } from "../engine/progressEngine";
-import { formatElapsed, seoulDateKey } from "../engine/time";
+import { getDailyPuzzle, PRACTICE_PUZZLES } from "../data/puzzles";
+import { nextRank, rankLabel } from "../data/ranks";
+import { examRemainingMs, examStatus, getProgress, practiceUnlocked } from "../engine/progressEngine";
+import { formatCountdown, formatElapsed } from "../engine/time";
 import type { SpotId } from "../scene/homeScene";
 import { SideScene } from "../scene/sideScene";
 
@@ -46,9 +46,9 @@ const ENTRANCE_DELAY_MS = 420;
  */
 export function HomePlayable() {
   const game = useGame();
-  const daily = getDailyPuzzle(seoulDateKey());
+  const daily = getDailyPuzzle(todayKey());
   const dailyProgress = getProgress(game, daily.id);
-  const exam = examStatus(game);
+  const exam = examStatus(game, gameNow());
   const step = nextStep(game);
   const stepSpot = STEP_SPOT[step];
 
@@ -156,9 +156,27 @@ export function HomePlayable() {
 
   const selected = heading ?? here;
   const practiceSolved = PRACTICE_PUZZLES.filter((p) => getProgress(game, p.id).status === "solved").length;
-  const practiceNext = PRACTICE_PUZZLES.find((p) => getProgress(game, p.id).status !== "solved") ?? null;
-  const examPuzzle = exam.rule ? PUZZLE_BY_ID[exam.rule.examPuzzleIds[0]] : null;
-  const examInProgress = examPuzzle ? getProgress(game, examPuzzle.id).status === "in_progress" : false;
+  // 다음 과제: 지금 등급에서 열려 있는 것 가운데 풀지 않은 첫 문제
+  const practiceNext = PRACTICE_PUZZLES.find((p) => practiceUnlocked(game, p) && getProgress(game, p.id).status !== "solved") ?? null;
+  const practiceLocked = PRACTICE_PUZZLES.some((p) => !practiceUnlocked(game, p));
+  const examSession = exam.session;
+  const examActive = examSession?.status === "active";
+  const examFailed = examSession?.status === "failed";
+  /** 시험실에 들어가 할 일이 있는가: 치르던 시험이 있거나 지금 응시할 수 있다 */
+  const examOpen = !!examSession || exam.canStart;
+  const examTotal = exam.rule?.examPuzzleIds.length ?? 0;
+  const examLeft = examSession && examActive ? examRemainingMs(examSession, gameNow()) : null;
+  const examState = !exam.rule
+    ? ""
+    : examActive
+      ? `${exam.rule.to}급 시험 중 ${examSession.index}/${examTotal}`
+      : examFailed
+        ? `${exam.rule.to}급 시험 종료`
+        : exam.canStart
+          ? `${exam.rule.to}급 응시 가능`
+          : exam.unlocked
+            ? `${exam.rule.to}급 오늘 응시 끝`
+            : `${exam.rule.to}급 과제 ${exam.solved}/${exam.required}`;
   const dailyState =
     dailyProgress.status === "solved" ? "해결" : dailyProgress.status === "in_progress" ? `풀이 중 ${formatElapsed(dailyProgress.elapsedMs)}` : "미해결";
 
@@ -169,7 +187,11 @@ export function HomePlayable() {
           ? "풀다 만 시험지가 게시판에 그대로 붙어 있다."
           : "자정이 가까운 복도. 게시판에 오늘의 사건이 붙어 있다.";
       }
-      if (step === "exam") return "시험실 문 안에 불이 켜져 있다. 승급 시험이다.";
+      if (step === "exam") {
+        if (examActive) return "시험실에 풀다 만 시험지가 놓여 있다.";
+        if (examFailed) return "시험실 문에 쪽지가 붙어 있다. 시험이 끝났다.";
+        return "시험실 문 안에 불이 켜져 있다. 승급 시험이다.";
+      }
       if (step === "practice") return "오늘의 사건은 끝났다. 연습실에 풀지 않은 과제가 남아 있다.";
       return "복도는 조용하다. 창밖의 나뭇가지만 흔들린다.";
     }
@@ -179,11 +201,15 @@ export function HomePlayable() {
       return `게시판 앞. 오늘의 사건은 「${daily.title}」.`;
     }
     if (selected === "practice") {
-      return practiceNext ? "연습실 문이 열린다. 풀지 않은 과제가 남아 있다." : "연습실 문이 열린다. 과제는 모두 풀었다.";
+      if (practiceNext) return "연습실 문이 열린다. 풀지 않은 과제가 남아 있다.";
+      return practiceLocked ? "연습실 문이 열린다. 남은 서랍은 등급이 올라야 열린다." : "연습실 문이 열린다. 과제는 모두 풀었다.";
     }
     if (selected === "exam") {
       if (!exam.rule) return `승급 시험실. 문 위에 ${game.rank}. 합격 기록이 남아 있다.`;
-      if (exam.unlocked) return `승급 시험실. 문 위에 ${exam.rule.to}. 안에 불이 켜져 있다.`;
+      if (examActive) return `승급 시험실. 문 위에 ${exam.rule.to}. 풀다 만 시험지가 책상에 놓여 있다.`;
+      if (examFailed) return `승급 시험실. 문 위에 ${exam.rule.to}. 시험이 끝났다는 쪽지가 붙어 있다.`;
+      if (exam.canStart) return `승급 시험실. 문 위에 ${exam.rule.to}. 안에 불이 켜져 있다.`;
+      if (exam.unlocked) return `승급 시험실. 문 위에 ${exam.rule.to}. 오늘은 불이 꺼졌다.`;
       return `승급 시험실. 문 위에 ${exam.rule.to}. 아직 열리지 않는다.`;
     }
     return `기록 보관함. 서랍에 ${game.nickname}의 신분증이 들어 있다.`;
@@ -228,40 +254,55 @@ export function HomePlayable() {
               <span>{practiceNext.title}</span>
             </>
           ) : (
-            <span>과제를 모두 풀었다. 다시 풀어 볼 수 있다.</span>
+            <span>{practiceLocked ? "남은 서랍은 등급이 올라야 열린다." : "과제를 모두 풀었다. 다시 풀어 볼 수 있다."}</span>
           )}
         </span>
       ),
     },
     exam: exam.rule
       ? {
-          // 시험을 볼 수 있을 때만 exam-cta 다(응시 조건을 채우기 전에는 exam-wait)
-          id: exam.unlocked ? "exam-cta" : "exam-wait",
-          label: exam.unlocked ? `${exam.rule.to}급 응시 가능` : `${exam.rule.to}급 조건 ${exam.doneCount}/${exam.requirements.length}`,
+          // 시험실에 들어가 할 일이 있을 때만 exam-cta 다(응시 조건을 채우기 전, 오늘 횟수를 다 쓴 뒤에는 exam-wait)
+          id: examOpen ? "exam-cta" : "exam-wait",
+          label: examState,
           state: (
             <>
-              {exam.unlocked ? `${exam.rule.to}급 응시 가능` : `${exam.rule.to}급 조건 ${exam.doneCount}/${exam.requirements.length}`}
+              {examState}
               <span className="sr-only">
-                , 응시 조건 <span data-testid="promo-count">{`${exam.doneCount}/${exam.requirements.length}`}</span> 완료
+                , 응시 조건 <span data-testid="promo-count">{`${exam.solved}/${exam.required}`}</span>
               </span>
             </>
           ),
-          go: exam.unlocked ? (examInProgress ? "시험 이어서 풀기" : "승급 시험 응시") : "시험실 들여다보기",
-          body: exam.unlocked ? (
+          go: examActive ? "시험 이어서 풀기" : examFailed ? "시험 결과 보기" : exam.canStart ? "승급 시험 응시" : "시험실 들여다보기",
+          body: examActive ? (
             <span className="cmd__line">
-              <span>{exam.rule.to}급 승급 시험</span>
-              <span>봉투가 기다린다.</span>
+              <span>
+                {examSession.index + 1}번 문제 {examSession.stage === "ready" ? "시험지가 기다린다" : "푸는 중"}
+              </span>
+              {examLeft !== null && <span className="num">남은 시간 {formatCountdown(examLeft)}</span>}
+            </span>
+          ) : examFailed ? (
+            <span className="cmd__line">
+              <span>등급은 그대로다.</span>
+              {exam.attemptsLeft !== null && <span className="num">오늘 {exam.attemptsLeft}번 남음</span>}
+            </span>
+          ) : exam.unlocked ? (
+            <span className="cmd__line">
+              <span>
+                {exam.rule.to}급 승급 시험 · <span className="num">{examTotal}문제</span>
+              </span>
+              <span>{exam.canStart ? "봉투가 기다린다." : "내일 다시 열린다."}</span>
             </span>
           ) : (
-            <ul className="cmd__reqs">
-              {exam.requirements.map((req) => (
-                <li key={req.label} data-done={req.done}>
-                  <span className="tickbox">{req.done && <PenMark kind="check" />}</span>
-                  {req.label}
-                  <span className="sr-only">{req.done ? " 완료" : " 미완료"}</span>
-                </li>
-              ))}
-            </ul>
+            <span className="cmd__need">
+              <span>
+                오늘의 추리·연습실 과제 <b className="num">{exam.solved}/{exam.required}</b>
+              </span>
+              <span className="meter" aria-hidden="true">
+                {Array.from({ length: exam.required }, (_, i) => (
+                  <i key={i} data-on={i < exam.solved} />
+                ))}
+              </span>
+            </span>
           ),
         }
       : {
@@ -272,6 +313,7 @@ export function HomePlayable() {
           body: (
             <span className="cmd__line">
               <span>{game.rank}급 승급 시험 합격</span>
+              <span>{nextRank(game.rank) ? "" : "최고 등급"}</span>
             </span>
           ),
         },
@@ -323,7 +365,7 @@ export function HomePlayable() {
         state={{
           dailySolved: dailyProgress.status === "solved",
           examRank: exam.rule ? exam.rule.to : game.rank,
-          examOpen: exam.unlocked,
+          examOpen,
           mark: stepSpot && selected !== stepSpot ? stepSpot : null,
         }}
         onArrive={onArrive}
