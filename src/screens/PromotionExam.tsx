@@ -13,6 +13,8 @@ import { PUZZLE_BY_ID } from "../data/puzzles";
 import { PROMOTION_RULES, RANK_BY_ID, rankLabel, type PromotionRule } from "../data/ranks";
 import { examStatus, getProgress, type SubmitOutcome } from "../engine/progressEngine";
 import type { GameState, Puzzle, RankId } from "../engine/types";
+import { EvidencePlay } from "./cases/EvidencePlay";
+import { SealPlay } from "./cases/SealPlay";
 import { ScenePlay } from "./codeux/ScenePlay";
 import { DeskPlay } from "./DeskPlay";
 import { GradedExplain, GradedFacts, Reward } from "./DeskResult";
@@ -368,8 +370,11 @@ export function PromotionExam() {
   const exit = () => goBack({ name: "home" });
   const solved = (outcome: SubmitOutcome) => setPassed({ outcome, from: rule.from });
 
-  // 시험 문제가 암호 해독이면 자료실 장면에서 치른다. 지금 시험 문제는 순서 추론뿐이라 이 갈래는 아직 쓰인 적이 없다.
+  // 시험 문제가 암호 해독·증거 조합·인장 대조이면 그 유형의 화면에서 치른다.
+  // 지금 시험 문제는 순서 추론뿐이라 이 세 갈래는 아직 쓰인 적이 없다.
   if (puzzle.type === "code") return <ScenePlay puzzle={puzzle} variant="exam" onExit={exit} onSolved={solved} />;
+  if (puzzle.type === "evidence") return <EvidencePlay puzzle={puzzle} variant="exam" onExit={exit} onSolved={solved} />;
+  if (puzzle.type === "spatial") return <SealPlay puzzle={puzzle} variant="exam" onExit={exit} onSolved={solved} />;
 
   return <DeskPlay puzzle={puzzle} variant="exam" onExit={exit} onSolved={solved} />;
 }

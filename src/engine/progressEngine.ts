@@ -2,7 +2,7 @@
  * 진행 상태 엔진. 모든 함수는 GameState 를 받아 새 GameState 를 돌려주는 순수 함수다.
  * 저장(localStorage)과 화면은 이 파일을 모른다.
  */
-import { PUZZLES, PUZZLE_BY_ID } from "../data/puzzles";
+import { ALL_PUZZLES, PUZZLES, PUZZLE_BY_ID } from "../data/puzzles";
 import { PROMOTION_RULES, type PromotionRule } from "../data/ranks";
 import { CREDIT_POLICY, hintCost, rewardFor, spend } from "./creditEngine";
 import { checkAnswer } from "./puzzleValidator";
@@ -153,7 +153,7 @@ export function requestHint(
 /* ───────── 승급 조건 ───────── */
 
 export function solvedCount(state: GameState, category: PuzzleCategory): number {
-  return PUZZLES.filter(
+  return ALL_PUZZLES.filter(
     (p) => p.category === category && getProgress(state, p.id).status === "solved",
   ).length;
 }

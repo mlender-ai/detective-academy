@@ -141,7 +141,7 @@ export function TruthDeduction({ puzzle, input, onChange, locked, verdict, wrong
       <section className="statements" aria-labelledby="statements-title">
         <h2 id="statements-title" className="truth__prompt leaf" data-testid="truth-prompt">
           {verdict === "correct" ? (
-            "네 진술 가운데 참은 하나뿐이었습니다"
+            puzzle.rules.trueCount === 1 ? "네 진술 가운데 참은 하나뿐이었습니다" : `네 진술 가운데 참은 ${puzzle.rules.trueCount}개뿐이었습니다`
           ) : suspect ? (
             <>
               <b className="truth__who">{suspect.name}</b>

@@ -4,26 +4,9 @@
  * solution 은 개발·검증용이다. 화면에는 플레이어가 해결한 뒤에만 노출한다.
  * solution 이 맞는지는 src/tests/puzzleValidator.test.ts 가 전수 탐색으로 확인한다.
  */
-import type { CodePuzzle, Person, Puzzle, SchedulePuzzle, TruthPuzzle } from "../engine/types";
-
-/*
- * 인물 색은 학원 팔레트의 네 가지 재질색만 쓴다: 황동, 봉랍, 녹청, 강철.
- * 사람 구분은 색에만 기대지 않고 고유 실루엣과 이름 첫 글자가 함께 맡는다.
- */
-const BRASS = "#87692F";
-const WAX = "#8A3F4B";
-const VERDIGRIS = "#3A715E";
-const STEEL = "#4F6486";
-
-const hana: Person = { id: "hana", name: "하나", color: VERDIGRIS, mark: "circle" };
-const junho: Person = { id: "junho", name: "준호", color: BRASS, mark: "shield" };
-const sera: Person = { id: "sera", name: "세라", color: WAX, mark: "hex" };
-const daon: Person = { id: "daon", name: "다온", color: STEEL, mark: "diamond" };
-
-const doyun: Person = { id: "doyun", name: "도윤", color: BRASS, mark: "shield" };
-const minjae: Person = { id: "minjae", name: "민재", color: STEEL, mark: "diamond" };
-const sea: Person = { id: "sea", name: "세아", color: WAX, mark: "circle" };
-const harin: Person = { id: "harin", name: "하린", color: VERDIGRIS, mark: "hex" };
+import type { CodePuzzle, Puzzle, SchedulePuzzle, TruthPuzzle } from "../engine/types";
+import { DAILY_SET } from "./dailySet";
+import { daon, doyun, hana, harin, junho, minjae, sea, sera } from "./people";
 
 export const DAILY_CODE: CodePuzzle = {
   id: "daily-code-001",
@@ -220,18 +203,36 @@ export const EXAM_SCHEDULE: SchedulePuzzle = {
   reward: 150,
 };
 
+/** 지금 제품의 흐름(입학 → 오늘의 추리 → 연습실 → 승급 시험)에 놓인 문제 */
 export const PUZZLES: Puzzle[] = [DAILY_CODE, PRACTICE_TRUTH, EXAM_SCHEDULE];
 
+/** 저장된 진행을 읽고 쓸 수 있는 모든 문제: 위의 셋과, 아직 날짜에 배정하지 않은 일일 문제 일곱 */
+export const ALL_PUZZLES: Puzzle[] = [...PUZZLES, ...DAILY_SET];
+
 export const PUZZLE_BY_ID: Record<string, Puzzle> = Object.fromEntries(
-  PUZZLES.map((p) => [p.id, p]),
+  ALL_PUZZLES.map((p) => [p.id, p]),
 );
+
+/**
+ * 검수용 일차 전환. 주소가 ?demo=1&day=3 이면 오늘의 추리 자리에 일일 문제 3일차가 놓인다.
+ * 일반 사용자 주소에는 영향을 주지 않는다. 날짜별 배정은 GATE 05 에서 만든다.
+ */
+function previewDay(): number | null {
+  if (typeof window === "undefined") return null;
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("demo") !== "1") return null;
+  const day = Number(params.get("day"));
+  return Number.isInteger(day) && day >= 1 && day <= DAILY_SET.length ? day : null;
+}
+
+const PREVIEW_DAY = previewDay();
 
 /**
  * 오늘의 추리. 프로토타입은 예시 문제 1개를 고정으로 내보낸다.
  * 실제 서비스에서는 dateKey(Asia/Seoul) → 문제 배정 표로 바꾸면 된다.
  */
 export function getDailyPuzzle(_dateKey: string): Puzzle {
-  return DAILY_CODE;
+  return PREVIEW_DAY ? DAILY_SET[PREVIEW_DAY - 1] : DAILY_CODE;
 }
 
 export const PRACTICE_PUZZLES: Puzzle[] = PUZZLES.filter((p) => p.category === "practice");

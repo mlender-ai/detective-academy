@@ -12,13 +12,13 @@ export function vaultStory(puzzle: CodePuzzle) {
   return {
     rule,
     /** 자료실에 들어섰을 때 */
-    arrive: "자료실. 책상 위에 누군가 남긴 기록이 놓여 있다.",
+    arrive: puzzle.intro ?? "자료실. 책상 위에 누군가 남긴 기록이 놓여 있다.",
     /** 책상 앞: 기록을 살핀다 */
     desk: `금고를 열려던 시도 ${rules.clues.length}번의 기록이다. 암호는 ${rule}.`,
     /** 금고 앞: 잠금장치를 돌린다 */
     safe: `금고 앞. 숫자 드럼 ${rules.length}개를 돌려 암호를 맞춘다.`,
     /** 금고가 열렸을 때 */
-    solved: "철컥. 금고가 열렸다. 안에 출입 기록부가 들어 있다.",
+    solved: puzzle.outro ?? "철컥. 금고가 열렸다. 안에 출입 기록부가 들어 있다.",
     /** 혼합형의 도입: 장면 하나에 세 문장 */
     intro: `자료실 구석에 낡은 금고가 있다. 책상 위에는 금고를 열려던 시도 ${rules.clues.length}번의 기록. 암호는 ${rule}다.`,
   };

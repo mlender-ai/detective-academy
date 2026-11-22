@@ -6,6 +6,8 @@ import type { Puzzle } from "../engine/types";
 import { PLAY_VARIANT } from "../app/variant";
 import { NotebookPlay } from "./codeux/NotebookPlay";
 import { ScenePlay } from "./codeux/ScenePlay";
+import { EvidencePlay } from "./cases/EvidencePlay";
+import { SealPlay } from "./cases/SealPlay";
 import { DeskPlay } from "./DeskPlay";
 import { DeskResult } from "./DeskResult";
 
@@ -48,6 +50,10 @@ export function CaseSession({ puzzle, onExit }: Props) {
     const Play = PLAY_VARIANT === "notebook" ? NotebookPlay : ScenePlay;
     return <Play key={key} puzzle={puzzle} replay={replay} onExit={exit} onSolved={solved} />;
   }
+
+  // 새 유형 둘은 추리 책상 위에 저마다의 물건(증거 게시판, 도장과 자국)을 놓는다
+  if (puzzle.type === "evidence") return <EvidencePlay key={key} puzzle={puzzle} replay={replay} onExit={exit} onSolved={solved} />;
+  if (puzzle.type === "spatial") return <SealPlay key={key} puzzle={puzzle} replay={replay} onExit={exit} onSolved={solved} />;
 
   return <DeskPlay key={key} puzzle={puzzle} replay={replay} onExit={exit} onSolved={solved} />;
 }

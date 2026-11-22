@@ -1,11 +1,16 @@
 /** 퍼즐 화면과 엔진 사이의 얇은 연결부: 초기 입력값, 답안 변환, 제출 가능 여부 */
+import { allCards } from "../engine/evidence";
 import { isCodeWellFormed } from "../engine/puzzleValidator";
 import type {
   CodeInput,
   CodePuzzle,
+  EvidenceInput,
+  EvidencePuzzle,
+  EvidenceSolution,
   Puzzle,
   PuzzleInput,
   ScheduleInput,
+  SpatialInput,
   TruthInput,
   TruthPuzzle,
 } from "../engine/types";
@@ -39,7 +44,23 @@ export function initialInput(puzzle: Puzzle): PuzzleInput {
         type: "schedule",
         placement: puzzle.rules.slots.map(() => null),
       } satisfies ScheduleInput;
+    case "evidence":
+      return { type: "evidence", picked: [], found: [] } satisfies EvidenceInput;
+    case "spatial":
+      return { type: "spatial", stamp: null, turns: {}, trials: [] } satisfies SpatialInput;
   }
+}
+
+/** 집어 든 두 증거가 "진술 하나 + 증거 하나"이면 그 짝을 답안으로 만든다 */
+export function evidencePair(puzzle: EvidencePuzzle, picked: readonly string[]): EvidenceSolution | null {
+  if (picked.length !== 2) return null;
+  const cards = allCards(puzzle.rules);
+  const [a, b] = picked.map((id) => cards.find((card) => card.id === id));
+  if (!a || !b) return null;
+  const statements = [a, b].filter((card) => card.kind === "statement");
+  if (statements.length !== 1) return null;
+  const against = a === statements[0] ? b : a;
+  return { statement: statements[0].id, against: against.id };
 }
 
 /** 저장된 입력값이 이 문제의 것이 맞으면 그대로 쓰고, 아니면 초기값을 쓴다. */
@@ -51,10 +72,27 @@ export function restoreInput(puzzle: Puzzle, saved: PuzzleInput | null): PuzzleI
   if (saved.type === "schedule" && puzzle.type === "schedule") {
     return saved.placement.length === puzzle.rules.slots.length ? saved : initialInput(puzzle);
   }
+  if (saved.type === "evidence" && puzzle.type === "evidence") {
+    // 문제가 고쳐져 없어진 카드를 가리키는 값은 버린다
+    const ids = new Set(allCards(puzzle.rules).map((card) => card.id));
+    const base = new Set(puzzle.rules.cards.map((card) => card.id));
+    const found = saved.found.filter((id) => ids.has(id) && !base.has(id));
+    const have = new Set([...base, ...found]);
+    return { type: "evidence", picked: saved.picked.filter((id) => have.has(id)).slice(0, 2), found };
+  }
+  if (saved.type === "spatial" && puzzle.type === "spatial") {
+    const ids = new Set(puzzle.rules.stamps.map((stamp) => stamp.id));
+    return {
+      type: "spatial",
+      stamp: saved.stamp && ids.has(saved.stamp) ? saved.stamp : null,
+      turns: Object.fromEntries(Object.entries(saved.turns).filter(([id]) => ids.has(id))),
+      trials: saved.trials.filter((trial) => ids.has(trial.stamp)).slice(0, puzzle.rules.trials),
+    };
+  }
   return saved;
 }
 
-export function toAnswer(input: PuzzleInput): unknown {
+export function toAnswer(puzzle: Puzzle, input: PuzzleInput): unknown {
   switch (input.type) {
     case "code":
       return input.dials;
@@ -62,6 +100,10 @@ export function toAnswer(input: PuzzleInput): unknown {
       return input.suspect;
     case "schedule":
       return input.placement;
+    case "evidence":
+      return puzzle.type === "evidence" ? evidencePair(puzzle, input.picked) : null;
+    case "spatial":
+      return input.stamp ? { stamp: input.stamp, turn: input.turns[input.stamp] ?? 0 } : null;
   }
 }
 
@@ -76,7 +118,8 @@ export function readiness(puzzle: Puzzle, input: PuzzleInput): Readiness {
   }
   if (puzzle.type === "truth" && input.type === "truth") {
     if (!input.suspect || !(puzzle as TruthPuzzle).rules.people.some((p) => p.id === input.suspect)) {
-      return { ok: false, reason: "답안지를 숨겼다고 생각하는 사람을 먼저 고르세요." };
+      const item = (puzzle as TruthPuzzle).rules.item ?? "답안지";
+      return { ok: false, reason: `${item}${josa(item, "을", "를")} 숨겼다고 생각하는 사람을 먼저 고르세요.` };
     }
     return { ok: true };
   }
@@ -85,6 +128,17 @@ export function readiness(puzzle: Puzzle, input: PuzzleInput): Readiness {
     if (empty > 0) {
       return { ok: false, reason: `아직 비어 있는 시간이 ${empty}개 있습니다. 네 명을 모두 배치하세요.` };
     }
+    return { ok: true };
+  }
+  if (puzzle.type === "evidence" && input.type === "evidence") {
+    if (input.picked.length < 2) return { ok: false, reason: "증거 두 개를 골라 맞대어 보세요." };
+    if (!evidencePair(puzzle, input.picked)) {
+      return { ok: false, reason: "거짓이라고 생각하는 진술 하나와, 그 진술을 깨는 증거 하나를 고르세요." };
+    }
+    return { ok: true };
+  }
+  if (puzzle.type === "spatial" && input.type === "spatial") {
+    if (!input.stamp) return { ok: false, reason: "자국을 낸 도장을 먼저 집으세요." };
     return { ok: true };
   }
   return { ok: false, reason: "입력값을 확인할 수 없습니다." };
@@ -102,5 +156,7 @@ export function submitLabel(puzzle: Puzzle, input: PuzzleInput): string {
     const name = puzzle.rules.people.find((p) => p.id === input.suspect)?.name;
     if (name) return `${name} 지목하고 제출`;
   }
+  if (puzzle.type === "evidence") return "모순으로 제출";
+  if (puzzle.type === "spatial") return "이 도장으로 제출";
   return "추론 제출";
 }

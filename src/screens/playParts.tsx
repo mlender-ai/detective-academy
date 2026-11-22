@@ -7,7 +7,7 @@ import { formatElapsed } from "../engine/time";
 import type { Puzzle } from "../engine/types";
 import { submitLabel } from "../games/logic";
 import { TRUTH_REVEAL_STEP_MS } from "../games/TruthDeduction/TruthDeduction";
-import { WRONG_TEXT, type usePlaySession } from "./usePlaySession";
+import { wrongText, type usePlaySession } from "./usePlaySession";
 
 /**
  * 풀이 화면의 공통 부품: 위 막대, 오답 쪽지, 아래 단추 줄, 그 위에 뜨는 것들(건너뛰기·수사 지원 서랍·자막 화면).
@@ -21,18 +21,24 @@ export const REACTION_MS: Record<Puzzle["type"], number> = {
   code: 1050,
   truth: TRUTH_REVEAL_STEP_MS * 4 + 700,
   schedule: 1200,
+  evidence: 1500,
+  spatial: 1500,
 };
 
 const WRONG_TITLE: Record<Puzzle["type"], string> = {
   code: "잠금이 풀리지 않았습니다",
   truth: "추론이 맞지 않습니다",
   schedule: "추론이 맞지 않습니다",
+  evidence: "모순이 아닙니다",
+  spatial: "자국이 맞지 않습니다",
 };
 
 const CHECKING_LABEL: Record<Puzzle["type"], string> = {
   code: "잠금 해제",
   truth: "추론 확인 완료",
   schedule: "추론 확인 완료",
+  evidence: "모순 확인",
+  spatial: "자국 일치",
 };
 
 export function submitText(puzzle: Puzzle, session: PlaySession): string {
@@ -80,7 +86,7 @@ export function PlayNotice({ puzzle, session }: { puzzle: Puzzle; session: PlayS
       ) : (
         <div className="slip slip--wrong leaf" role="alert" data-testid="notice-wrong">
           <strong>{WRONG_TITLE[puzzle.type]}</strong>
-          <p>{WRONG_TEXT[puzzle.type]}</p>
+          <p>{wrongText(puzzle)}</p>
           {wrongCount >= 2 && hintsLeft > 0 && (
             <button type="button" className="slip__action" onClick={() => setHintsOpen(true)}>
               수사 지원을 받아 볼까요?
@@ -158,7 +164,14 @@ export function PlayOverlays({ puzzle, session, variant, replay, cine = true }: 
         <HintDrawer puzzle={puzzle} progress={progress} credits={game.credits} onClose={() => setHintsOpen(false)} />
       )}
 
-      {cine && <CineCard kicker={variant === "exam" ? "승급 시험" : replay ? "다시 풀기" : "사건 기록"} title={puzzle.title} sub={puzzle.typeLabel} />}
+      {cine && (
+        <CineCard
+          kicker={variant === "exam" ? "승급 시험" : replay ? "다시 풀기" : "사건 기록"}
+          title={puzzle.title}
+          sub={puzzle.typeLabel}
+          text={replay ? undefined : puzzle.intro}
+        />
+      )}
     </>
   );
 }

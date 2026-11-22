@@ -7,13 +7,30 @@
  *  - checkAnswer  : 플레이어 답안을 '규칙'으로 채점한다 (선언된 정답과 문자열 비교하지 않는다).
  *  - verifyGuidance : 힌트·해설이 단정하는 사실이 실제 정답과 모순되지 않는지 확인한다.
  */
+import {
+  allCards,
+  auditEvidence,
+  cardOf,
+  contradicts,
+  deriveFrom,
+  enumerateEvidence,
+  evidenceAnswerHolds,
+  satisfiable,
+  solveEvidence,
+} from "./evidence";
+import { auditSpatial, enumerateSeals, sealAnswerHolds, solveSpatial } from "./seal";
 import type {
   CodeFact,
   CodeRules,
+  EvidenceFact,
+  EvidenceRules,
+  EvidenceSolution,
   Puzzle,
   ScheduleConstraint,
   ScheduleFact,
   ScheduleRules,
+  SpatialFact,
+  SpatialSolution,
   TruthClaim,
   TruthFact,
   TruthRules,
@@ -152,6 +169,8 @@ export function constraintHolds(c: ScheduleConstraint, order: readonly string[])
       return order.indexOf(c.who) !== c.slot;
     case "immediatelyAfter":
       return order.indexOf(c.who) === order.indexOf(c.after) + 1;
+    case "notAdjacent":
+      return Math.abs(order.indexOf(c.a) - order.indexOf(c.b)) !== 1;
   }
 }
 
@@ -188,6 +207,69 @@ export function scheduleFactHolds(fact: ScheduleFact, order: readonly string[]):
   }
 }
 
+/* ───────── 증거 조합 ───────── */
+
+const isEvidenceAnswer = (answer: unknown): answer is EvidenceSolution =>
+  !!answer &&
+  typeof answer === "object" &&
+  typeof (answer as EvidenceSolution).statement === "string" &&
+  typeof (answer as EvidenceSolution).against === "string";
+
+export function evidenceFactHolds(fact: EvidenceFact, rules: EvidenceRules): boolean {
+  const claim = (id: string) => cardOf(rules, id)?.claim;
+  switch (fact.kind) {
+    case "derives":
+      return deriveFrom(rules, fact.from[0], fact.from[1])?.id === fact.card;
+    case "consistent": {
+      const [a, b] = [claim(fact.a), claim(fact.b)];
+      return !!a && !!b && !contradicts(rules, a, b);
+    }
+    case "contradicts": {
+      const [a, b] = [claim(fact.a), claim(fact.b)];
+      return !!a && !!b && contradicts(rules, a, b);
+    }
+    case "statementHolds": {
+      const statement = claim(fact.statement);
+      const reliable = rules.cards.filter((card) => card.kind !== "statement").map((card) => card.claim);
+      return !!statement && satisfiable(rules, [...reliable, statement]);
+    }
+  }
+}
+
+/** 이 사실이 어떤 답안(진술 + 증거)을 후보에서 지우는가 */
+function evidenceFactExcludes(fact: EvidenceFact, answer: EvidenceSolution): boolean {
+  const pair = (a: string, b: string) =>
+    (answer.statement === a && answer.against === b) || (answer.statement === b && answer.against === a);
+  switch (fact.kind) {
+    case "statementHolds":
+      return answer.statement === fact.statement;
+    case "consistent":
+      return pair(fact.a, fact.b);
+    case "contradicts":
+      // 모순인 짝을 그대로 알려 주면 그 짝만 남는다
+      return !pair(fact.a, fact.b);
+    case "derives":
+      return false;
+  }
+}
+
+/* ───────── 공간 추론 · 인장 대조 ───────── */
+
+const isSpatialAnswer = (answer: unknown): answer is SpatialSolution =>
+  !!answer &&
+  typeof answer === "object" &&
+  typeof (answer as SpatialSolution).stamp === "string" &&
+  typeof (answer as SpatialSolution).turn === "number";
+
+export function spatialFactHolds(fact: SpatialFact, answer: SpatialSolution): boolean {
+  switch (fact.kind) {
+    case "stampIsNot":
+      return answer.stamp !== fact.stamp;
+    case "turnIsNot":
+      return answer.turn !== fact.turn;
+  }
+}
+
 /* ───────── 문제 단위 검증 ───────── */
 
 export interface PuzzleVerification {
@@ -198,6 +280,8 @@ export interface PuzzleVerification {
   solutions: unknown[];
   unique: boolean;
   matchesDeclared: boolean;
+  /** 문제의 짜임새에서 찾은 문제 (증거 조합의 표, 인장의 그림 자료). 다른 유형은 비어 있다. */
+  issues: string[];
   ok: boolean;
 }
 
@@ -205,6 +289,7 @@ export function verifyPuzzle(puzzle: Puzzle): PuzzleVerification {
   let candidateCount: number;
   let solutions: unknown[];
   let matchesDeclared: boolean;
+  let issues: string[] = [];
 
   switch (puzzle.type) {
     case "code": {
@@ -228,6 +313,26 @@ export function verifyPuzzle(puzzle: Puzzle): PuzzleVerification {
       matchesDeclared = found.length === 1 && sameArray(found[0], puzzle.solution);
       break;
     }
+    case "evidence": {
+      candidateCount = enumerateEvidence(puzzle.rules).length;
+      const found = solveEvidence(puzzle.rules);
+      solutions = found;
+      matchesDeclared =
+        found.length === 1 &&
+        found[0].statement === puzzle.solution.statement &&
+        found[0].against === puzzle.solution.against;
+      issues = auditEvidence(puzzle.rules).issues;
+      break;
+    }
+    case "spatial": {
+      candidateCount = enumerateSeals(puzzle.rules).length;
+      const found = solveSpatial(puzzle.rules);
+      solutions = found;
+      matchesDeclared =
+        found.length === 1 && found[0].stamp === puzzle.solution.stamp && found[0].turn === puzzle.solution.turn;
+      issues = auditSpatial(puzzle.rules).issues;
+      break;
+    }
   }
 
   const unique = solutions.length === 1;
@@ -237,7 +342,8 @@ export function verifyPuzzle(puzzle: Puzzle): PuzzleVerification {
     solutions,
     unique,
     matchesDeclared,
-    ok: unique && matchesDeclared,
+    issues,
+    ok: unique && matchesDeclared && issues.length === 0,
   };
 }
 
@@ -257,6 +363,10 @@ export function checkAnswer(puzzle: Puzzle, answer: unknown): boolean {
       if (!Array.isArray(answer) || !answer.every((id) => typeof id === "string")) return false;
       return isOrderWellFormed(puzzle.rules, answer) && orderSatisfies(puzzle.rules, answer);
     }
+    case "evidence":
+      return isEvidenceAnswer(answer) && evidenceAnswerHolds(puzzle.rules, answer);
+    case "spatial":
+      return isSpatialAnswer(answer) && sealAnswerHolds(puzzle.rules, answer);
   }
 }
 
@@ -283,6 +393,15 @@ function solutionLiteral(puzzle: Puzzle): string[] {
         (id) => puzzle.rules.people.find((p) => p.id === id)?.name ?? id,
       );
       return [names.join(" → "), names.join(", "), names.join("-")];
+    }
+    case "evidence": {
+      const statement = cardOf(puzzle.rules, puzzle.solution.statement);
+      const name = puzzle.rules.people.find((p) => p.id === statement?.speaker)?.name ?? "";
+      return [`${name}의 진술이 거짓`, `${name}의 말이 거짓`, `${name}가 거짓말`, `${name}이 거짓말`, `거짓말을 한 사람은 ${name}`];
+    }
+    case "spatial": {
+      const name = puzzle.rules.stamps.find((s) => s.id === puzzle.solution.stamp)?.name ?? "";
+      return [`${name}으로 찍`, `${name}로 찍`, `정답은 ${name}`, `${name}이 맞`, `${name}가 맞`];
     }
   }
 }
@@ -345,6 +464,43 @@ export function verifyGuidance(puzzle: Puzzle): GuidanceVerification {
         puzzle.rules.people.map((p) => p.id),
         puzzle.rules.slots.length,
       ).filter((order) => hintFacts.every((fact) => scheduleFactHolds(fact, order))).length;
+      break;
+    }
+    case "evidence": {
+      const check = (label: string, facts: EvidenceFact[]) =>
+        facts.forEach((fact) => {
+          if (!evidenceFactHolds(fact, puzzle.rules)) issues.push(`${label}: ${JSON.stringify(fact)} 가 규칙과 맞지 않는다`);
+        });
+      puzzle.hints.forEach((h, i) => check(`힌트 ${i + 1}`, h.facts));
+      puzzle.explanation.forEach((s, i) => check(`해설 ${i + 1}`, s.facts));
+      const hintFacts = puzzle.hints.flatMap((h) => h.facts);
+      candidatesAfterHints = enumerateEvidence(puzzle.rules).filter(
+        (answer) => !hintFacts.some((fact) => evidenceFactExcludes(fact, answer)),
+      ).length;
+      // 풀이는 실제로 쓰는 카드만 말해야 한다
+      const ids = new Set(allCards(puzzle.rules).map((card) => card.id));
+      [...puzzle.hints, ...puzzle.explanation].forEach((item) =>
+        item.facts.forEach((fact) => {
+          const used = fact.kind === "derives" ? [...fact.from, fact.card] : fact.kind === "statementHolds" ? [fact.statement] : [fact.a, fact.b];
+          used.forEach((id) => {
+            if (!ids.has(id)) issues.push(`없는 카드 ${id} 를 가리킨다`);
+          });
+        }),
+      );
+      break;
+    }
+    case "spatial": {
+      const answer = puzzle.solution;
+      const check = (label: string, facts: SpatialFact[]) =>
+        facts.forEach((fact) => {
+          if (!spatialFactHolds(fact, answer)) issues.push(`${label}: ${JSON.stringify(fact)} 가 정답과 모순된다`);
+        });
+      puzzle.hints.forEach((h, i) => check(`힌트 ${i + 1}`, h.facts));
+      puzzle.explanation.forEach((s, i) => check(`해설 ${i + 1}`, s.facts));
+      const hintFacts = puzzle.hints.flatMap((h) => h.facts);
+      candidatesAfterHints = enumerateSeals(puzzle.rules).filter((candidate) =>
+        hintFacts.every((fact) => spatialFactHolds(fact, candidate)),
+      ).length;
       break;
     }
   }

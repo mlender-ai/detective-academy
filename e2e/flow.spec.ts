@@ -2,6 +2,8 @@ import { expect, test } from "@playwright/test";
 import { dialValue, enroll, placeByDrag, placeByTap, preset, setCode, setDial, shot, stored, toDesk, toSafe } from "./helpers";
 
 test("처음 방문한 사용자가 입학해서 문제를 풀고 D급으로 승급한다", async ({ page }) => {
+  // 입학에서 승급·신분증까지 한 번에 가는 긴 흐름이다(혼자 돌면 30초쯤). 다른 테스트와 함께 돌 때를 위해 시간을 넉넉히 준다.
+  test.slow();
   /* ── 입학 ── */
   await page.goto("/");
   await expect(page.getByTestId("admission-screen")).toBeVisible();

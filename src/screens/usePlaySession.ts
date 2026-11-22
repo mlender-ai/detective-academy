@@ -4,15 +4,28 @@ import { haptic, playSound } from "../app/sound";
 import { gameStore, useGame } from "../app/store";
 import { getProgress, type SubmitOutcome } from "../engine/progressEngine";
 import type { Puzzle, PuzzleInput } from "../engine/types";
-import { initialInput, readiness, restoreInput, toAnswer, type Verdict } from "../games/logic";
+import { initialInput, josa, readiness, restoreInput, toAnswer, type Verdict } from "../games/logic";
 
 export type PlayNotice = { kind: "invalid"; text: string } | { kind: "wrong" };
 
-export const WRONG_TEXT: Record<Puzzle["type"], string> = {
+const WRONG_TEXT: Record<Puzzle["type"], string> = {
   code: "이 암호는 시도 기록과 맞지 않는 곳이 있습니다. 기록을 하나씩 다시 대조해 보세요.",
   truth: "이 사람이 숨겼다면 참인 진술이 하나가 되지 않습니다. 다른 가정을 확인해 보세요.",
   schedule: "이 순서는 조건 가운데 어긋나는 것이 있습니다. 조건을 하나씩 다시 확인해 보세요.",
+  evidence: "이 진술은 그 증거와 함께 성립할 수 있습니다. 두 카드의 사람·시각·장소를 다시 맞대어 보세요.",
+  spatial: "이 도장을 이 방향으로 찍으면 자국과 다른 곳이 있습니다. 찍으면 좌우가 뒤집힌다는 것을 떠올려 보세요.",
 };
+
+const COUNT_WORD = ["", "하나", "둘", "셋", "넷"];
+
+/** 오답 쪽지의 글. 무엇이 틀렸는지는 알려 주지 않고, 다시 볼 곳만 가리킨다. */
+export function wrongText(puzzle: Puzzle): string {
+  if (puzzle.type === "truth" && puzzle.rules.trueCount !== 1) {
+    const word = COUNT_WORD[puzzle.rules.trueCount] ?? `${puzzle.rules.trueCount}개`;
+    return `이 사람이 숨겼다면 참인 진술이 ${word}${josa(word, "이", "가")} 되지 않습니다. 다른 가정을 확인해 보세요.`;
+  }
+  return WRONG_TEXT[puzzle.type];
+}
 
 interface Options {
   /** 이미 해결한 문제를 기록·보상 없이 다시 푼다 */
@@ -90,7 +103,7 @@ export function usePlaySession(puzzle: Puzzle, { replay, reactionMs, onSolved }:
       setNotice({ kind: "invalid", text: ready.reason });
       return;
     }
-    const outcome = gameStore.submit(puzzle, toAnswer(input));
+    const outcome = gameStore.submit(puzzle, toAnswer(puzzle, input));
     if (!outcome.accepted) return;
     if (outcome.correct) {
       outcomeRef.current = outcome;

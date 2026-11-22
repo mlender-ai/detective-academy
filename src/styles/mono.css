@@ -1137,8 +1137,21 @@
   line-height: 20px;
 }
 
-.cine__sub[data-shown="false"] {
+.cine__sub[data-shown="false"],
+.cine__text[data-shown="false"] {
   visibility: hidden;
+}
+
+/* 사건을 여는 한두 문장: 아래 겹줄 밑에 놓인다 */
+.cine__text {
+  position: absolute;
+  left: 24px;
+  right: 24px;
+  top: calc(62% + 22px);
+  font-size: 16px;
+  line-height: 24px;
+  text-wrap: balance;
+  word-break: keep-all;
 }
 
 .cine[data-stage="out"] {

@@ -11,10 +11,14 @@ import { DeskWood } from "../components/DeskWood";
 import { useCountUp } from "../components/CreditReward";
 import { Stamp } from "../components/Stamp";
 import { getProgress, type SubmitOutcome } from "../engine/progressEngine";
+import { allCards, derivationPath } from "../engine/evidence";
 import { truthValues } from "../engine/puzzleValidator";
+import { pressSeal, sealFace } from "../engine/seal";
 import { formatDuration, seoulDateLabel } from "../engine/time";
 import type { Puzzle, PuzzleProgress } from "../engine/types";
 import { LockOpen } from "../games/CodeBreaker/CodeBreaker";
+import { josa } from "../games/logic";
+import { DotGrid, gridWords } from "../games/SealMatch/SealMatch";
 
 interface Props {
   puzzle: Puzzle;
@@ -128,7 +132,10 @@ function Solution({ puzzle }: { puzzle: Puzzle }) {
     const values = truthValues(puzzle.rules, puzzle.solution);
     return (
       <section className="solution leaf" data-testid="solution">
-        <h2 className="solution__label hand">답안지를 숨긴 사람</h2>
+        <h2 className="solution__label hand">
+          {puzzle.rules.item ?? "답안지"}
+          {josa(puzzle.rules.item ?? "답안지", "을", "를")} 숨긴 사람
+        </h2>
         <p className="solution__person">
           <span className="solution__photo">
             <Portrait person={culprit} />
@@ -154,9 +161,73 @@ function Solution({ puzzle }: { puzzle: Puzzle }) {
     );
   }
 
+  if (puzzle.type === "evidence") {
+    const cards = allCards(puzzle.rules);
+    const label = (id: string) => cards.find((card) => card.id === id)?.label ?? id;
+    const statement = cards.find((card) => card.id === puzzle.solution.statement)!;
+    const against = cards.find((card) => card.id === puzzle.solution.against)!;
+    const speaker = puzzle.rules.people.find((p) => p.id === statement.speaker)!;
+    const path = derivationPath(puzzle.rules, against.id);
+    return (
+      <section className="solution leaf solution--evidence" data-testid="solution">
+        <h2 className="solution__label hand">기록과 맞지 않는 진술</h2>
+        <p className="solution__person">
+          <span className="solution__photo">
+            <Portrait person={speaker} />
+            <PenMark kind="cross" />
+          </span>
+          {speaker.name}
+        </p>
+        <p className="solution__lie">“{statement.text}”</p>
+        <h2 className="solution__label hand">이 진술을 깬 증거</h2>
+        {path.length === 0 ? (
+          <p className="solution__fact">{against.text}</p>
+        ) : (
+          <ol className="solution__chain">
+            {path.map((step) => (
+              <li key={step.card.id}>
+                <span className="solution__from">
+                  {label(step.from[0])} + {label(step.from[1])}
+                </span>
+                <span className="solution__fact">{step.card.text}</span>
+              </li>
+            ))}
+          </ol>
+        )}
+      </section>
+    );
+  }
+
+  if (puzzle.type === "spatial") {
+    const stamp = puzzle.rules.stamps.find((s) => s.id === puzzle.solution.stamp)!;
+    const { turn } = puzzle.solution;
+    const cell = puzzle.rules.size >= 6 ? 10 : 12;
+    return (
+      <section className="solution leaf solution--seal" data-testid="solution">
+        <h2 className="solution__label hand">자국을 낸 도장</h2>
+        <p className="solution__stamp">
+          {stamp.name} · {["돌리지 않고", "한 번 돌려", "두 번 돌려", "세 번 돌려"][turn]} 찍음
+        </p>
+        <div className="solution__seals">
+          <figure>
+            <DotGrid grid={sealFace(stamp.face, turn)} cell={cell} label={`도장 면. ${gridWords(sealFace(stamp.face, turn))}`} />
+            <figcaption>도장 면</figcaption>
+          </figure>
+          <span className="solution__arrow" aria-hidden="true">
+            찍으면
+          </span>
+          <figure>
+            <DotGrid grid={pressSeal(stamp.face, turn)} cell={cell} label={`찍힌 자국. ${gridWords(pressSeal(stamp.face, turn))}`} />
+            <figcaption>찍힌 자국</figcaption>
+          </figure>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="solution leaf" data-testid="solution">
-      <h2 className="solution__label hand">발표 순서</h2>
+      <h2 className="solution__label hand">{puzzle.rules.title ?? "발표 순서"}</h2>
       <ol className="solution__order">
         {puzzle.solution.map((id, i) => {
           const person = puzzle.rules.people.find((p) => p.id === id)!;
@@ -217,6 +288,12 @@ export function DeskResult({ puzzle, outcome, onReplay }: Props) {
           <p className="graded__lead" data-testid="result-lead">
             {fresh ? <Typed text={lead} startMs={STAMP_DELAY_MS + 200} /> : lead}
           </p>
+
+          {puzzle.outro && (
+            <p className="graded__outro" data-testid="result-outro">
+              {fresh ? <Typed text={puzzle.outro} startMs={STAMP_DELAY_MS + 200 + lead.length * 26 + 300} /> : puzzle.outro}
+            </p>
+          )}
 
           <GradedFacts progress={progress} />
 
