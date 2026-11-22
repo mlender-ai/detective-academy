@@ -5,12 +5,11 @@ import { dialValue, expectLayoutOk, offToneRatio, preset, setCode, setDial, stor
  * 암호 풀이 화면 (V3 GATE 03). 사용자가 B안 · 장면 전개를 골라 암호 해독의 기본 화면이 되었다.
  * - 기본(B안 장면 전개): 자료실에서 책상(기록)과 금고(자물쇠) 사이를 오가며 푼다.
  * - ?play=c  C안 혼합형: 자물쇠를 크게 두고 조건은 수사 수첩(접힘 · 간편 보기 · 전체 보기)에 담는다. 다른 문제에 쓸 UI 후보로 남겨 두었다.
- * - ?play=a  A안 접기·펼치기: 한 화면에서 사건·시도 기록·숫자 메모를 접고 편다. 걷어내기 전까지 주소로만 열린다.
- * - ?play=old 예전 풀이 화면: 시험지 한 장에 기록·메모·자물쇠가 다 있다. 걷어내기 전까지 주소로만 열린다.
- * 모두 같은 엔진으로 판정하고 보상한다. 정답은 426 이다.
+ * 예전 풀이 화면과 A안(접기·펼치기)은 걷어냈다. 다시 보려면 docs/archive/v3-gate03-all-app/ 을 연다.
+ * 둘 다 같은 엔진으로 판정하고 보상한다. 정답은 426 이다.
  */
 
-type Ux = "a" | "b" | "c";
+type Ux = "b" | "c";
 
 /** 그 안으로 열 때 주소에 덧붙일 값. B안은 기본이라 아무것도 붙이지 않는다. */
 const query = (ux: Ux) => (ux === "b" ? "" : `&play=${ux}`);
@@ -31,6 +30,15 @@ test("암호 해독의 기본 화면은 자료실 장면이다", async ({ page }
   await expect(page.getByTestId("record")).toBeVisible();
 });
 
+test("걷어낸 화면의 주소(?play=old · ?play=a)로 열어도 자료실 장면이 열린다", async ({ page }) => {
+  for (const old of ["old", "a"]) {
+    await preset(page, "daily-unsolved", `&play=${old}`);
+    await page.getByTestId("daily-file").click();
+    await expect(page.getByTestId("play-screen")).toHaveAttribute("data-ux", "b");
+    await expect(page.getByTestId("record")).toBeVisible();
+  }
+});
+
 test("진술 추리는 그대로 추리 책상에서 푼다", async ({ page }) => {
   await preset(page, "daily-solved");
   await page.getByTestId("practice-entry").click();
@@ -39,80 +47,6 @@ test("진술 추리는 그대로 추리 책상에서 푼다", async ({ page }) =
   await expect(screen).toHaveAttribute("data-type", "truth");
   expect(await screen.getAttribute("data-ux")).toBeNull();
   await expect(page.getByTestId("live-scene")).toHaveCount(0);
-});
-
-test.describe("예전 풀이 화면 (?play=old)", () => {
-  test("시험지 한 장에 기록과 자물쇠가 같이 있고, 끝까지 풀린다", async ({ page }) => {
-    await preset(page, "daily-unsolved", "&play=old");
-    await page.getByTestId("daily-file").click();
-    const screen = page.getByTestId("play-screen");
-    await expect(screen).toBeVisible();
-    expect(await screen.getAttribute("data-ux")).toBeNull();
-    await expect(page.locator(".exampaper")).toBeVisible();
-    await expect(page.locator(".clue")).toHaveCount(5);
-    await expect(page.getByTestId("dial-0")).toBeVisible();
-    await expectLayoutOk(page, '[data-testid="submit"]');
-    expect(await offToneRatio(page)).toBeLessThan(0.005);
-
-    await page.getByTestId("submit").click();
-    await expect(page.getByTestId("notice-wrong")).toBeVisible();
-    await setCode(page, [4, 2, 6]);
-    await page.getByTestId("submit").click();
-    await expect(page.getByTestId("result-screen")).toBeVisible();
-    await expect(page.getByTestId("reward")).toContainText("+100");
-  });
-});
-
-test.describe("A안 · 접기·펼치기 (?play=a)", () => {
-  test("패널을 접고 펴도 자물쇠와 메모가 그대로이고, 접힌 패널에 요약이 남는다", async ({ page }) => {
-    await open(page, "a");
-    // 처음: 사건은 한 줄 요약으로 접혀 있고, 시도 기록은 펴져 있고, 메모는 접혀 있다
-    await expect(page.getByTestId("fold-brief")).toHaveAttribute("data-open", "false");
-    await expect(page.getByTestId("fold-brief")).toContainText("서로 다른 숫자 3개");
-    await expect(page.getByTestId("fold-clues")).toHaveAttribute("data-open", "true");
-    await expect(page.getByTestId("fold-memo")).toHaveAttribute("data-open", "false");
-    await expect(page.getByTestId("fold-memo-summary")).toHaveText("표시한 숫자 없음");
-
-    await setDial(page, 0, 7);
-    // 메모를 펴서 5를 제외로, 6을 후보로 표시한다
-    await page.getByTestId("fold-memo-toggle").click();
-    await page.getByTestId("memo-5").click();
-    await page.getByTestId("memo-6").click();
-    await page.getByTestId("memo-6").click();
-    await page.getByTestId("fold-memo-toggle").click();
-    await expect(page.getByTestId("fold-memo-summary")).toHaveText("제외 5 · 후보 6");
-
-    // 시도 기록을 접으면 숫자와 표시만 남은 간편 보기가 보인다(메모가 겹쳐 보인다)
-    await page.getByTestId("fold-clues-toggle").click();
-    await expect(page.getByTestId("fold-clues")).toHaveAttribute("data-open", "false");
-    await expect(page.locator(".cluestrip .cluestrip__item")).toHaveCount(5);
-    await expect(page.locator('.cluestrip .clue__digit[data-memo="out"]')).toHaveCount(3);
-    expect(await dialValue(page, 0)).toBe(7);
-
-    // 접어 둔 만큼 드럼의 창이 길어진다
-    const tall = (await page.getByTestId("dial-0").boundingBox())!.height;
-    await page.getByTestId("fold-clues-toggle").click();
-    const short = (await page.getByTestId("dial-0").boundingBox())!.height;
-    expect(tall).toBeGreaterThan(short);
-
-    // 접고 편 상태는 새로고침해도 남는다
-    await page.getByTestId("fold-brief-toggle").click();
-    await page.reload();
-    await expect(page.getByTestId("fold-brief")).toHaveAttribute("data-open", "true");
-    await expect(page.getByTestId("fold-brief")).toContainText("자료실 금고는");
-    expect(await dialValue(page, 0)).toBe(7);
-  });
-
-  test("오답은 쪽지로 알리고, 정답이면 결과와 보상으로 이어진다", async ({ page }) => {
-    await open(page, "a");
-    await page.getByTestId("submit").click();
-    await expect(page.getByTestId("notice-wrong")).toBeVisible();
-    await setCode(page, [4, 2, 6]);
-    await page.getByTestId("submit").click();
-    await expect(page.getByTestId("result-screen")).toBeVisible();
-    await expect(page.getByTestId("reward")).toContainText("+100");
-    expect((await stored(page)).credits).toBe(140);
-  });
 });
 
 test.describe("기본 · 장면 전개(자료실)", () => {
@@ -260,9 +194,9 @@ test.describe("C안 · 혼합형(수사 수첩) (?play=c)", () => {
   });
 });
 
-test.describe("세 화면의 공통 약속", () => {
-  for (const ux of ["a", "b", "c"] as const) {
-    test(`${ux === "b" ? "기본(자료실)" : `${ux.toUpperCase()}안`}: 두 가지 색으로만 그려진다`, async ({ page }) => {
+test.describe("두 화면의 공통 약속", () => {
+  for (const ux of ["b", "c"] as const) {
+    test(`${ux === "b" ? "기본(자료실)" : "C안"}: 두 가지 색으로만 그려진다`, async ({ page }) => {
       await open(page, ux);
       await page.waitForTimeout(900);
       expect(await offToneRatio(page)).toBeLessThan(0.005);
@@ -278,7 +212,7 @@ test.describe("세 화면의 공통 약속", () => {
       }
     });
 
-    test(`${ux === "b" ? "기본(자료실)" : `${ux.toUpperCase()}안`}: 이미 해결한 사건은 기록으로 열리고, 다시 풀어도 보상은 한 번이다`, async ({ page }) => {
+    test(`${ux === "b" ? "기본(자료실)" : "C안"}: 이미 해결한 사건은 기록으로 열리고, 다시 풀어도 보상은 한 번이다`, async ({ page }) => {
       await preset(page, "daily-solved", query(ux));
       await page.getByTestId("daily-file").click();
       await expect(page.getByTestId("result-screen")).toBeVisible();
@@ -314,17 +248,6 @@ for (const size of [
 ]) {
   test.describe(`${size.width}×${size.height}`, () => {
     test.use({ viewport: size });
-
-    test("A안: 기록을 읽으면서 드럼을 굴릴 수 있고 제출 단추가 화면 안에 있다", async ({ page }) => {
-      await open(page, "a");
-      await expectLayoutOk(page, '[data-testid="submit"]');
-      const submitTop = (await page.getByTestId("submit").boundingBox())!.y;
-      const dials = (await page.locator(".lock__dials").boundingBox())!;
-      expect(dials.y + dials.height, "드럼이 제출 단추에 가려진다").toBeLessThanOrEqual(submitTop);
-      // 펴져 있는 시도 기록의 마지막 줄까지 보인다(자물쇠에 가려지지 않는다)
-      const last = (await page.locator(".fold .clue").last().boundingBox())!;
-      expect(last.y + last.height, "시도 기록이 자물쇠에 가려진다").toBeLessThanOrEqual(dials.y);
-    });
 
     test("기본(자료실): 책상에서는 기록 다섯 건과 메모가, 금고 앞에서는 드럼과 제출 단추가 화면 안에 있다", async ({ page }) => {
       await open(page, "b");

@@ -4,7 +4,6 @@ import { useGame } from "../app/store";
 import { getProgress, type SubmitOutcome } from "../engine/progressEngine";
 import type { Puzzle } from "../engine/types";
 import { PLAY_VARIANT } from "../app/variant";
-import { FoldPlay } from "./codeux/FoldPlay";
 import { NotebookPlay } from "./codeux/NotebookPlay";
 import { ScenePlay } from "./codeux/ScenePlay";
 import { DeskPlay } from "./DeskPlay";
@@ -43,10 +42,10 @@ export function CaseSession({ puzzle, onExit }: Props) {
     });
   const key = replay ? "replay" : "play";
 
-  // 암호 해독은 자료실 장면에서 푼다 (V3 GATE 03 에서 사용자가 B안을 골랐다).
-  // 수사 수첩(C안)·예전 화면·A안은 주소에 ?play=c · old · a 를 붙였을 때만 열린다. 판정·힌트·보상은 같은 엔진을 쓴다.
-  if (puzzle.type === "code" && PLAY_VARIANT !== "old") {
-    const Play = PLAY_VARIANT === "a" ? FoldPlay : PLAY_VARIANT === "c" ? NotebookPlay : ScenePlay;
+  // 암호 해독은 자료실 장면에서 푼다 (V3 GATE 03 에서 사용자가 고른 B안).
+  // 수사 수첩(C안)은 다른 문제에 쓸 후보로 남겨 둔 화면이라 주소에 ?play=c 를 붙였을 때만 열린다. 판정·힌트·보상은 같은 엔진을 쓴다.
+  if (puzzle.type === "code") {
+    const Play = PLAY_VARIANT === "notebook" ? NotebookPlay : ScenePlay;
     return <Play key={key} puzzle={puzzle} replay={replay} onExit={exit} onSolved={solved} />;
   }
 

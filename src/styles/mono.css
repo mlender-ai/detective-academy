@@ -466,61 +466,14 @@
   animation: m-blink 700ms steps(1) infinite;
 }
 
-/* 게시판은 판이 아니라 명령 창이 놓이는 자리다 */
-.bulletin {
-  margin: 0 10px;
-  padding: 2px 0 6px;
-  gap: 14px;
-  justify-content: center;
-  background: none;
-  box-shadow: none;
-}
-
-.posting {
-  color: var(--m-w);
-  animation: m-open 200ms steps(2) both;
-}
-
 @keyframes m-open {
   from {
     clip-path: inset(46% 0 46% 0);
   }
 }
 
-.posting__pin,
-.promoslip__pin,
 .statement__pin {
   display: none;
-}
-
-.posting__leaf {
-  padding: 12px 14px 12px;
-  background: #000;
-  box-shadow: var(--m-frame2);
-}
-
-.posting__title {
-  font-family: var(--m-font);
-  font-size: 32px;
-  line-height: 36px;
-}
-
-.posting__date {
-  margin-top: 6px;
-  padding: 0 6px;
-  font-family: var(--m-font);
-  font-size: 16px;
-  line-height: 20px;
-  color: #000;
-  background: var(--m-w);
-  border: 0;
-}
-
-.posting__subject {
-  margin-top: 6px;
-  padding-bottom: 8px;
-  color: var(--m-w);
-  border-bottom: 2px solid var(--m-w);
 }
 
 .posting__status {
@@ -553,33 +506,6 @@
   line-height: 22px;
 }
 
-.posting:active .posting__cta {
-  transform: none;
-  color: var(--m-w);
-  background: #000;
-  box-shadow: var(--m-frame);
-}
-
-.posting[data-lifting="true"] {
-  transform: none;
-}
-
-.posting[data-lifting="true"] .posting__leaf {
-  box-shadow: var(--m-frame2);
-  animation: m-invert 150ms steps(1) both;
-}
-
-@keyframes m-invert {
-  0%,
-  66% {
-    filter: invert(1);
-  }
-  33%,
-  100% {
-    filter: none;
-  }
-}
-
 .posting__stamp {
   right: 0;
   top: 0;
@@ -598,26 +524,6 @@
   line-height: 20px;
 }
 
-.promoslip {
-  gap: 14px;
-  padding-left: 4px;
-  align-items: center;
-}
-
-.promoslip__tag {
-  gap: 4px;
-  padding: 8px 10px 10px;
-  background: #000;
-  box-shadow: var(--m-frame);
-}
-
-.promoslip__title {
-  font-size: 16px;
-  line-height: 22px;
-  color: var(--m-w);
-}
-
-.promoslip__note,
 .promoslip__reqs li {
   font-size: 16px;
   line-height: 22px;
@@ -629,65 +535,6 @@
   height: 14px;
   border: 2px solid var(--m-w);
   background: #000;
-}
-
-/* 아래 막대: 상태 창 세 칸 */
-.ledge {
-  gap: 0;
-  margin-top: 10px;
-  padding: 0 0 env(safe-area-inset-bottom);
-  background: #000;
-  box-shadow: none;
-  border-top: 2px solid var(--m-w);
-}
-
-.ledge__item {
-  grid-template-rows: 52px auto auto;
-  margin-bottom: 0;
-  padding: 12px 2px 8px;
-  color: var(--m-w);
-  background: #000;
-  box-shadow: none;
-}
-
-.ledge__item + .ledge__item {
-  border-left: 2px solid var(--m-w);
-}
-
-button.ledge__item:active {
-  transform: none;
-  box-shadow: none;
-  filter: invert(1);
-}
-
-.ledge__name {
-  margin-top: 8px;
-  font-size: 16px;
-  line-height: 20px;
-}
-
-.ledge__sub {
-  font-family: var(--m-cap);
-  font-size: 12px;
-  line-height: 16px;
-  color: var(--m-w);
-}
-
-.ledge__item[data-primary="true"] {
-  box-shadow: inset 0 0 0 2px #000, inset 0 0 0 4px var(--m-w);
-}
-
-.ledge__item[data-primary="true"] .ledge__sub {
-  color: #000;
-  background: var(--m-w);
-  padding: 0 4px;
-}
-
-.ledge__item--coins .ledge__name {
-  font-family: var(--m-font);
-  font-size: 32px;
-  line-height: 24px;
-  color: var(--m-w);
 }
 
 /* ───────── 추리 책상 ───────── */
@@ -740,10 +587,6 @@ button.ledge__item:active {
 
 .desk__scroll {
   padding: 10px 12px 8px;
-}
-
-.code {
-  gap: 6px;
 }
 
 .exampaper {
@@ -1386,41 +1229,13 @@ button.ledge__item:active {
     padding: 6px 12px 4px;
   }
 
-  .bulletin {
-    gap: 10px;
-    padding: 2px 0 4px;
-  }
-
-  .posting__leaf {
-    padding: 8px 12px 10px;
-  }
-
-  .posting__title {
-    font-size: 32px;
-  }
-
   .posting__meta {
     padding: 4px 0 10px;
-  }
-
-  .ledge {
-    margin-top: 8px;
-    padding-top: 0;
-    padding-bottom: env(safe-area-inset-bottom);
-  }
-
-  .ledge__item {
-    grid-template-rows: 48px auto auto;
-    padding: 4px 2px;
   }
 
   .desk__scroll {
     padding-top: 6px;
     padding-bottom: 2px;
-  }
-
-  .code {
-    gap: 4px;
   }
 
   .exampaper {

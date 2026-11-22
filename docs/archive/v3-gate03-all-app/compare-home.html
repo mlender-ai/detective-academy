@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>탐정학원 V3 · GATE 02 메인 홈 비교</title>
+<style>
+@font-face { font-family: "NeoDGM"; src: url("./fonts/neodgm.woff2") format("woff2"); }
+@font-face { font-family: "Galmuri11"; src: url("./fonts/Galmuri11.woff2") format("woff2"); }
+* { box-sizing: border-box; }
+html, body { margin: 0; background: #000; color: #f1f1ea; }
+body { font: 16px/1.5 "NeoDGM", monospace; -webkit-font-smoothing: none; }
+main { margin: 0 auto; padding: 20px 16px 48px; width: max-content; max-width: 100%; }
+h1 { font-size: 32px; line-height: 40px; font-weight: 400; margin: 0 0 6px; }
+p { margin: 0 0 8px; }
+a { color: inherit; }
+.note { font: 12px/1.7 "Galmuri11", monospace; }
+.bar { display: flex; flex-wrap: wrap; gap: 8px 20px; align-items: center; margin: 14px 0 18px; }
+.bar span { font: 12px/1.5 "Galmuri11", monospace; }
+.seg { display: flex; flex-wrap: wrap; gap: 2px; }
+.seg button { min-height: 32px; padding: 0 10px; font: 16px "NeoDGM", monospace; color: #f1f1ea; background: #000; border: 0; box-shadow: inset 0 0 0 2px #f1f1ea; cursor: pointer; }
+.seg button[aria-pressed="true"] { color: #000; background: #f1f1ea; }
+.row { display: flex; gap: 28px; align-items: flex-start; }
+.col { flex: none; }
+.col h2 { display: inline-block; font-size: 16px; font-weight: 400; margin: 0 0 4px; padding: 0 6px; color: #000; background: #f1f1ea; }
+.col p { max-width: 390px; min-height: 84px; }
+.phone { display: block; border: 0; background: #000; box-shadow: 0 0 0 2px #f1f1ea; }
+.open { display: inline-block; margin-top: 10px; padding: 6px 10px; text-decoration: none; box-shadow: inset 0 0 0 2px #f1f1ea; }
+.open:active { color: #000; background: #f1f1ea; }
+.open::before { content: "▶ "; }
+/* 좁은 화면(휴대폰): 나란히 띄우지 않고, 각 안을 전체 화면으로 여는 단추만 둔다 */
+@media (max-width: 900px) {
+  main { width: auto; }
+  .row { display: grid; gap: 22px; }
+  .phone, .bar .size { display: none; }
+  .col p { min-height: 0; }
+  .open { display: block; padding: 12px; font-size: 16px; }
+}
+</style>
+</head>
+<body>
+<main>
+  <h1>탐정학원 V3 · GATE 02</h1>
+  <p class="note"><b>보관본 (2026-11-22).</b> 예전 홈 · 홈 A안 · 예전 암호 화면 · 암호 A안을 작업 폴더에서 걷어내기 직전의 빌드다. 이 폴더를 정적 서버로 열어야 한다.</p>
+  <p>메인 홈 세 가지. 셋 다 실제로 플레이된다(입학 이후의 같은 상태, 같은 화면 크기에서 시작).</p>
+  <p class="note">2026-11-22 에 B안으로 골랐다. 그래서 지금의 기본 홈은 B안이다. 예전 홈과 A안은 걷어내기 전까지 주소에 <b>?home=old</b> · <b>?home=a</b> 를 붙이면 열린다.</p>
+
+  <div class="bar">
+    <span>진행 상태</span>
+    <div class="seg" id="state">
+      <button data-v="daily-unsolved" aria-pressed="true">오늘의 추리 미해결</button>
+      <button data-v="daily-solved" aria-pressed="false">오늘 해결</button>
+      <button data-v="exam-ready" aria-pressed="false">승급 시험 가능</button>
+      <button data-v="promoted" aria-pressed="false">승급 완료</button>
+    </div>
+    <span class="size">화면 크기</span>
+    <div class="seg size" id="size">
+      <button data-v="390x844" aria-pressed="true">390×844</button>
+      <button data-v="390x664" aria-pressed="false">390×664 주소창 보임</button>
+      <button data-v="375x667" aria-pressed="false">375×667</button>
+      <button data-v="430x932" aria-pressed="false">430×932</button>
+    </div>
+  </div>
+
+  <div class="row">
+    <section class="col">
+      <h2>예전 홈 (?home=old)</h2>
+      <p class="note">복도는 정지 그림 두 장을 번갈아 보여 준다. 공고를 누르면 곧바로 시험지가 펼쳐진다.</p>
+      <iframe class="phone" data-home="old" title="예전 홈"></iframe>
+      <a class="open" data-home="old" href="#">예전 홈을 전체 화면으로 열기</a>
+    </section>
+    <section class="col">
+      <h2>A안 · 시네마틱 복도 (?home=a)</h2>
+      <p class="note">구성은 그대로. 복도에 탐정이 서 있고, 등·문·끝 방의 사람·종이가 정해진 박자로 움직인다. 공고·연습실·시험·신분증을 누르면 탐정이 그쪽으로 걸어가고 카메라가 따라간 뒤 화면이 바뀐다. 한 번 더 누르면 건너뛴다.</p>
+      <iframe class="phone" data-home="a" title="A안"></iframe>
+      <a class="open" data-home="a" href="#">A안을 전체 화면으로 열기</a>
+    </section>
+    <section class="col">
+      <h2>B안 · 플레이 가능한 복도 — 고른 안, 지금의 홈</h2>
+      <p class="note">복도가 게임 장면이다(옆에서 본 복도, 화면보다 넓다). 게시판·연습실 문·시험실 문·기록 보관함을 직접 누르면 걸어가서 살펴보고, 한 번 더 누르면 들어간다. 아래 줄을 누르면 걸어가서 바로 들어간다.</p>
+      <iframe class="phone" data-home="b" title="B안"></iframe>
+      <a class="open" data-home="b" href="#">B안을 전체 화면으로 열기</a>
+    </section>
+  </div>
+
+  <p class="note" style="margin-top:22px">보는 법: 같은 상태에서 같은 일을 해 본다. ① 오늘의 추리로 들어가기 ② 연습실 들어갔다 나오기 ③ 승급 시험 가능 상태에서 시험실로 가기 ④ 걷는 중에 한 번 더 눌러 건너뛰기.</p>
+</main>
+<script>
+  // 세 화면이 서로의 진행을 덮어쓰지 않게 저장 칸을 따로 쓴다(save). 상태를 바꾸면 세 화면을 같은 상태로 다시 연다.
+  let state = "daily-unsolved";
+  let size = "390x844";
+  const url = (home, apply) => {
+    const q = new URLSearchParams({ demo: "1", save: `g2-${home}`, preset: state });
+    // B안은 기본 홈이므로 주소에 아무것도 붙이지 않는다
+    if (home !== "b") q.set("home", home);
+    if (apply) q.set("apply", "1");
+    return `./index.html?${q}`;
+  };
+  const render = (apply) => {
+    const [w, h] = size.split("x").map(Number);
+    for (const frame of document.querySelectorAll("iframe.phone")) {
+      frame.width = w;
+      frame.height = h;
+      frame.src = url(frame.dataset.home, apply);
+    }
+    for (const a of document.querySelectorAll("a.open")) a.href = url(a.dataset.home, true);
+  };
+  const seg = (id, set) => {
+    const box = document.getElementById(id);
+    box.addEventListener("click", (e) => {
+      const b = e.target.closest("button");
+      if (!b) return;
+      for (const other of box.querySelectorAll("button")) other.setAttribute("aria-pressed", String(other === b));
+      set(b.dataset.v);
+      render(true);
+    });
+  };
+  seg("state", (v) => (state = v));
+  seg("size", (v) => (size = v));
+  render(true);
+</script>
+</body>
+</html>

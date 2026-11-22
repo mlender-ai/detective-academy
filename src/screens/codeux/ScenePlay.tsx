@@ -7,7 +7,7 @@ import type { GameProps } from "../../games/logic";
 import { VaultScene, type VaultSpot } from "../../scene/vaultScene";
 import { HintButton, PlayBar, PlayFoot, PlayNotice, PlayOverlays } from "../playParts";
 import { usePlaySession } from "../usePlaySession";
-import type { CodePlayProps } from "./FoldPlay";
+import type { CodePlayProps } from "./types";
 import { vaultStory } from "./story";
 import { useStored } from "./useStored";
 
@@ -21,7 +21,7 @@ const ENTRANCE_DELAY_MS = 320;
  * 문제 하나가 자료실의 장면들로 펼쳐진다: 자료실에 들어선다 → 책상의 기록을 살핀다 → 금고 앞에서 드럼을 돌린다 → 금고가 열린다.
  * 책상과 금고 사이는 장면의 물건이나 아래 단추를 눌러 언제든 오간다. 다이얼과 메모는 오가도 그대로다.
  */
-export function ScenePlay({ puzzle, replay = false, onExit, onSolved }: CodePlayProps) {
+export function ScenePlay({ puzzle, variant = "case", replay = false, onExit, onSolved }: CodePlayProps) {
   const session = usePlaySession(puzzle, { replay, reactionMs: OPEN_MS, onSolved });
   const input = session.input as CodeInput;
   const board = useCodeBoard({
@@ -70,7 +70,7 @@ export function ScenePlay({ puzzle, replay = false, onExit, onSolved }: CodePlay
       data-at={spot}
       data-testid="play-screen"
     >
-      <PlayBar puzzle={puzzle} session={session} variant="case" replay={replay} onExit={onExit} />
+      <PlayBar puzzle={puzzle} session={session} variant={variant} replay={replay} onExit={onExit} />
 
       <LiveScene
         ref={sceneRef}
@@ -149,7 +149,7 @@ export function ScenePlay({ puzzle, replay = false, onExit, onSolved }: CodePlay
       )}
 
       {/* 사건을 여는 자막 화면 대신, 자료실에 들어서는 장면이 도입이다 */}
-      <PlayOverlays puzzle={puzzle} session={session} variant="case" replay={replay} cine={false} />
+      <PlayOverlays puzzle={puzzle} session={session} variant={variant} replay={replay} cine={false} />
     </div>
   );
 }

@@ -3,8 +3,9 @@
 V3(인디게임 경험과 게임플레이 확장)의 실험을 모아 둔 곳이다. **제품 코드(`src/`)와 확정된 화면(D안)은 건드리지 않는다.** 여기서 검수를 통과한 것만 제품으로 옮긴다.
 
 - 브랜치: `feat/v3-indie-experience` (main 과 배포본은 그대로다)
-- 보는 법: 개발 서버(`npm run dev`)를 켜고 <http://localhost:5183/lab/gate01/> (실험) · <http://localhost:5183/lab/gate02/> (메인 홈 비교) · <http://localhost:5183/lab/gate03/> (암호 풀이 화면 비교)
+- 보는 법: 개발 서버(`npm run dev`)를 켜고 <http://localhost:5183/lab/gate01/> (실험) · <http://localhost:5183/lab/gate02/> (메인 홈) · <http://localhost:5183/lab/gate03/> (암호 풀이 화면: 고른 B안과 남겨 둔 C안)
 - 휴대폰에서: `npx vite --config lab/vite.lan.config.ts` 후 `http://<맥의 주소>:5184/lab/gate03/` (같은 와이파이)
+- 고르지 않은 화면(예전 홈, 홈 A안, 예전 암호 화면, 암호 A안)은 2026-11-22 에 보관하고 걷어냈다. 나란히 다시 보려면 `npx vite preview --outDir docs/archive/v3-gate03-all-app --port 4191` 후 <http://localhost:4191/compare-home.html> · <http://localhost:4191/compare-play.html>.
 - 의존성: `lab/package.json` 에만 있다(`cd lab && npm install`). 제품의 `package.json` 에는 넣지 않았다.
 
 ## GATE 01 · 오픈소스와 아트 실험
@@ -100,16 +101,16 @@ lab/ink/                   Ink Studio 장면과 굽는 법
 
 기존 홈, A안, B안을 같은 크기로 나란히 놓고 실제로 플레이해 골랐다.
 
-**결정 (2026-11-22): 사용자가 B안 · 플레이 가능한 복도를 골랐다("B안으로").** 그래서 이 브랜치의 기본 홈은 B안이다. 예전 홈과 A안은 걷어내기 전까지 `?home=old` · `?home=a` 로 열린다(걷어내는 것은 사용자 확인을 받은 뒤에 한다). main 과 배포본은 그대로다.
+**결정 (2026-11-22): 사용자가 B안 · 플레이 가능한 복도를 골랐다("B안으로").** 그래서 이 브랜치의 홈은 B안이다. 예전 홈과 A안은 같은 날 사용자 확인("보관하고 걷어내기")을 받아 보관하고 걷어냈다(`docs/archive/v3-gate03-all-app/` 의 `compare-home.html` 로 세 홈을 다시 나란히 볼 수 있다). main 과 배포본은 그대로다.
 
 고르기 전에는 확정된 홈을 건드리지 않았다: 배포본과 그때 브랜치의 기본 홈을 세 가지 상태 × 세 가지 화면 크기로 찍어 견줬고 다른 화소는 0 이었다.
 
 | | 주소 | 내용 |
 |---|---|---|
-| 나란히 보기 | `/lab/gate02/` | 세 홈을 같은 상태·같은 크기로. 진행 상태 넷, 화면 크기 넷을 바꿔 볼 수 있다. 휴대폰에서는 각 안을 전체 화면으로 여는 단추가 나온다. |
+| 지금의 홈 | `/lab/gate02/` | 고른 홈을 진행 상태 넷, 화면 크기 넷으로 바꿔 본다. 세 홈 나란히 보기는 보관본의 `compare-home.html`. |
 | B안 플레이 가능한 복도 | `/` | 고른 안. 옆에서 본 복도가 게임 장면이 된다. |
-| 예전 홈 | `/?home=old` | D안을 확정했을 때의 홈 |
-| A안 시네마틱 복도 | `/?home=a` | 예전 구성 그대로. 복도 그림 자리에 살아 있는 장면이 놓인다. |
+| 예전 홈 | 보관본 `/?home=old` | D안을 확정했을 때의 홈 |
+| A안 시네마틱 복도 | 보관본 `/?home=a` | 예전 구성 그대로. 복도 그림 자리에 살아 있는 장면이 놓인다. |
 | B안 복도 전체 | `/lab/gate02/side.html` | 340×150점 복도를 통째로(그림 검수용). 물건을 누르면 걸어간다. |
 
 그림: `docs/compare/v3/gate02-homes.png`(나란히), `gate02-b-corridor.png`(B안 복도 전체), `gate02-a-walk.png` · `gate02-b-walk.png`(걷는 장면을 이어 찍은 것).
@@ -136,12 +137,12 @@ src/scene/
   dot.ts · detective.ts   점 찍는 도구와 탐정(실험실에서 옮김)
   stage.ts                밝기 층을 합쳐 점묘로 바꾸고 먹 층을 얹는다. 화면을 떠나면 그리지 않는다.
   homeScene.ts            두 장면의 공통 약속(go · skip · hit · onArrive)과 갈 곳의 이름
-  depthArt.ts · depthScene.ts   A안: 깊이 방향 복도
+  (depthArt.ts · depthScene.ts  A안: 깊이 방향 복도. 걷어냈다)
   sideArt.ts · sideScene.ts     B안: 옆에서 본 복도. 물건의 자리(BOX)와 설 자리·누를 영역(SPOTS)이 데이터다.
 src/components/LiveScene.tsx    React 연결. 내려갈 때 루프와 관찰자를 정리한다.
 src/screens/HomePlayable.tsx    B안 화면
-src/styles/live.css             두 안의 스타일
-src/app/variant.ts              기본은 B안, ?home=old · ?home=a 로 예전 홈과 A안
+src/styles/live.css             장면과 홈의 스타일
+(src/app/variant.ts 의 ?home=old · ?home=a 전환은 걷어냈다)
 ```
 
 ### 측정 (2026-11-22, 헤드리스 크로미움, 빌드본, 390×844)
@@ -175,17 +176,17 @@ src/app/variant.ts              기본은 B안, ?home=old · ?home=a 로 예전 
 
 예전 풀이 화면은 제목·긴 설명·시도 기록·숫자 메모·자물쇠·힌트·제출이 한 화면에 몰려 있다. 같은 암호 문제(오늘의 추리 · 자료실 금고의 암호)를 세 가지 다른 구성으로 실제로 풀 수 있게 만들어, 예전 화면까지 넷을 나란히 놓고 골랐다.
 
-**결정 (2026-11-22): 사용자가 B안 · 장면 전개를 골랐다("B안이 좋아 C안은 아이디어 차원에서 남겨놔 다른 문제에 쓰일수있는 UI로").** 그래서 이 브랜치에서 암호 해독의 기본 화면은 B안이다. C안(수사 수첩)은 지우지 않고 다른 문제에 쓸 UI 후보로 남겼다(`?play=c`). 예전 화면과 A안은 걷어내기 전까지 `?play=old` · `?play=a` 로 열린다(걷어내는 것은 사용자 확인을 받은 뒤에 한다). main 과 배포본은 그대로다.
+**결정 (2026-11-22): 사용자가 B안 · 장면 전개를 골랐다("B안이 좋아 C안은 아이디어 차원에서 남겨놔 다른 문제에 쓰일수있는 UI로").** 그래서 이 브랜치에서 암호 해독의 기본 화면은 B안이다. C안(수사 수첩)은 지우지 않고 다른 문제에 쓸 UI 후보로 남겼다(`?play=c`). 예전 화면과 A안은 같은 날 사용자 확인("보관하고 걷어내기")을 받아 보관하고 걷어냈다(`docs/archive/v3-gate03-all-app/` 의 `compare-play.html` 로 네 화면을 다시 나란히 볼 수 있다). main 과 배포본은 그대로다.
 
 고르기 전에는 확정된 풀이 화면을 건드리지 않았다(부품을 나눈 뒤에도 화소 단위로 같음을 확인했다).
 
 | | 주소 | 내용 |
 |---|---|---|
-| 나란히 보기 | `/lab/gate03/` | 네 화면을 같은 문제·같은 크기로. 휴대폰에서는 각 안을 전체 화면으로 여는 단추가 나온다. |
+| 남은 두 화면 | `/lab/gate03/` | 고른 B안과 남겨 둔 C안을 같은 문제·같은 크기로. 네 화면 나란히 보기는 보관본의 `compare-play.html`. |
 | B안 장면 전개 | `/#/daily` | 고른 안. 자료실에서 책상(기록)과 금고(자물쇠) 사이를 오간다. |
 | C안 혼합형 | `/?play=c#/daily` | 도입 장면 뒤 자물쇠 + 수사 수첩. 다른 문제용 후보로 남김. |
-| 예전 화면 | `/?play=old#/daily` | 시험지 한 장 + 자물쇠 |
-| A안 접기·펼치기 | `/?play=a#/daily` | 한 화면. 사건·시도 기록·숫자 메모를 접고 편다. |
+| 예전 화면 | 보관본 `/?play=old#/daily` | 시험지 한 장 + 자물쇠 |
+| A안 접기·펼치기 | 보관본 `/?play=a#/daily` | 한 화면. 사건·시도 기록·숫자 메모를 접고 편다. |
 | 자료실 장면 | `/lab/gate03/vault.html` | B안의 무대이자 C안의 도입 장면(그림 검수용). |
 
 그림: `docs/compare/v3/gate03-plays.png`.
@@ -206,15 +207,16 @@ src/app/variant.ts              기본은 B안, ?home=old · ?home=a 로 예전 
 src/games/CodeBreaker/CodeBreaker.tsx   부품으로 나눔: useCodeBoard · ClueList · ClueStrip(간편 보기) · MemoPad · CodeLock
 src/screens/playParts.tsx               풀이 화면 공통: 위 막대 · 오답 쪽지 · 단추 줄 · 수사 지원 서랍
 src/screens/codeux/
-  FoldPlay.tsx       A안
+  (FoldPlay.tsx      A안. 걷어냈다)
   ScenePlay.tsx      B안
   NotebookPlay.tsx   C안 (도입 장면 VaultIntro 포함)
   story.ts           암호 해독의 짧은 이야기(장면마다 한두 줄. 숫자는 문제 데이터에서 읽는다)
-  useStored.ts       펼침 상태를 기기에 기억
+  useStored.ts       선 곳·수첩 상태를 기기에 기억
+  types.ts           암호 풀이 화면이 받는 것
 src/scene/vaultArt.ts · vaultScene.ts   자료실 장면(문 · 서가 · 책상과 기록지 · 금고)
 src/scene/marks.ts                      모서리 괄호(홈과 같이 쓴다)
-src/styles/codeux.css                   세 안의 스타일
-src/app/variant.ts                      기본은 B안. ?play=c · old · a 로 나머지를 연다
+src/styles/codeux.css                   B안과 C안의 스타일
+src/app/variant.ts                      기본은 B안. ?play=c 로 C안을 연다
 ```
 
 `LiveScene` 은 어떤 장면이든 받게 일반화했다(`make` 로 장면을 만들어 준다).
@@ -235,6 +237,8 @@ src/app/variant.ts                      기본은 B안. ?play=c · old · a 로 
 - 고르기 전의 자동 테스트 28개(`e2e/play-variants.spec.ts`): 접고 펴기와 상태 보존, 책상↔금고 왕복과 다이얼·메모 보존, 수첩 세 상태와 중요 표시, 도입 장면, 오답·정답·보상, 다시 풀기에서 보상이 한 번인지, 모션 줄이기, 두 색, 375×667 · 390×664 · 375×812 · 430×932 배치. 전체는 단위 50개 + 브라우저 92개 통과.
 
 - B안을 기본으로 올린 뒤(2026-11-22): 입학부터 승급까지의 기존 테스트가 자료실 장면을 거쳐 통과한다(책상에서 메모·수사 지원, 금고 앞에서 다이얼·제출). 자막 화면 테스트는 추리 책상에서 여는 진술 추리로 옮겼다(암호 사건은 자료실에 들어서는 장면이 도입이다). 전체는 단위 50개 + 브라우저 95개 통과. 사파리 엔진(WebKit 26)으로 홈에서 암호를 열어 390×664 · 375×629 · 390×844 에서 끝까지 풀었고, 책상·금고 어느 쪽도 스크롤되지 않는다. 화면 캡처의 화소로 본 두 색 아닌 비율은 크로미움 0, WebKit 0.01% 이하(자물쇠 쪽 한두 줄).
+
+- 고르지 않은 화면을 걷어낸 뒤(2026-11-22): 예전 홈 · 홈 A안 · 예전 암호 화면 · 암호 A안의 코드와 그 화면들만 쓰던 스타일 규칙 106개를 걷어냈다. 스크립트 384KB → 362KB(gzip 122KB → 115KB), 스타일 110KB → 101KB. 남은 화면은 그대로다: 움직임을 끈 상태로 보관본과 새 빌드의 홈·암호 풀이 화면 44장(네 가지 크기)을 화소로 견줘 제품 화면의 다른 화소가 0 이었고, 정지 화면(입학·연습실·진술 추리·승급 시험·신분증)과 C안도 전후가 같았다. 전체는 단위 50개 + 브라우저 80개 통과.
 
 ### 알아 둔 것
 

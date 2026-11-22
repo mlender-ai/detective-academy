@@ -1,4 +1,4 @@
-import { useEffect, useId, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
 import { haptic, playSound } from "../../app/sound";
 import { PenMark, PX, Sprite } from "../../art/pixel";
 import type { CodeClue, CodeInput, CodePuzzle, DigitMemo } from "../../engine/types";
@@ -239,7 +239,7 @@ type Board = Pick<GameProps<CodePuzzle, CodeInput>, "input" | "onChange" | "verd
 
 /**
  * 암호 퍼즐의 조작: 다이얼 맞추기, 숫자 메모 돌리기, 겹친 숫자 확인, 오답·정답의 반응.
- * 화면 구성이 달라도(시험지 한 장, 접는 패널, 수사 수첩, 장면 전개) 같은 조작을 쓴다.
+ * 화면 구성이 달라도(자료실 장면, 수사 수첩) 같은 조작을 쓴다.
  */
 export function useCodeBoard({ input, onChange, verdict, wrongCount }: Board) {
   const [shaking, setShaking] = useState(false);
@@ -360,7 +360,7 @@ export function ClueList({ puzzle, memo, head = true }: { puzzle: CodePuzzle; me
 }
 
 /**
- * 시도 기록의 간편 보기: 글 없이 숫자와 표시만 촘촘히 놓는다. 접힌 패널이나 수첩의 귀퉁이에서 쓴다.
+ * 시도 기록의 간편 보기: 글 없이 숫자와 표시만 촘촘히 놓는다. 수사 수첩의 간편 보기에서 쓴다.
  * 글로 된 풀이는 화면 낭독기에만 준다.
  */
 export function ClueStrip({ puzzle, memo }: { puzzle: CodePuzzle; memo: CodeInput["memo"] }) {
@@ -471,30 +471,5 @@ export function CodeLock({ puzzle, input, locked, verdict, board }: CodeLockProp
             : "숫자를 굴리거나 눌러서 맞추세요"}
       </p>
     </section>
-  );
-}
-
-interface Props extends GameProps<CodePuzzle, CodeInput> {
-  /** 시험지 머리: 문제 제목과 설명, 열어 본 수사 지원 */
-  brief: ReactNode;
-}
-
-/**
- * 책상 위의 시험지(시도 기록 + 숫자 메모)와 암호 자물쇠.
- * 시험지를 읽으면서 바로 아래 자물쇠를 굴린다.
- */
-export function CodeBreaker({ puzzle, input, onChange, locked, verdict, wrongCount, brief }: Props) {
-  const board = useCodeBoard({ input, onChange, verdict, wrongCount });
-
-  return (
-    <div className="code">
-      <article className="exampaper leaf" style={{ viewTransitionName: "exam-sheet" }}>
-        {brief}
-        <ClueList puzzle={puzzle} memo={input.memo} />
-        <MemoPad puzzle={puzzle} memo={input.memo} locked={locked} onCycle={board.cycleMemo} />
-      </article>
-
-      <CodeLock puzzle={puzzle} input={input} locked={locked} verdict={verdict} board={board} />
-    </div>
   );
 }

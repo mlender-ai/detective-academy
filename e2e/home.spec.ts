@@ -2,12 +2,12 @@ import { expect, test, type Page } from "@playwright/test";
 import { expectLayoutOk, offToneRatio, preset } from "./helpers";
 
 /**
- * 메인 홈 (V3 GATE 02). 사용자가 B안 · 플레이 가능한 복도를 골라 기본 홈이 되었다.
- * - 기본(B안): 복도의 물건을 눌러 걸어가 살펴보거나, 명령 창의 줄로 바로 들어간다.
- * - ?home=old: 예전 홈. ?home=a: A안 시네마틱 복도. 둘은 걷어내기 전까지 주소로만 열린다.
+ * 메인 홈 · 플레이 가능한 복도 (V3 GATE 02 에서 사용자가 고른 B안).
+ * 복도의 물건을 눌러 걸어가 살펴보거나, 명령 창의 줄로 바로 들어간다.
+ * 예전 홈과 A안(시네마틱 복도)은 걷어냈다. 다시 보려면 docs/archive/v3-gate03-all-app/ 을 연다.
  */
 
-/** B안의 복도에서 물건의 자리를 누른다. x 는 복도 좌표(점), y 는 점 화면의 세로 좌표. 카메라가 왼쪽 끝에 있을 때만 맞는다. */
+/** 복도에서 물건의 자리를 누른다. x 는 복도 좌표(점), y 는 점 화면의 세로 좌표. 카메라가 왼쪽 끝에 있을 때만 맞는다. */
 async function tapCorridor(page: Page, worldX: number, dotY: number) {
   const scene = (await page.getByTestId("live-scene").boundingBox())!;
   const canvas = (await page.locator('[data-testid="live-scene"] canvas').boundingBox())!;
@@ -15,62 +15,7 @@ async function tapCorridor(page: Page, worldX: number, dotY: number) {
   await page.touchscreen.tap(scene.x + worldX * 2, canvas.y + dotY * 2);
 }
 
-test("예전 홈은 ?home=old 로만 열린다", async ({ page }) => {
-  await preset(page, "daily-unsolved", "&home=old");
-  await expect(page.getByTestId("home-screen")).toBeVisible();
-  await expect(page.getByTestId("live-scene")).toHaveCount(0);
-  await expect(page.locator(".hall__scene img")).toBeVisible();
-  await page.getByTestId("daily-file-cta").click();
-  await expect(page.getByTestId("play-screen")).toBeVisible();
-});
-
-test.describe("A안 · 시네마틱 복도", () => {
-  test("구성은 그대로이고, 공고를 누르면 탐정이 걸어간 뒤 시험지가 펼쳐진다", async ({ page }) => {
-    await preset(page, "daily-unsolved", "&home=a");
-    await expect(page.getByTestId("home-screen")).toHaveAttribute("data-home", "a");
-    await expect(page.locator('[data-testid="live-scene"][data-kind="depth"] canvas')).toBeVisible();
-    // 지금 홈의 것들이 그대로 있다
-    await expect(page.getByTestId("daily-file-status")).toHaveText("미해결");
-    await expect(page.getByTestId("practice-entry")).toBeVisible();
-    await expect(page.getByTestId("identity")).toBeVisible();
-    await expect(page.getByTestId("credit-balance")).toBeVisible();
-    await expectLayoutOk(page, '[data-testid="daily-file-cta"]');
-
-    const started = Date.now();
-    await page.getByTestId("daily-file").click();
-    await expect(page.getByTestId("play-screen")).toBeVisible();
-    // 걷는 연출은 1.2초 안쪽이다 (화면 전환 시간을 더해도 넉넉히 3초 안)
-    expect(Date.now() - started).toBeLessThan(3000);
-  });
-
-  test("걷는 중에 한 번 더 누르면 건너뛴다", async ({ page }) => {
-    await preset(page, "exam-ready", "&home=a");
-    await expect(page.getByTestId("exam-cta")).toBeVisible();
-    // 끝 방까지는 가장 먼 길이다. 두 번 누르면 곧바로 넘어간다.
-    await page.getByTestId("exam-cta").click();
-    await page.getByTestId("exam-cta").click();
-    await expect(page.getByTestId("exam-gate")).toBeVisible({ timeout: 2000 });
-  });
-
-  test("연습실과 신분증으로도 걸어서 들어간다", async ({ page }) => {
-    await preset(page, "daily-solved", "&home=a");
-    await page.getByTestId("practice-entry").click();
-    await expect(page).toHaveURL(/#\/practice$/);
-    await page.goBack();
-    await expect(page.getByTestId("home-screen")).toBeVisible();
-    await page.getByTestId("identity").click();
-    await expect(page).toHaveURL(/#\/profile$/);
-  });
-
-  test("두 가지 색으로만 그려진다", async ({ page }) => {
-    await preset(page, "exam-ready", "&home=a");
-    await expect(page.getByTestId("live-scene")).toBeVisible();
-    await page.waitForTimeout(600);
-    expect(await offToneRatio(page)).toBeLessThan(0.005);
-  });
-});
-
-test.describe("기본 홈 · 플레이 가능한 복도", () => {
+test.describe("홈 · 플레이 가능한 복도", () => {
   test("들어서면 탐정이 오늘 할 일 앞으로 가 서고, 명령 창의 줄을 누르면 곧바로 들어간다", async ({ page }) => {
     await preset(page, "daily-unsolved");
     const home = page.getByTestId("home-screen");
@@ -164,6 +109,25 @@ test.describe("기본 홈 · 플레이 가능한 복도", () => {
     expect(Date.now() - started).toBeLessThan(1500);
   });
 
+  test("탐정이 걷는 중에 할 일이 바뀌어도, 새 할 일의 줄을 누르면 그곳으로 들어간다", async ({ page }) => {
+    // 연습실로 걸어가는 중에(들어선 지 0.42초 뒤에 출발해 0.45~0.9초 걷는다) 할 일을 시험실로 바꾼다
+    await preset(page, "daily-solved");
+    await page.waitForTimeout(550);
+    await page.getByTestId("demo-toggle").click();
+    await page.getByTestId("demo-exam-ready").click();
+    // 줄은 곧바로 시험실로 펼쳐지지만 탐정은 아직 연습실로 가는 중이다. 이때 눌러도 시험실로 가야 한다.
+    await page.getByTestId("exam-cta").click();
+    await expect(page).toHaveURL(/#\/exam$/);
+  });
+
+  test("걷어낸 홈의 주소(?home=old · ?home=a)로 열어도 지금의 홈이 열린다", async ({ page }) => {
+    for (const old of ["old", "a"]) {
+      await preset(page, "daily-unsolved", `&home=${old}`);
+      await expect(page.getByTestId("home-screen")).toHaveAttribute("data-home", "b");
+      await expect(page.locator('[data-testid="live-scene"][data-kind="side"] canvas')).toBeVisible();
+    }
+  });
+
   test("두 가지 색으로만 그려진다", async ({ page }) => {
     await preset(page, "exam-ready");
     await expect(page.getByTestId("home-screen")).toHaveAttribute("data-at", "exam");
@@ -181,13 +145,7 @@ for (const size of [
   test.describe(`${size.width}×${size.height}`, () => {
     test.use({ viewport: size });
 
-    test("A안: 주 버튼이 화면 안에 있다", async ({ page }) => {
-      await preset(page, "daily-unsolved", "&home=a");
-      await expect(page.getByTestId("live-scene")).toBeVisible();
-      await expectLayoutOk(page, '[data-testid="daily-file-cta"]');
-    });
-
-    test("기본 홈: 펼쳐진 줄과 나머지 줄이 모두 화면 안에 있다", async ({ page }) => {
+    test("홈: 펼쳐진 줄과 나머지 줄이 모두 화면 안에 있다", async ({ page }) => {
       await preset(page, "daily-unsolved");
       await expect(page.getByTestId("home-screen")).toHaveAttribute("data-at", "board");
       await expectLayoutOk(page, '[data-testid="daily-file-cta"]');

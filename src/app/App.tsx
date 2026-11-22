@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { AcademyHome } from "../screens/AcademyHome";
 import { AdmissionScreen } from "../screens/AdmissionScreen";
 import { DailyChallenge } from "../screens/DailyChallenge";
 import { DetectiveProfile } from "../screens/DetectiveProfile";
@@ -9,13 +8,12 @@ import { PromotionExam } from "../screens/PromotionExam";
 import { DemoPanel, isDemoMode } from "./DemoPanel";
 import { navigate, toHash, useRoute, type Route } from "./router";
 import { useGame } from "./store";
-import { HOME_VARIANT } from "./variant";
 
 function Screen({ route }: { route: Route }) {
   switch (route.name) {
     case "home":
-      // 기본 홈은 플레이 가능한 복도다(GATE 02 에서 고른 B안). 예전 홈(?home=old)과 A안(?home=a)은 걷어내기 전까지 주소로만 열린다.
-      return HOME_VARIANT === "b" ? <HomePlayable /> : <AcademyHome live={HOME_VARIANT === "a"} />;
+      // 홈은 플레이 가능한 복도다 (V3 GATE 02 에서 고른 B안)
+      return <HomePlayable />;
     case "daily":
       return <DailyChallenge />;
     case "practice":

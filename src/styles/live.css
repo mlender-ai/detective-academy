@@ -1,5 +1,4 @@
-/* 살아 있는 복도 장면과 메인 홈 (V3 GATE 02).
-   기본 홈은 B안 · 플레이 가능한 복도다. A안의 규칙은 ?home=a 로 열었을 때만 쓰인다. 예전 홈의 스타일은 건드리지 않는다.
+/* 살아 있는 복도 장면과 메인 홈 (V3 GATE 02 에서 고른 B안 · 플레이 가능한 복도).
    색은 검정과 흰색(--m-w) 두 가지, 점 하나는 2px, 글자는 16·32px 이라는 mono.css 의 약속을 그대로 따른다. */
 
 .livescene {
@@ -14,26 +13,7 @@
   image-rendering: pixelated;
 }
 
-/* ───────── A안 · 시네마틱 복도 ─────────
-   지금 홈의 복도 그림과 같은 자리(가로 가운데, 세로 44%)에 같은 크기로 놓는다. 점이 2px 격자에서 벗어나지 않게 자리를 맞춘다. */
-
-.livescene[data-kind="depth"] canvas {
-  left: calc(50% - 240px);
-  left: round(down, calc(50% - 240px), 2px);
-  top: calc((100% - 320px) * 0.44);
-  top: round(nearest, calc((100% - 320px) * 0.44), 2px);
-  width: 480px;
-  height: 320px;
-}
-
-/* 살아 있는 장면에는 두 장을 겹쳐 깜빡이던 정지 그림을 쓰지 않는다 */
-.hall__scene.livescene::before,
-.hall__scene.livescene::after {
-  content: none;
-  animation: none;
-}
-
-/* ───────── 메인 홈 (B안) · 플레이 가능한 복도 ─────────
+/* ───────── 메인 홈 · 플레이 가능한 복도 ─────────
    위에서부터: 학원 이름과 등급 → 복도(누를 수 있는 게임 장면) → 서술 한 줄 → 갈 곳(명령 창) */
 
 .hall--play {

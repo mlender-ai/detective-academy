@@ -12,7 +12,7 @@ export interface LiveSceneHandle<Id extends string = string> {
 }
 
 interface Props<Id extends string, S> {
-  /** 장면의 종류. 스타일이 캔버스를 놓는 자리를 이것으로 가른다: depth(깊이 방향 복도) · side(옆에서 본 복도) · vault(자료실) */
+  /** 장면의 종류. 스타일이 캔버스를 놓는 자리를 이것으로 가른다: side(옆에서 본 복도) · vault(자료실) */
   kind: string;
   /** 장면을 만든다. 화면에 올라올 때 한 번 불린다. */
   make: () => Scene<Id, S>;

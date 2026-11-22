@@ -16,6 +16,7 @@
 
 지나온 안은 보관되어 있습니다(푸는 법은 `docs/archive/README.md`).
 
+- V3 에서 고르지 않은 화면(예전 홈, 홈 A안, 예전 암호 화면, 암호 A안): `docs/archive/v3-gate03-all-app/` 을 정적 서버로 열고 `compare-home.html` · `compare-play.html`
 - 앞선 확정안 B안(픽셀 아트)과 비교용 시안 C안(누아르 카툰): `docs/archive/bcd-all-app/` 을 정적 서버로 열면 세 안을 나란히 볼 수 있습니다. 비교 그림은 `docs/compare/pairs/`
 - 수채 드로잉(A안)과 픽셀 아트(B안)의 비교: `docs/compare/DETECTIVE_ACADEMY_AB_Compare.html`, `docs/archive/ab-both-app/`
 - 처음의 V1(남색·금색 카드): `docs/v1/`
@@ -83,7 +84,7 @@ src/
   games/      퍼즐별 조작 화면 — CodeBreaker, TruthDeduction, SchedulePuzzle
   scene/      살아 있는 장면 — 점 찍는 도구, 탐정(관절 모형), 밝기 층을 점묘로 바꾸는 stage, 홈의 옆에서 본 복도(sideArt·sideScene), 암호 해독의 자료실(vaultArt·vaultScene)
   screens/    입학(복도), 홈(HomePlayable: 걸어 다니는 복도), 연습실·풀이(DeskPlay)·채점 결과(DeskResult)·신분증(책상), 승급 시험(시험실)
-              codeux/ 암호 해독의 풀이 — ScenePlay(자료실 장면, 기본) · NotebookPlay(수사 수첩, ?play=c 로만. 다른 문제용 후보) · FoldPlay(?play=a 로만)
+              codeux/ 암호 해독의 풀이 — ScenePlay(자료실 장면, 기본) · NotebookPlay(수사 수첩, ?play=c 로만. 다른 문제용 후보)
               usePlaySession.ts 가 풀이 진행(입력·시간·제출·판정)을 맡고 화면은 그리기만 한다
   components/ 신분증, 인장, 시험 봉투, 힌트 서랍, 크레딧 꼬리표, 서술 한 줄(Narration), 자막 화면(CineCard)
   styles/     tokens.css(색·글꼴 이름) · 배치(base·components·art·hall·desk·rooms, @layer layout)

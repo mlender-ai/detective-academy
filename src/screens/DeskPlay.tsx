@@ -1,8 +1,7 @@
 import type { ReactNode } from "react";
 import { DeskWood } from "../components/DeskWood";
 import type { SubmitOutcome } from "../engine/progressEngine";
-import type { CodeInput, CodePuzzle, Puzzle, ScheduleInput, SchedulePuzzle, TruthInput, TruthPuzzle } from "../engine/types";
-import { CodeBreaker } from "../games/CodeBreaker/CodeBreaker";
+import type { ScheduleInput, SchedulePuzzle, TruthInput, TruthPuzzle } from "../engine/types";
 import type { GameProps } from "../games/logic";
 import { SchedulePuzzleGame } from "../games/SchedulePuzzle/SchedulePuzzle";
 import { TruthDeduction } from "../games/TruthDeduction/TruthDeduction";
@@ -10,7 +9,8 @@ import { PlayBar, PlayFoot, PlayNotice, PlayOverlays, REACTION_MS } from "./play
 import { usePlaySession } from "./usePlaySession";
 
 interface Props {
-  puzzle: Puzzle;
+  /** 추리 책상에서 푸는 문제. 암호 해독은 자료실 장면(codeux/ScenePlay)에서 푼다. */
+  puzzle: TruthPuzzle | SchedulePuzzle;
   /** exam: 시험실 책상(녹색 깔개)에서 치르는 승급 시험 */
   variant?: "case" | "exam";
   /** 이미 해결한 문제를 기록·보상 없이 다시 푼다 */
@@ -22,7 +22,7 @@ interface Props {
 
 /**
  * 추리 책상. 게시판이나 연습실에서 가져온 시험지가 책상 위에 놓이고,
- * 그 아래에서 자물쇠를 굴리거나 진술서를 살피거나 이름표를 옮긴다.
+ * 그 아래에서 진술서를 살피거나 이름표를 옮긴다.
  */
 export function DeskPlay({ puzzle, variant = "case", replay = false, onExit, onSolved }: Props) {
   const session = usePlaySession(puzzle, { replay, reactionMs: REACTION_MS[puzzle.type], onSolved });
@@ -49,17 +49,6 @@ export function DeskPlay({ puzzle, variant = "case", replay = false, onExit, onS
       <PlayBar puzzle={puzzle} session={session} variant={variant} replay={replay} onExit={onExit} />
 
       <div className="screen__scroll play__scroll desk__scroll">
-        {puzzle.type === "code" && (
-          <CodeBreaker
-            puzzle={puzzle}
-            input={input as CodeInput}
-            onChange={change as GameProps<CodePuzzle, CodeInput>["onChange"]}
-            locked={locked}
-            verdict={verdict}
-            wrongCount={wrongCount}
-            brief={brief}
-          />
-        )}
         {puzzle.type === "truth" && (
           <TruthDeduction
             puzzle={puzzle}

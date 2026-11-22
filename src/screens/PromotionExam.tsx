@@ -13,6 +13,7 @@ import { PUZZLE_BY_ID } from "../data/puzzles";
 import { PROMOTION_RULES, RANK_BY_ID, rankLabel, type PromotionRule } from "../data/ranks";
 import { examStatus, getProgress, type SubmitOutcome } from "../engine/progressEngine";
 import type { GameState, Puzzle, RankId } from "../engine/types";
+import { ScenePlay } from "./codeux/ScenePlay";
 import { DeskPlay } from "./DeskPlay";
 import { GradedExplain, GradedFacts, Reward } from "./DeskResult";
 
@@ -364,12 +365,11 @@ export function PromotionExam() {
     );
   }
 
-  return (
-    <DeskPlay
-      puzzle={puzzle}
-      variant="exam"
-      onExit={() => goBack({ name: "home" })}
-      onSolved={(outcome) => setPassed({ outcome, from: rule.from })}
-    />
-  );
+  const exit = () => goBack({ name: "home" });
+  const solved = (outcome: SubmitOutcome) => setPassed({ outcome, from: rule.from });
+
+  // 시험 문제가 암호 해독이면 자료실 장면에서 치른다. 지금 시험 문제는 순서 추론뿐이라 이 갈래는 아직 쓰인 적이 없다.
+  if (puzzle.type === "code") return <ScenePlay puzzle={puzzle} variant="exam" onExit={exit} onSolved={solved} />;
+
+  return <DeskPlay puzzle={puzzle} variant="exam" onExit={exit} onSolved={solved} />;
 }

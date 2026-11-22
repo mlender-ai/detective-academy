@@ -25,16 +25,16 @@
 - 단계(검수 게이트): 01 오픈소스·아트 실험 → 02 메인 홈 비교(기존 / A 시네마틱 복도 / B 플레이 가능한 복도) → 03 퍼즐 UX 비교(기존 / A 접기·펼치기 / B 장면 전개 / C 혼합형, 암호 문제로) → 04 신규 퍼즐(증거 조합, 공간 추론, 일일 문제 7개) → 05 콘텐츠·성장(F~S 승급, 제한 시간, 제출 횟수) → 06 통합. **한 단계의 결과를 사용자가 실제로 플레이해 본 뒤 다음으로 간다.**
 - **GATE 01 은 끝났다 (2026-11-22).** 사용자는 결과를 본 뒤 "GATE 02 진행"이라고만 했다(채택안에 대한 다른 말은 없었다). 결과와 측정값은 `lab/README.md`. 요지: 그리는 방식은 Canvas 2D + 층으로 나눈 밝기 + CPU 점묘를 채택, 캐릭터는 코드 기반 관절 모형을 채택, Ink Studio 는 그림 굽는 도구로만, Phaser·PixiJS 는 제외(화소 결과가 같고 이 크기에서는 성능 이득이 없는데 용량만 크다).
 - **GATE 02 는 끝났다: 사용자가 B안 · 플레이 가능한 복도를 골랐다 (2026-11-22, "B안으로").** 세 홈(기존 / A 시네마틱 복도 / B 플레이 가능한 복도)을 같은 크기로 나란히 놓고 고른 것이다. 나란히 보는 곳은 `http://localhost:5183/lab/gate02/`.
-  - **이 브랜치의 기본 홈은 B안이다**(`src/screens/HomePlayable.tsx`). 옆에서 본 복도(`SideScene`, 340점 폭이라 카메라가 따라간다)가 게임 장면이다. 물건을 누르면 걸어가 살펴보고 한 번 더 누르면 들어가며, 아래 명령 창의 줄을 누르면 걸어가서 바로 들어간다. 들어서면 탐정이 오늘 할 일 앞으로 가 서 있으므로 매일의 주 동선은 걷지 않고 한 번에 들어간다. 걷기는 0.45~0.9초, 걷는 중에 한 번 더 누르면 건너뛰고, 모션 줄이기 설정이면 걷지 않는다.
-  - **예전 홈과 A안은 아직 걷어내지 않았다.** `?home=old`(예전 홈, `AcademyHome`) · `?home=a`(A안, `AcademyHome live` + `DepthScene`)로만 열린다(`src/app/variant.ts`). 걷어낼 것: `AcademyHome.tsx`, `depthArt.ts`·`depthScene.ts`, `variant.ts`, `LiveScene` 의 depth 갈래, 예전 홈만 쓰는 스타일(`.posting`·`.promoslip`·`.ledge`·`.bulletin`)과 복도 겹침 그림. **걷어내기 전에 사용자에게 확인하고 `docs/archive/` 에 보관한다.** 입학 화면은 `.hall__scene` 과 `corridor.png` 를 계속 쓰므로 그것은 남긴다.
+  - **이 브랜치의 홈은 B안이다**(`src/screens/HomePlayable.tsx`). 옆에서 본 복도(`SideScene`, 340점 폭이라 카메라가 따라간다)가 게임 장면이다. 물건을 누르면 걸어가 살펴보고 한 번 더 누르면 들어가며, 아래 명령 창의 줄을 누르면 걸어가서 바로 들어간다. 들어서면 탐정이 오늘 할 일 앞으로 가 서 있으므로 매일의 주 동선은 걷지 않고 한 번에 들어간다. 걷기는 0.45~0.9초, 걷는 중에 한 번 더 누르면 건너뛰고, 모션 줄이기 설정이면 걷지 않는다.
+  - 예전 홈과 A안(시네마틱 복도)은 보관하고 걷어냈다(아래 "V3 에서 고르지 않은 화면은 걷어냈다"). `?home=old` · `?home=a` 로 열어도 지금의 홈이 열린다.
   - main 과 배포본은 그대로 예전 홈이다. 이 브랜치를 main 에 올리는 것은 사용자가 요청할 때만 한다.
   - 장면 코드는 `src/scene/`(실험실에서 채택한 것을 옮겨 온 것), React 쪽 연결은 `src/components/LiveScene.tsx`, 스타일은 `src/styles/live.css`. 복도의 물건 자리(`sideArt.ts` 의 `BOX`)와 설 자리·누를 영역(`sideScene.ts` 의 `SPOTS`)은 데이터다.
   - 줄의 테스트 이름은 예전 홈의 것을 물려받았다: `daily-file`(게시판 줄) · `daily-file-status` · `daily-file-cta`(게시판 줄이 펼쳐졌을 때만 있다) · `practice-entry` · `exam-cta`(시험을 볼 수 있을 때) / `exam-wait`(조건 미달) / `exam-record`(합격 뒤) · `identity` · `promo-count`. 홈에서 들어갈 때는 `-cta` 가 아니라 줄을 누른다.
 - **GATE 03 은 끝났다: 사용자가 B안 · 장면 전개를 골랐다 (2026-11-22, 원문: "B안이 좋아 C안은 아이디어 차원에서 남겨놔 다른 문제에 쓰일수있는 UI로").** 암호 풀이 화면 네 가지(기존 / A 접기·펼치기 / B 장면 전개 / C 혼합형)를 같은 문제로 나란히 놓고 고른 것이다. 나란히 보는 곳은 `http://localhost:5183/lab/gate03/`.
   - **이 브랜치에서 암호 해독의 기본 화면은 B안이다**(`src/screens/codeux/ScenePlay.tsx`. `CaseSession` 이 암호 문제일 때 연다). 자료실 장면(`src/scene/vaultArt.ts`·`vaultScene.ts`)에서 책상(시도 기록·숫자 메모·수사 지원)과 금고(자물쇠·제출) 사이를 오간다. 장면의 물건이나 아래 단추("금고 앞으로" / "기록 보기")를 누른 즉시 화면이 바뀌고 탐정은 그 뒤를 따라 걷는다(0.4~0.7초). 정답이면 금고가 열린 뒤 채점 결과(추리 책상)로 넘어간다. 기록과 자물쇠를 한 화면에서 같이 볼 수 없다(이 안의 성격이다). 금고 앞에는 "내 메모" 한 줄만 따라온다. 사건을 여는 자막 화면은 뜨지 않는다(자료실에 들어서는 장면이 도입이다). 마지막에 선 곳은 기기에 남아, 나갔다 오면 그 자리에서 잇는다.
-  - **C안(수사 수첩, `NotebookPlay.tsx`)은 지우지 않는다.** 사용자가 다른 문제에 쓸 수 있는 UI 아이디어로 남기라고 했다. `?play=c` 로만 열린다. 진술 추리·순서 추론·새 퍼즐(GATE 04)의 화면을 짤 때 후보로 꺼내 보여 준다(쓸지는 그때 사용자가 정한다. 뒤 문장은 내 해석). 유형에 매이지 않는 부분은 수첩의 세 상태(접힘 · 간편 보기 · 전체 보기), 기록의 '중요' 표시, 처음 한 번의 도입 장면이고, 암호에 매인 부분은 자물쇠(`CodeLock`)와 숫자 기록의 간편 보기(`ClueStrip`)다.
-  - **예전 암호 화면과 A안은 아직 걷어내지 않았다.** `?play=old`(예전: `DeskPlay` + `CodeBreaker`) · `?play=a`(`FoldPlay.tsx`)로만 열린다(`src/app/variant.ts` 의 `PLAY_VARIANT`). 걷어낼 것: `FoldPlay.tsx` 와 `.fold*`·`.foldplay*` 스타일, `CodeBreaker` 묶음 컴포넌트와 `DeskPlay` 의 암호 갈래, `variant.ts` 의 `old`·`a`. **걷어내기 전에 사용자에게 확인하고 `docs/archive/` 에 보관한다.** `ClueStrip`·`useStored`·`CodePlayProps`(지금 `FoldPlay.tsx` 에 있다)는 남는 화면이 쓰므로 옮겨서 남긴다. 승급 시험은 `DeskPlay` 를 직접 쓴다: 지금 시험 문제는 순서 추론뿐이고, 시험에 암호 문제가 생기면 그때 자료실 장면을 입힐지 정한다.
-  - 판정·힌트·보상·시간 기록은 어느 화면이든 `usePlaySession` 하나를 쓴다. 암호 화면의 부품은 `CodeBreaker.tsx` 의 `useCodeBoard`·`ClueList`·`ClueStrip`·`MemoPad`·`CodeLock`, `playParts.tsx` 의 위 막대·오답 쪽지·단추 줄이다. 접고 편 상태·수첩 상태·중요 표시·선 곳은 `useStored`(저장 칸마다 `…:ux:이름`)로 기기에 남는다.
+  - **C안(수사 수첩, `NotebookPlay.tsx`)은 지우지 않는다.** 사용자가 다른 문제에 쓸 수 있는 UI 아이디어로 남기라고 했다. `?play=c` 로만 열린다(`src/app/variant.ts` 의 `PLAY_VARIANT`). 진술 추리·순서 추론·새 퍼즐(GATE 04)의 화면을 짤 때 후보로 꺼내 보여 준다(쓸지는 그때 사용자가 정한다. 뒤 문장은 내 해석). 유형에 매이지 않는 부분은 수첩의 세 상태(접힘 · 간편 보기 · 전체 보기), 기록의 '중요' 표시, 처음 한 번의 도입 장면이고, 암호에 매인 부분은 자물쇠(`CodeLock`)와 숫자 기록의 간편 보기(`ClueStrip`)다. 지금 `ClueStrip` 과 `useStored` 의 일부(수첩 상태·중요 표시)는 C안만 쓴다.
+  - 예전 암호 화면(시험지 한 장)과 A안(접기·펼치기)은 보관하고 걷어냈다(아래 "V3 에서 고르지 않은 화면은 걷어냈다"). `?play=old` · `?play=a` 로 열어도 자료실 장면이 열린다. `DeskPlay` 는 이제 진술 추리와 순서 추론만 받는다(타입으로 막았다). 승급 시험 문제가 암호 해독이면 `PromotionExam` 이 자료실 장면을 `variant="exam"` 으로 연다: 지금 시험 문제는 순서 추론뿐이라 이 갈래는 아직 실행해 본 적이 없다.
+  - 판정·힌트·보상·시간 기록은 어느 화면이든 `usePlaySession` 하나를 쓴다. 암호 화면의 부품은 `CodeBreaker.tsx` 의 `useCodeBoard`·`ClueList`·`ClueStrip`·`MemoPad`·`CodeLock`, `playParts.tsx` 의 위 막대·오답 쪽지·단추 줄이다. 수첩 상태·중요 표시·선 곳은 `useStored`(저장 칸마다 `…:ux:이름`)로 기기에 남는다. 화면이 받는 것은 `codeux/types.ts` 의 `CodePlayProps`.
   - 테스트에서 암호 문제를 풀 때는 `e2e/helpers.ts` 의 `toSafe(page)`(금고 앞으로) · `toDesk(page)`(책상으로)를 쓴다. 다이얼과 제출은 금고 앞에, 메모와 수사 지원 단추는 책상에 있다.
   - main 과 배포본의 암호 화면은 그대로 예전 화면이다.
   - 진술 추리·순서 추론 화면은 그대로 추리 책상이다. 그 화면들을 어떻게 할지는 GATE 04·06 에서 다룬다.
@@ -68,8 +68,20 @@
 - 이전 안을 다시 보려면 `docs/archive/bcd-all-app/` 을 정적 서버로 연다(세 안 나란히 보기 포함). 소스는 `docs/archive/bcd-final-2026-11-22-src.tar.gz`.
 - 새 방향을 볼 일이 생기면 확정안을 덮지 않고 별도 진입점(`other.html` + 다른 `main-*.tsx`)으로 얹어 비교한다. `scripts/capture-all.mjs --page other.html` 로 찍을 수 있다.
 
+## V3 에서 고르지 않은 화면은 걷어냈다 (2026-11-22, 사용자: "보관하고 걷어내기")
+
+- GATE 02·03 에서 고르지 않은 네 화면을 걷어냈다: 예전 홈, 홈 A안(시네마틱 복도), 예전 암호 화면(시험지 한 장), 암호 A안(접기·펼치기). C안(수사 수첩)은 사용자가 남기라고 해서 남겼다.
+- 걷어낸 것: `src/screens/AcademyHome.tsx`, `src/scene/depthArt.ts`·`depthScene.ts`, `src/screens/codeux/FoldPlay.tsx`, `CodeBreaker.tsx` 의 묶음 컴포넌트(`CodeBreaker`)와 `DeskPlay` 의 암호 갈래, `variant.ts` 의 `HOME_VARIANT` 와 `?play=old`·`a`, 그 화면들만 쓰던 스타일 규칙 106개(`.bulletin`·`.posting` 의 틀·`.promoslip` 의 틀·`.ledge*`·`.fold*`·`.foldplay*`·`.code`·`.livescene[data-kind="depth"]`)와 `@keyframes m-invert`, 그 화면들의 테스트.
+- 남긴 것(이름은 예전 홈의 것이지만 다른 화면이 쓴다): `.posting__status`·`__meta`·`__sealed`·`__stamp`(연습실의 시험지), `.promoslip__reqs`·`.tickbox`·`.diamonds`(홈의 명령 창·시험실·신분증), `.hall__scene` 과 복도 그림 세 장(입학 화면). `src/art/objects.tsx` 의 `EnvelopeArt`·`IdArt` 와 그 스프라이트(작은 봉투, 신분증)는 예전 홈만 쓰던 그림이라 지금은 쓰는 곳이 없다(그림 재료라 남겨 두었다).
+- 걷어낸 뒤 남은 화면은 그대로다: 움직임을 끈 상태(모션 줄이기)로 보관본과 새 빌드의 홈·암호 풀이 화면을 네 가지 크기에서 44장 찍어 화소로 견줬고, 제품 화면의 다른 화소는 0 이었다(4장은 QA 손잡이만 달랐다). 움직이는 장면은 켠 채로 찍으면 매번 달라지므로, 장면이 있는 화면의 전후 비교는 모션 줄이기 + 시각 고정으로 한다.
+- 빌드: 스크립트 384KB → 362KB(gzip 122KB → 115KB), 스타일 110KB → 101KB.
+- 다시 보려면 `docs/archive/v3-gate03-all-app/` 을 정적 서버로 열고 `compare-home.html`(세 홈) · `compare-play.html`(네 암호 화면)을 본다. 소스는 `docs/archive/v3-gate03-all-2026-11-22-src.tar.gz`.
+- 이 일을 하다가 홈의 경합 하나를 고쳤다: 탐정이 걷는 중에 오늘 할 일이 바뀌면(QA 패널로만 생기는 상황) 그 직후 0.4초 안에 새 할 일의 줄을 눌렀을 때 엉뚱한 걸음을 건너뛰고 들어가지 않던 문제. `HomePlayable` 이 "지금 그곳으로 가는 중인가"를 펼쳐 둔 줄(`heading`)이 아니라 장면이 실제로 가는 곳(`walkingTo`)으로 보게 했다. 회귀 테스트는 `e2e/home.spec.ts`.
+
 ## 보관해 둔 것 (`docs/archive/README.md` 에 푸는 법)
 
+- `v3-gate03-all-app/`: V3 GATE 02·03 의 모든 화면이 함께 있던 빌드본(2.2MB). `index.html` 이 그때의 기본(B안 홈 + B안 암호 화면)이고 `?home=old`·`?home=a`·`?play=old`·`?play=a`·`?play=c` 로 나머지가 열린다. `compare-home.html`·`compare-play.html` 이 나란히 보기.
+- `v3-gate03-all-2026-11-22-src.tar.gz`: 그 화면들을 걷어내기 직전의 소스(테스트·실험실·`docs/screenshots` 포함. `docs/compare`·`docs/v1`·`docs/archive` 는 뺐다).
 - `bcd-all-app/`: B안·C안·D안이 함께 있던 빌드본(28MB). `index.html` 이 D안, `pixel.html` 이 B안, `noir.html` 이 C안, `compare.html` 이 나란히 보기.
 - `bcd-final-2026-11-22-src.tar.gz`: 이전 안을 걷어내기 직전의 소스 전체(테스트·문서·`docs/screenshots` 포함).
 - `bcd-all-2026-11-22-src.tar.gz`: D안 확정 직전의 소스(그때는 `index.html` 이 B안, `mono.html` 이 D안이었고 초상은 B안의 그림을 흑백으로 옮긴 것이었다).
@@ -80,9 +92,9 @@
 
 ## 검증
 
-- `npm run verify`: 타입 검사 + 단위 테스트 50개 + 브라우저 테스트 95개(입학부터 승급·신분증까지의 전체 흐름, 화면 크기별 배치, 두 색 확인, 자막 화면 45개 + 홈 20개 `e2e/home-variants.spec.ts` + 암호 풀이 화면 30개 `e2e/play-variants.spec.ts`). 문제·힌트를 고치면 반드시 `npm test`.
+- `npm run verify`: 타입 검사 + 단위 테스트 50개 + 브라우저 테스트 80개(입학부터 승급·신분증까지의 전체 흐름, 화면 크기별 배치, 두 색 확인, 자막 화면 45개 + 홈 13개 `e2e/home.spec.ts` + 암호 풀이 화면 22개 `e2e/play-variants.spec.ts`). 문제·힌트를 고치면 반드시 `npm test`.
 - 브라우저 테스트는 자막 화면을 끄고 돈다(`playwright.config.ts` 의 `storageState`). 자막 화면 자체는 `mono.spec.ts` 의 "자막 화면" 묶음이 켜고 확인한다(추리 책상에서 여는 진술 추리로 본다. 암호 사건에는 자막 화면이 없다).
-- 화면은 실제 렌더링을 눈으로 본다: `node scripts/capture-all.mjs <폴더> --q cine=0 [--h 664] [--w 375]` 로 전 화면 30장 (개발 서버 5183 필요). `cine=0` 을 빼면 자막 화면이 찍힌다. 한 장만 찍을 때는 `node scripts/shot.mjs <out.png> <프리셋> [--q "home=b&cine=0"]`. 미리보기 창은 백그라운드에서 타이머가 느려지므로 흐름 검증은 Playwright 로 한다. 비교 페이지를 통째로(fullPage) 찍을 때는 창 높이를 페이지보다 크게 잡는다: 창보다 긴 페이지를 통째로 찍으면 안쪽 화면의 펼침 연출(`m-open`)이 첫 장면에 멈춘 채 찍혀 내용이 빈 것처럼 보인다(실제 창에서는 정상이다).
+- 화면은 실제 렌더링을 눈으로 본다: `node scripts/capture-all.mjs <폴더> --q cine=0 [--h 664] [--w 375]` 로 전 화면 30장 (개발 서버 5183 필요). `cine=0` 을 빼면 자막 화면이 찍힌다. 한 장만 찍을 때는 `node scripts/shot.mjs <out.png> <프리셋> [--q "cine=0"]`. 미리보기 창은 백그라운드에서 타이머가 느려지므로 흐름 검증은 Playwright 로 한다. 비교 페이지를 통째로(fullPage) 찍을 때는 창 높이를 페이지보다 크게 잡는다: 창보다 긴 페이지를 통째로 찍으면 안쪽 화면의 펼침 연출(`m-open`)이 첫 장면에 멈춘 채 찍혀 내용이 빈 것처럼 보인다(실제 창에서는 정상이다).
 - **스타일을 크게 고칠 때는 전후 캡처를 화소 단위로 비교한다.** 고치기 전에 `capture-all` 로 찍어 두고, 고친 뒤 다시 찍어 달라진 화면만 눈으로 본다(타이머 숫자와 무작위 학번은 매번 달라진다).
 - **빌드본으로도 확인한다.** 개발 서버와 빌드는 스타일 파일이 실리는 순서가 다를 수 있다. 브라우저 테스트는 빌드본(`vite preview`)으로 돈다.
 - **낮은 화면 390×664**(주소창이 보이는 모바일 브라우저)를 반드시 확인한다. 812 이상에서만 보면 조작부가 화면 밖으로 밀리는 것을 놓친다. 375×812 에서는 글줄이 한 번 더 꺾여 넘치기 쉽다. 사용자의 아이폰 13 미니는 사파리에서 375×629 쯤이다: 홈은 그 높이에서도 스크롤 없이 네 줄이 다 보여야 한다.

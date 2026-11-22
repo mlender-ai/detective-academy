@@ -1,5 +1,5 @@
 // 전 화면(홈·암호 해독·입학·연습실·진술 추리·승급 시험·신분증)을 한 번에 찍는다. 개발 서버(5183)가 켜져 있어야 한다.
-// 암호 해독은 자료실 장면(책상 ↔ 금고)을 오가며 찍는다. --q play=old 처럼 한 화면짜리 풀이 화면을 찍을 때는 오가는 단계를 건너뛴다.
+// 암호 해독은 자료실 장면(책상 ↔ 금고)을 오가며 찍는다. 오가는 단추가 없는 화면(--q play=c 의 수사 수첩)에서는 그 단계를 건너뛴다.
 //   node scripts/capture-all.mjs <out-dir> [--q cine=0] [--w 390] [--h 844] [--only 이름,이름] [--engine webkit]
 // 사파리 엔진(WebKit)은 이 프로젝트의 Playwright 에 없다. 다른 곳에 설치된 Playwright 를 쓰려면
 //   PW=/경로/node_modules/@playwright/test node scripts/capture-all.mjs <out-dir> --engine webkit

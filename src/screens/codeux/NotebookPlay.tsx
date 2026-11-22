@@ -9,7 +9,7 @@ import type { GameProps } from "../../games/logic";
 import { VaultScene, type VaultSpot } from "../../scene/vaultScene";
 import { PlayBar, PlayFoot, PlayNotice, PlayOverlays, REACTION_MS } from "../playParts";
 import { usePlaySession } from "../usePlaySession";
-import type { CodePlayProps } from "./FoldPlay";
+import type { CodePlayProps } from "./types";
 import { vaultStory } from "./story";
 import { useStored } from "./useStored";
 

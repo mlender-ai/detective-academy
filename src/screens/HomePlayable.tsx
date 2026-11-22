@@ -64,6 +64,15 @@ export function HomePlayable() {
   const touched = useRef(false);
   const leaving = useRef(false);
   const timers = useRef<number[]>([]);
+  /**
+   * 장면이 실제로 걸어가고 있는 곳. heading 은 줄을 미리 펼쳐 두려고 걸음보다 먼저 바뀔 수 있어서
+   * (들어설 때의 뜸), "지금 그곳으로 가는 중인가"는 이것으로 본다.
+   */
+  const walkingTo = useRef<SpotId | null>(null);
+  const walkTo = (id: SpotId) => {
+    walkingTo.current = id;
+    sceneRef.current?.go(id);
+  };
 
   // 들어서면(그리고 오늘 할 일이 바뀌면) 탐정이 그곳으로 걸어가 그 앞에 선다.
   // 기다릴 필요는 없다: 그동안에도 모든 것을 누를 수 있다. 사용자가 이미 다른 곳을 골랐으면 끼어들지 않는다.
@@ -71,7 +80,7 @@ export function HomePlayable() {
     if (!stepSpot || touched.current || leaving.current) return;
     setHeading((now) => (sceneRef.current?.busy() || here !== stepSpot ? stepSpot : now));
     const id = window.setTimeout(() => {
-      if (!touched.current && !leaving.current) sceneRef.current?.go(stepSpot);
+      if (!touched.current && !leaving.current) walkTo(stepSpot);
     }, ENTRANCE_DELAY_MS);
     return () => window.clearTimeout(id);
     // 오늘 할 일이 있는 곳이 바뀔 때만 다시 한다
@@ -120,13 +129,13 @@ export function HomePlayable() {
       return;
     }
     enterOnArrive.current = id;
-    if (scene.busy() && heading === id) {
+    if (scene.busy() && walkingTo.current === id) {
       // 가는 중에 한 번 더 누르면 걷기를 건너뛴다
       scene.skip();
       return;
     }
     setHeading(id);
-    scene.go(id);
+    walkTo(id);
   };
 
   /** 장면의 물건: 걸어가서 살펴본다. 그 앞에 서서 한 번 더 누르면 들어간다. */
@@ -142,7 +151,7 @@ export function HomePlayable() {
     }
     enterOnArrive.current = null;
     setHeading(id);
-    scene.go(id);
+    walkTo(id);
   };
 
   const selected = heading ?? here;
