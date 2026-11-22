@@ -49,7 +49,7 @@ th { border-bottom: 2px solid #f1f1ea; }
 <main>
   <h1>탐정학원 V3 · GATE 05</h1>
   <p>콘텐츠와 성장 시스템: 날짜별 오늘의 추리, 등급별 연습실, F→S 승급 시험(제한 시간 · 제출 횟수 · 하루 응시 횟수), 크레딧 밸런스.</p>
-  <p class="note">아래에서 장면을 고르면 그 상태로 바로 열린다(장면마다 저장 칸이 따로다). 모든 수치는 초기 실험값이고 <b>src/data/ranks.ts</b> · <b>src/engine/creditEngine.ts</b> 의 숫자만 바꾸면 된다. 화면 오른쪽 아래의 <b>QA</b> 손잡이로도 등급을 옮기고, 날짜를 하루 넘기고, 오늘 응시 횟수를 되돌릴 수 있다. 정답은 여기에 적지 않았다.</p>
+  <p class="note">아래에서 장면을 고르면 그 상태로 바로 열린다(장면마다 저장 칸이 따로다). 모든 수치는 초기 실험값이고 <b>src/data/ranks.ts</b> · <b>src/engine/creditEngine.ts</b> 의 숫자만 바꾸면 된다. 화면 왼쪽 가장자리의 <b>QA</b> 손잡이로도 등급을 옮기고, 날짜를 하루 넘기고, 오늘 응시 횟수를 되돌릴 수 있다. 정답은 여기에 적지 않았다.</p>
 
   <div class="bar">
     <button class="again" id="again">이 장면 처음부터 다시</button>
@@ -81,8 +81,8 @@ th { border-bottom: 2px solid #f1f1ea; }
         <tr><td>F→D</td><td>과제 3개</td><td>1</td><td>없음</td><td>제한 없음</td><td>가능</td><td>제한 없음</td><td>+80</td></tr>
         <tr><td>D→C</td><td>과제 5개</td><td>2</td><td>없음</td><td>제한 없음</td><td>가능</td><td>제한 없음</td><td>+100</td></tr>
         <tr><td>C→B</td><td>과제 8개</td><td>3</td><td>15분</td><td>제한 없음</td><td>가능</td><td>3번</td><td>+120</td></tr>
-        <tr><td>B→A</td><td>과제 12개</td><td>4</td><td>없음</td><td>문제마다 3번</td><td>없음</td><td>2번</td><td>+160</td></tr>
-        <tr><td>A→S</td><td>과제 15개</td><td>5</td><td>25분</td><td>문제마다 2번</td><td>없음</td><td>1번</td><td>+200</td></tr>
+        <tr><td>B→A</td><td>과제 12개</td><td>4</td><td>없음</td><td>문제마다 3번 (진술은 2번)</td><td>없음</td><td>2번</td><td>+160</td></tr>
+        <tr><td>A→S</td><td>과제 15개</td><td>5</td><td>25분</td><td>문제마다 2번 (진술은 1번)</td><td>없음</td><td>1번</td><td>+200</td></tr>
       </table>
       <p class="note">응시 조건의 "과제"는 처음 해결한 오늘의 추리와 연습실 과제를 합친 수이고, 입학부터 쌓인 수로 센다. 제한 시간은 문제를 푸는 동안에만 흐른다(봉투와 문제 사이의 장면에서는 멈춘다). 시험지를 펼친 뒤에는 화면을 떠나거나 새로고침해도 시간이 흐른다. 떨어져도 등급은 그대로다.</p>
 

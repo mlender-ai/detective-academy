@@ -17,6 +17,15 @@ import type {
 
 export type Verdict = "idle" | "wrong" | "correct";
 
+/** 유형의 한 낱말 이름 (시험 안내의 좁은 칸) */
+export const TYPE_WORD: Record<Puzzle["type"], string> = {
+  code: "암호",
+  truth: "진술",
+  schedule: "순서",
+  evidence: "증거",
+  spatial: "인장",
+};
+
 /** 유형의 짧은 이름 (연습실의 서랍, 시험 안내) */
 export const TYPE_NAME: Record<Puzzle["type"], string> = {
   code: "암호 해독",

@@ -16,7 +16,7 @@ import { PROMOTION_RULES, RANK_BY_ID, rankLabel, type ExamRules, type PromotionR
 import { examRemainingMs, examRuleOf, examStatus, getProgress, type ExamStatus, type SubmitOutcome } from "../engine/progressEngine";
 import { formatCountdown } from "../engine/time";
 import type { ExamSession, Puzzle, RankId } from "../engine/types";
-import { TYPE_NAME } from "../games/logic";
+import { TYPE_NAME, TYPE_WORD } from "../games/logic";
 import { EvidencePlay } from "./cases/EvidencePlay";
 import { SealPlay } from "./cases/SealPlay";
 import { ScenePlay } from "./codeux/ScenePlay";
@@ -59,24 +59,34 @@ function RoomBar({ title, note }: { title: string; note?: string }) {
   );
 }
 
-/** 시험에 걸린 제한을 한 줄씩: 걸린 것만 적고, 아무것도 없으면 없다고 적는다 */
-function ruleLines(rules: ExamRules): string[] {
-  const lines: string[] = [];
-  if (rules.timeLimitSec !== null) lines.push(`${Math.round(rules.timeLimitSec / 60)}분 안에 모두 풉니다`);
-  if (rules.submitsPerPuzzle !== null) {
-    // 유형에 따라 더 줄인 횟수가 있으면 함께 적는다: "문제마다 3번까지 제출합니다 (진술 추리는 2번)"
-    const fewer = (Object.entries(rules.submitsByType ?? {}) as [Puzzle["type"], number][])
-      .filter(([, count]) => count < rules.submitsPerPuzzle!)
-      .map(([type, count]) => `${TYPE_NAME[type]}는 ${count}번`);
-    lines.push(`문제마다 ${rules.submitsPerPuzzle}번까지 제출합니다${fewer.length ? ` (${fewer.join(", ")})` : ""}`);
-  }
-  if (lines.length === 0) lines.push("시간과 제출 횟수에 제한이 없습니다");
-  lines.push(rules.hints ? "수사 지원을 쓸 수 있습니다" : "수사 지원을 쓸 수 없습니다");
-  return lines;
+/** 시험에 걸린 제한을 표의 줄로: 시간 · 제출 · 수사 지원. 시작 전에 모두 보여 준다. */
+function ruleRows(rules: ExamRules): { label: string; text: string }[] {
+  // 유형에 따라 더 줄인 제출 횟수가 있으면 함께 적는다: "문제마다 3번 · 진술은 2번"
+  const fewer = (Object.entries(rules.submitsByType ?? {}) as [Puzzle["type"], number][])
+    .filter(([, count]) => rules.submitsPerPuzzle !== null && count < rules.submitsPerPuzzle)
+    .map(([type, count]) => `${TYPE_WORD[type]}은 ${count}번`);
+  return [
+    { label: "시간", text: rules.timeLimitSec === null ? "제한 없음" : `${Math.round(rules.timeLimitSec / 60)}분 안에 모두 풀기` },
+    { label: "제출", text: rules.submitsPerPuzzle === null ? "제한 없음" : [`문제마다 ${rules.submitsPerPuzzle}번`, ...fewer].join(" · ") },
+    { label: "수사 지원", text: rules.hints ? "쓸 수 있음" : "쓸 수 없음" },
+  ];
 }
 
 function puzzlesOf(rule: PromotionRule): Puzzle[] {
   return rule.examPuzzleIds.map((id) => PUZZLE_BY_ID[id]).filter(Boolean);
+}
+
+function RuleRows({ rules }: { rules: ExamRules }) {
+  return (
+    <>
+      {ruleRows(rules).map((row) => (
+        <div key={row.label} data-rule={row.label}>
+          <dt>{row.label}</dt>
+          <dd className="num">{row.text}</dd>
+        </div>
+      ))}
+    </>
+  );
 }
 
 /** 응시 안내: 무엇이 나오고, 어떤 제한이 걸리고, 붙으면 무엇을 받는가 */
@@ -85,27 +95,12 @@ function ExamFacts({ rule, status }: { rule: PromotionRule; status: ExamStatus }
   return (
     <dl className="roomnote__facts" data-testid="exam-facts">
       <div>
-        <dt>승급</dt>
-        <dd>
-          {rankLabel(rule.from)} → {rankLabel(rule.to)}
-        </dd>
-      </div>
-      <div>
         <dt>출제</dt>
         <dd>
-          <span className="num">{puzzles.length}문제</span> · {puzzles.map((p) => TYPE_NAME[p.type]).join(", ")}
+          <span className="num">{puzzles.length}문제</span> · {puzzles.map((p) => TYPE_WORD[p.type]).join(", ")}
         </dd>
       </div>
-      <div>
-        <dt>규칙</dt>
-        <dd>
-          <ul className="roomnote__rules" data-testid="exam-rules">
-            {ruleLines(rule.exam).map((line) => (
-              <li key={line}>{line}</li>
-            ))}
-          </ul>
-        </dd>
-      </div>
+      <RuleRows rules={rule.exam} />
       {rule.exam.attemptsPerDay !== null && (
         <div>
           <dt>응시</dt>
@@ -284,16 +279,7 @@ function ExamGate({ rule, status, session, state, onOpen }: GateProps) {
                   </dd>
                 </div>
               )}
-              <div>
-                <dt>규칙</dt>
-                <dd>
-                  <ul className="roomnote__rules">
-                    {ruleLines(rule.exam).map((line) => (
-                      <li key={line}>{line}</li>
-                    ))}
-                  </ul>
-                </dd>
-              </div>
+              <RuleRows rules={rule.exam} />
             </dl>
           </section>
         ) : (
@@ -302,7 +288,7 @@ function ExamGate({ rule, status, session, state, onOpen }: GateProps) {
               {blocked
                 ? "오늘의 응시 횟수를 모두 썼습니다. 자정이 지나면 다시 응시할 수 있습니다."
                 : timed
-                  ? "봉투를 열면 시험이 시작됩니다. 시험지를 펼친 뒤에는 화면을 떠나도 시간이 흐릅니다."
+                  ? "봉투를 열면 시험이 시작됩니다. 화면을 떠나도 시간은 흐릅니다."
                   : "학원 인장으로 봉한 시험 봉투입니다. 봉투를 열면 시험이 시작됩니다."}
             </p>
             <ExamFacts rule={rule} status={status} />

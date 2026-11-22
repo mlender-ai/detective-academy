@@ -113,22 +113,9 @@
 
 /* ───────── 시험실: 응시 안내, 응시 조건, 시험 종료 ───────── */
 
-.roomnote__rules {
-  display: grid;
-  gap: 0;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-/* 줄이 꺾여도 마름모 뒤로 가지런히 */
-.roomnote__rules li {
-  padding-left: 24px;
-  text-indent: -24px;
-}
-
-.roomnote__rules li::before {
-  content: "◆ ";
+/* 응시 안내의 표: 줄마다 한 줄로 읽히게 촘촘히 */
+.roomnote__facts > div {
+  padding: 2px 0;
 }
 
 .roomnote__need {
@@ -174,6 +161,14 @@
 }
 
 @media (max-height: 700px) {
+  /* 낮은 화면의 응시 안내: 시험실을 낮춰, 규칙이 스크롤 없이 다 보이게 한다 */
+  .room[data-state="sealed"],
+  .room[data-state="opening"],
+  .room[data-state="locked"],
+  .room[data-state="failed"] {
+    --room-h: 112px;
+  }
+
   .room .room__envelope {
     margin-bottom: -6px;
   }
@@ -579,6 +574,8 @@
 
 /* 명예 탐정: 아래의 표어 칸이 뒤집힌다 */
 .idcard[data-rank="S"] .idcard__foot {
+  padding-left: 4px;
+  padding-right: 4px;
   color: #000;
   background: var(--m-w);
   border-top-color: #000;
