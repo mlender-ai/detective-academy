@@ -2,7 +2,7 @@
 import type { StageFrame } from "./stage";
 
 /** 홈에서 갈 수 있는 곳 */
-export type SpotId = "board" | "practice" | "exam" | "archive";
+export type SpotId = "board" | "practice" | "exam" | "archive" | "case";
 
 /** 장면에 반영되는 게임 상태 */
 export interface SceneState {
@@ -14,6 +14,11 @@ export interface SceneState {
   examOpen: boolean;
   /** 지금 할 일이 있는 곳. 탐정이 다른 곳에 있으면 그 물건에 모서리 괄호가 깜빡인다. */
   mark?: SpotId | null;
+  /**
+   * 사건 접수함(창 아래의 낡은 텔레비전). 맡을 수 있는 사건이 없으면(없거나 "locked") 복도에 놓이지 않는다.
+   * new 새 사건 · open 수사 중 · cleared 해결
+   */
+  caseStatus?: "locked" | "new" | "open" | "cleared";
 }
 
 /** 장면 하나가 지키는 약속. Id 는 갈 수 있는 곳의 이름, S 는 장면에 비치는 상태다. */
@@ -48,6 +53,7 @@ export const SPOT_LABEL: Record<SpotId, string> = {
   practice: "연습실",
   exam: "승급 시험실",
   archive: "기록 보관함",
+  case: "사건 접수함",
 };
 
 const TAU = Math.PI * 2;

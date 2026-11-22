@@ -22,6 +22,8 @@ export const BOX = {
   exam: [244, 32, 40, FLOOR - 32],
   window: [306, 30, 26, 40],
   clock: [38, 28, 15, 15],
+  /** 사건 접수함: 창 아래의 낡은 텔레비전과 받침대 */
+  case: [305, 78, 24, FLOOR - 78],
 } as const;
 
 export interface Placed {
@@ -434,6 +436,48 @@ export function paintSide(): SideArt {
     rectDots(s, 0, 0, 1, ph, 1);
     rectDots(s, 2, 30, 2, 3, 1);
     ink.practiceLeaf = placed(s, px + pw - 6, py);
+  }
+
+  // 사건 접수함: 받침대 위의 낡은 텔레비전. 화면은 켜짐(잡음 둘) · 토끼 가면이 스치는 장면 · 꺼짐 네 가지다.
+  {
+    const [cx, cy, cw, ch] = BOX.case;
+    const body = (screen: (s: Sprite) => void) => {
+      const s = makeSprite(cw, ch);
+      // 안테나
+      lineDots(s, 12, 4, 7, 0, 1);
+      lineDots(s, 12, 4, 17, 0, 1);
+      // 몸통
+      rectDots(s, 1, 4, cw - 2, 16, 1);
+      rectDots(s, 2, 5, cw - 4, 14, -1);
+      // 화면(왼쪽)과 다이얼(오른쪽)
+      rectDots(s, 3, 6, 14, 12, 1);
+      rectDots(s, 4, 7, 12, 10, -1);
+      putDot(s, 19, 8, 1);
+      putDot(s, 19, 11, 1);
+      rectDots(s, 18, 15, 3, 1, 1);
+      screen(s);
+      // 받침대
+      rectDots(s, 0, 20, cw, 2, 1);
+      rectDots(s, 3, 22, 1, ch - 22, 1);
+      rectDots(s, cw - 4, 22, 1, ch - 22, 1);
+      rectDots(s, 3, 24, cw - 6, 1, 1);
+      return placed(s, cx, cy);
+    };
+    const noise = (seed: number) => (s: Sprite) => {
+      for (let y = 0; y < 10; y++) for (let x = 0; x < 12; x++) if ((x * 7 + y * 13 + seed * 5 + ((x * y + seed) % 3)) % 4 === 0) putDot(s, 4 + x, 7 + y, 1);
+    };
+    ink.caseNoise0 = body(noise(0));
+    ink.caseNoise1 = body(noise(1));
+    // 잡음 사이로 스치는 것: 긴 귀 둘과 얼굴
+    ink.caseMask = body((s) => {
+      rectDots(s, 7, 8, 1, 4, 1);
+      rectDots(s, 12, 8, 1, 4, 1);
+      rectDots(s, 6, 12, 8, 4, 1);
+      putDot(s, 8, 13, -1);
+      putDot(s, 11, 13, -1);
+    });
+    // 꺼진 화면: 가운데에 남은 한 점
+    ink.caseOff = body((s) => putDot(s, 10, 12, 1));
   }
 
   // 전경: 양 끝의 기둥. 카메라가 밀릴 때 복도보다 빨리 민다.

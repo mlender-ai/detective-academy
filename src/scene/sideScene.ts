@@ -31,6 +31,8 @@ const SPOTS: Record<SpotId, Spot> = {
   board: { x: BOX.board[0] - 3, hit: [84, 16, 74, 92], frame: grow(BOX.board, 9), arrive: "interact", face: 0 },
   practice: { x: BOX.practice[0] + BOX.practice[2] / 2, hit: [166, 16, 52, 92], frame: grow(BOX.practice, 9), arrive: "idle", face: 0 },
   exam: { x: BOX.exam[0] + BOX.exam[2] / 2, hit: [234, 10, 60, 98], frame: grow(BOX.exam, 10), arrive: "idle", face: 0 },
+  // 사건 접수함(텔레비전)은 왼쪽에 서서 들여다본다. 맡을 사건이 있을 때만 복도에 놓인다.
+  case: { x: BOX.case[0] - 13, hit: [296, 72, 40, 36], frame: grow(BOX.case, 5), arrive: "examine", face: Math.PI / 2 },
 };
 
 const HOME_X = 152;
@@ -77,6 +79,11 @@ export class SideScene implements HomeScene {
     return this.target !== null;
   }
 
+  /** 사건 접수함이 복도에 놓여 있는가 */
+  private get hasCase() {
+    return !!this.state.caseStatus && this.state.caseStatus !== "locked";
+  }
+
   setView(view: { x0: number; y0: number; x1: number; y1: number }) {
     this.visible = { x0: view.x0, x1: view.x1 };
     // 아직 움직이기 전이면 카메라를 곧바로 제자리에 둔다(처음 그릴 때 밀리는 모습이 보이지 않게)
@@ -92,6 +99,7 @@ export class SideScene implements HomeScene {
   hit(x: number, y: number): SpotId | null {
     const wx = x + Math.round(this.cam);
     for (const id of Object.keys(SPOTS) as SpotId[]) {
+      if (id === "case" && !this.hasCase) continue;
       const [hx, hy, hw, hh] = SPOTS[id].hit;
       if (wx >= hx && wx < hx + hw && y >= hy && y < hy + hh) return id;
     }
@@ -201,6 +209,13 @@ export class SideScene implements HomeScene {
     if (lamp2) put(art.ink.bulb2);
     put(art.ink[`paper${this.state.dailySolved ? "S" : "N"}${flutter}`]);
     put(open ? art.ink.practiceLeaf : art.ink.practiceClosed);
+
+    // 사건 접수함: 새 사건·수사 중이면 잡음이 일고 7초마다 토끼 가면이 스친다. 해결한 뒤에는 꺼져 있다.
+    if (this.hasCase) {
+      const d = time % 7;
+      const live = this.state.caseStatus !== "cleared";
+      put(!live ? art.ink.caseOff : d > 5.2 && d < 5.7 ? art.ink.caseMask : art.ink[`caseNoise${Math.floor(time * 5) & 1}`]);
+    }
 
     // 문 위의 등급 표찰
     let plate = this.plates.get(this.state.examRank);

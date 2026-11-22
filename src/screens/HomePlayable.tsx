@@ -14,22 +14,30 @@ import { examRemainingMs, examStatus, getProgress, practiceUnlocked } from "../e
 import { formatCountdown, formatElapsed } from "../engine/time";
 import type { SpotId } from "../scene/homeScene";
 import { SideScene } from "../scene/sideScene";
+import { CASES } from "../story/cases";
+import { caseStatus, getChapter } from "../story/engine/storyEngine";
 
-/** 복도의 네 곳과 그곳에서 열리는 화면 */
+/** 지금 접수함에 들어 있는 사건 (사건이 늘면 풀지 않은 첫 사건을 고른다) */
+const STORY = CASES[0];
+
+/** 복도의 곳들과 그곳에서 열리는 화면 */
 const ROUTE: Record<SpotId, Route> = {
   board: { name: "daily" },
   practice: { name: "practice" },
   exam: { name: "exam" },
   archive: { name: "profile" },
+  case: { name: "story", id: STORY.id },
 };
 
-const ORDER: SpotId[] = ["board", "practice", "exam", "archive"];
+/** 명령 창의 줄. 사건 수사는 그 사건을 맡을 수 있는 등급부터 나온다. */
+const ORDER: SpotId[] = ["board", "practice", "exam", "case", "archive"];
 
 const PLACE: Record<SpotId, string> = {
   board: "시험 게시판",
   practice: "연습실",
   exam: "승급 시험실",
   archive: "기록 보관함",
+  case: "사건 수사",
 };
 
 const STEP_SPOT: Record<NextStep, SpotId | null> = { daily: "board", practice: "practice", exam: "exam", none: null };
@@ -155,6 +163,11 @@ export function HomePlayable() {
   };
 
   const selected = heading ?? here;
+  const story = caseStatus(game, STORY);
+  const storyChapter = STORY.chapters[0];
+  const storyCleared = STORY.chapters.filter((ch) => getChapter(game, STORY, ch).status === "cleared").length;
+  const storyState = story === "cleared" ? `${storyCleared}장 해결` : story === "open" ? "수사 중" : "새 사건";
+  const order = ORDER.filter((id) => id !== "case" || story !== "locked");
   const practiceSolved = PRACTICE_PUZZLES.filter((p) => getProgress(game, p.id).status === "solved").length;
   // 다음 과제: 지금 등급에서 열려 있는 것 가운데 풀지 않은 첫 문제
   const practiceNext = PRACTICE_PUZZLES.find((p) => practiceUnlocked(game, p) && getProgress(game, p.id).status !== "solved") ?? null;
@@ -211,6 +224,11 @@ export function HomePlayable() {
       if (exam.canStart) return `승급 시험실. 문 위에 ${exam.rule.to}. 안에 불이 켜져 있다.`;
       if (exam.unlocked) return `승급 시험실. 문 위에 ${exam.rule.to}. 오늘은 불이 꺼졌다.`;
       return `승급 시험실. 문 위에 ${exam.rule.to}. 아직 열리지 않는다.`;
+    }
+    if (selected === "case") {
+      if (story === "cleared") return "창 아래의 텔레비전은 꺼져 있다. 수사 기록이 남아 있다.";
+      if (story === "open") return "창 아래의 텔레비전. 수사하던 방송이 멈춰 있다.";
+      return "창 아래의 낡은 텔레비전이 혼자 켜져 있다. 새 사건이 접수됐다.";
     }
     return `기록 보관함. 서랍에 ${game.nickname}의 신분증이 들어 있다.`;
   })();
@@ -317,6 +335,22 @@ export function HomePlayable() {
             </span>
           ),
         },
+    case: {
+      id: "story-entry",
+      label: `${STORY.title}, ${storyState}`,
+      state: (
+        <>
+          {STORY.code} [<span data-testid="story-entry-status">{storyState}</span>]
+        </>
+      ),
+      go: story === "cleared" ? "사건 기록 보기" : story === "open" ? "수사 이어서 하기" : "사건 파일 열기",
+      body: (
+        <span className="cmd__line">
+          <span>{STORY.title}</span>
+          <span className="num">{story === "cleared" ? "보상 받음" : `보상 +${storyChapter.reward}`}</span>
+        </span>
+      ),
+    },
     archive: {
       id: "identity",
       label: `탐정 신분증, ${rankLabel(game.rank)} ${game.nickname}`,
@@ -332,7 +366,7 @@ export function HomePlayable() {
   };
 
   return (
-    <div className="screen hall hall--play inkworld" data-testid="home-screen" data-home="b" data-next={step} data-at={here ?? ""}>
+    <div className="screen hall hall--play inkworld" data-testid="home-screen" data-home="b" data-next={step} data-at={here ?? ""} data-rows={order.length}>
       <h1 className="sr-only">탐정학원 복도</h1>
 
       <header className="hall__top">
@@ -367,6 +401,7 @@ export function HomePlayable() {
           examRank: exam.rule ? exam.rule.to : game.rank,
           examOpen,
           mark: stepSpot && selected !== stepSpot ? stepSpot : null,
+          caseStatus: story,
         }}
         onArrive={onArrive}
         onPick={look}
@@ -375,7 +410,7 @@ export function HomePlayable() {
       <Narration text={line} />
 
       <nav className="cmd" aria-label="갈 곳">
-        {ORDER.map((id) => {
+        {order.map((id) => {
           const row = rows[id];
           const on = selected === id;
           return (

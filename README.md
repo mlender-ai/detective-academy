@@ -64,6 +64,8 @@ E2E 테스트를 처음 돌리는 기기에서는 `npx playwright install chromi
 
 프리셋은 손으로 짜 맞춘 상태가 아니라 실제 엔진 함수를 순서대로 호출해 만듭니다(시험도 실제로 치러 올라갑니다).
 
+- CASE D-001 처음부터 (QA 저장 칸): 사건 수사를 등급과 상관없이 연다. 별도 저장 칸(`qa-story`)을 쓰므로 보고 있던 진행 상태는 그대로다. "실제 기록으로 돌아가기"로 돌아온다.
+
 주소로도 됩니다: `?demo=1&preset=ready-b&apply=1`(그 상태로 시작), `?demo=1&date=2026-11-25`(그 날짜로), `?demo=1&day=3`(일일 문제 3일차를 오늘의 추리 자리에), `&save=이름`(별도 저장 칸).
 
 ## 구조
@@ -95,9 +97,15 @@ src/
               codeux/ 암호 해독의 풀이 — ScenePlay(자료실 장면, 기본) · NotebookPlay(수사 수첩, ?play=c 로만. 다른 문제용 후보)
               usePlaySession.ts 가 풀이 진행(입력·시간·제출·판정)을 맡고 화면은 그리기만 한다
   components/ 신분증, 인장, 시험 봉투, 힌트 서랍, 크레딧 꼬리표, 서술 한 줄(Narration), 자막 화면(CineCard)
+  story/      사건 수사(스토리) — CASE D-001 「BJ 토끼의 마지막 방송」 제1장
+              engine/  장면의 종류와 진행(storyTypes · storyEngine: GameState → GameState)
+              cases/   사건 자료와 논리 — d001/case.ts(글·증거·장면), d001/logic.ts(가능한 경우를 전부 세어 판정), index.ts(사건 등록부)
+              scenes/  StoryCaseScreen(묶음) · StoryIntro · BroadcastRoom · TransmissionLog · EvidenceDesk · FinalDeduction · ChapterEnding · CaseRecord
+              components/ 틀(StoryShell)·수사 노트·수사 지원·증거 카드, 방송 화면(StreamView), 타임라인(BroadcastTimeline)
+              art/     방송실 그림(broadcastArt: 164×92점, 네 시점)
   styles/     tokens.css(색·글꼴 이름) · 배치(base·components·art·hall·desk·rooms, @layer layout)
               · 겉모습(mono·mono-rooms. 그 아래에 pixel·pixel-rooms 를 mono-pixel.css 가 한 층으로 깐다)
-              · 화면별(live 홈의 장면 · codeux 암호 풀이 · cases 증거·인장 · growth 연습실 서랍·시험 안내·등급별 휘장과 신분증)
+              · 화면별(live 홈의 장면 · codeux 암호 풀이 · cases 증거·인장 · growth 연습실 서랍·시험 안내·등급별 휘장과 신분증 · story 사건 수사)
   tests/      Vitest 단위 테스트
 e2e/          Playwright 테스트 (solve.ts: 문제 자료를 읽어 화면의 조작만으로 답을 넣는 도우미)
 scripts/      배경 굽기(mono-art), 화면 캡처(shot, capture-all), 캡처를 WebP 로(to-webp)
@@ -148,7 +156,7 @@ docs/v1/           V1 캡처와 빌드본
 
 ## 저장
 
-진행 상태는 브라우저 `localStorage` 의 `detective-academy:v1` 키에 저장됩니다. 입학 여부, 닉네임, 등급, 크레딧, 문제별 상태·입력값·힌트 단계·풀이 시간·제출 횟수·보상 수령 여부, 승급 기록, 치르고 있는 시험(문제 순번·남은 시간·쓴 제출 횟수), 등급별 오늘의 응시 횟수, 효과음 설정이 들어갑니다. 서버·계정은 없습니다.
+진행 상태는 브라우저 `localStorage` 의 `detective-academy:v1` 키에 저장됩니다. 입학 여부, 닉네임, 등급, 크레딧, 문제별 상태·입력값·힌트 단계·풀이 시간·제출 횟수·보상 수령 여부, 승급 기록, 치르고 있는 시험(문제 순번·남은 시간·쓴 제출 횟수), 등급별 오늘의 응시 횟수, 사건 수사의 진행(`story`: 장마다 있던 장면·조사한 곳·얻은 증거·고른 기록·확정한 사실·낸 결론과 근거·오답 수·수사 지원 단계·보상 수령·해결 시각), 효과음 설정이 들어갑니다. 사건 수사가 없던 때의 저장을 읽으면 기존 기록은 그대로 두고 빈 진행으로 채웁니다. 서버·계정은 없습니다.
 
 시험의 남은 시간과 횟수는 저장된 값에서 이어지므로 새로고침으로 되돌아가지 않습니다. 다만 브라우저 저장소는 사용자가 고칠 수 있어 조작을 막지는 못합니다. 순위 같은 경쟁 기능을 붙일 때는 시험 한 번의 기록(`ExamSession`)을 서버로 옮겨 검증해야 합니다.
 
@@ -156,4 +164,4 @@ docs/v1/           V1 캡처와 빌드본
 
 ## 이번 버전에 없는 것
 
-스토리 모드, 서버·계정·순위표, 결제·광고, 푸시 알림, AI 문제 생성, 특별 시험 모드, 상점.
+사건 수사의 2장 이후(지금은 CASE D-001 의 제1장만 있다), 서버·계정·순위표, 결제·광고, 푸시 알림, AI 문제 생성, 특별 시험 모드, 상점.

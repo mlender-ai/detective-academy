@@ -12,7 +12,9 @@ export type Route =
   | { name: "practice" }
   | { name: "practice-play"; id: string }
   | { name: "exam" }
-  | { name: "profile" };
+  | { name: "profile" }
+  /** 사건 수사(스토리). id 는 사건의 이름표 */
+  | { name: "story"; id: string };
 
 export function toHash(route: Route): string {
   switch (route.name) {
@@ -28,6 +30,8 @@ export function toHash(route: Route): string {
       return "#/exam";
     case "profile":
       return "#/profile";
+    case "story":
+      return `#/story/${encodeURIComponent(route.id)}`;
   }
 }
 
@@ -43,6 +47,8 @@ export function parseHash(hash: string): Route {
       return { name: "exam" };
     case "profile":
       return { name: "profile" };
+    case "story":
+      return tail ? { name: "story", id: decodeURIComponent(tail) } : { name: "home" };
     default:
       return { name: "home" };
   }

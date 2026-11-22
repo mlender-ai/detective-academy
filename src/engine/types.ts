@@ -384,5 +384,7 @@ export interface GameState {
   exam: ExamSession | null;
   /** 등급별 오늘의 응시 횟수. 날짜가 바뀌면 다시 센다. */
   examDays: Partial<Record<RankId, { dateKey: string; count: number }>>;
+  /** 스토리(등급별 사건 수사)의 진행. 장마다 따로 남는다. */
+  story: import("../story/engine/storyTypes").StoryState;
   settings: { sound: boolean };
 }

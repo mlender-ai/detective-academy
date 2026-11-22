@@ -4,6 +4,8 @@
  */
 import { ALL_PUZZLES, PRACTICE_PUZZLES, PUZZLE_BY_ID, getDailyPuzzle } from "../data/puzzles";
 import { PROMOTION_RULES, RANKS, rankIndex, submitLimit, type PromotionRule } from "../data/ranks";
+import { CASES } from "../story/cases";
+import { emptyStory, hydrateStory } from "../story/engine/storyEngine";
 import { CREDIT_POLICY, hintCost, rewardFor, spend } from "./creditEngine";
 import { checkAnswer } from "./puzzleValidator";
 import { seoulDateKey } from "./time";
@@ -49,6 +51,7 @@ export function createInitialState(): GameState {
     promotions: [],
     exam: null,
     examDays: {},
+    story: emptyStory(),
     settings: { sound: false },
   };
 }
@@ -521,6 +524,7 @@ export function hydrate(raw: unknown): GameState {
     promotions: Array.isArray(data.promotions) ? data.promotions : [],
     exam: hydrateExam(data.exam),
     examDays: hydrateExamDays(data.examDays),
+    story: hydrateStory(data.story, CASES),
     settings: { sound: data.settings?.sound === true },
   };
 }

@@ -12,6 +12,8 @@ scene.state = {
   examRank: q.get("rank") ?? "D",
   examOpen: q.get("exam") === "1",
   mark: (q.get("mark") as SpotId | null) ?? null,
+  // 사건 접수함(텔레비전): ?case=new · open · cleared 일 때만 놓인다
+  caseStatus: (q.get("case") as "new" | "open" | "cleared" | null) ?? undefined,
 };
 const stage = new Stage(canvas, WW, WH);
 canvas.style.width = `${WW * 3}px`;

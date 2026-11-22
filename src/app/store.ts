@@ -24,6 +24,22 @@ import {
   type SubmitOutcome,
 } from "../engine/progressEngine";
 import type { GameState, Puzzle, PuzzleInput } from "../engine/types";
+import {
+  finishEnding,
+  goScene,
+  investigate,
+  linkItems,
+  pickRecord,
+  requestStoryHint,
+  seeIntro,
+  submitDeduction,
+  type DeduceOutcome,
+  type InvestigateOutcome,
+  type LinkOutcome,
+  type PickOutcome,
+  type StoryHintOutcome,
+} from "../story/engine/storyEngine";
+import type { StoryCase, StoryChapter } from "../story/engine/storyTypes";
 import { gameNow } from "./clock";
 
 /**
@@ -147,6 +163,50 @@ export const gameStore = {
   /** 떨어진 시험의 결과를 닫는다 */
   dismissExam() {
     commit(dismissExam(state));
+  },
+
+  /* ── 사건 수사(스토리) ── */
+
+  storyIntroSeen(c: StoryCase, ch: StoryChapter) {
+    commit(seeIntro(state, c, ch));
+  },
+
+  storyGo(c: StoryCase, ch: StoryChapter, scene: string) {
+    commit(goScene(state, c, ch, scene));
+  },
+
+  storyInvestigate(c: StoryCase, ch: StoryChapter, scene: string, point: string): InvestigateOutcome {
+    const result = investigate(state, c, ch, scene, point);
+    commit(result.state);
+    return result.outcome;
+  },
+
+  storyPick(c: StoryCase, ch: StoryChapter, scene: string, record: string): PickOutcome {
+    const result = pickRecord(state, c, ch, scene, record);
+    commit(result.state);
+    return result.outcome;
+  },
+
+  storyLink(c: StoryCase, ch: StoryChapter, scene: string, a: string, b: string): LinkOutcome {
+    const result = linkItems(state, c, ch, scene, a, b);
+    commit(result.state);
+    return result.outcome;
+  },
+
+  storyDeduce(c: StoryCase, ch: StoryChapter, scene: string, choice: string | null, basis: string | null): DeduceOutcome {
+    const result = submitDeduction(state, c, ch, scene, choice, basis, gameNow());
+    commit(result.state);
+    return result.outcome;
+  },
+
+  storyFinish(c: StoryCase, ch: StoryChapter) {
+    commit(finishEnding(state, c, ch));
+  },
+
+  storyHint(c: StoryCase, ch: StoryChapter): StoryHintOutcome {
+    const result = requestStoryHint(state, c, ch);
+    commit(result.state);
+    return result.outcome;
   },
 
   /** 검수용: 오늘의 응시 횟수를 되돌린다 */

@@ -5,6 +5,7 @@ import { DetectiveProfile } from "../screens/DetectiveProfile";
 import { HomePlayable } from "../screens/HomePlayable";
 import { PracticePlay, PracticeRoom } from "../screens/PracticeRoom";
 import { PromotionExam } from "../screens/PromotionExam";
+import { StoryCaseScreen } from "../story/scenes/StoryCaseScreen";
 import { DemoPanel, isDemoMode } from "./DemoPanel";
 import { navigate, toHash, useRoute, type Route } from "./router";
 import { useGame } from "./store";
@@ -24,6 +25,8 @@ function Screen({ route }: { route: Route }) {
       return <PromotionExam />;
     case "profile":
       return <DetectiveProfile />;
+    case "story":
+      return <StoryCaseScreen id={route.id} />;
   }
 }
 
