@@ -75,7 +75,7 @@ async function toExam(page: Page, query: string) {
 test("기본값은 꺼져 있다: 효과의 캔버스가 어디에도 놓이지 않는다", async ({ page }) => {
   await preset(page, "daily-unsolved");
   await enterFromHome(page, "daily-file");
-  await solve(page, getDailyPuzzle(TEST_DATE));
+  await solve(page, getDailyPuzzle(TEST_DATE)!);
   await expect(page.getByTestId("reward")).toBeVisible();
   await expect(page.locator(".fxcanvas")).toHaveCount(0);
   await expect(page.getByTestId("reward")).not.toHaveAttribute("data-fx", /.*/);
@@ -101,7 +101,7 @@ test.describe("?fx=ascii", () => {
     await preset(page, "daily-unsolved", "&fx=ascii");
     const before = (await stored(page)).credits as number;
     await enterFromHome(page, "daily-file");
-    await solve(page, getDailyPuzzle(TEST_DATE));
+    await solve(page, getDailyPuzzle(TEST_DATE)!);
     await expect(page.getByTestId("reward")).toContainText("+60");
     // 보상은 저장된 크레딧에 한 번 더해진다
     expect((await stored(page)).credits).toBe(before + 60);
@@ -195,7 +195,7 @@ test.describe("?fx=ascii", () => {
     await page.emulateMedia({ reducedMotion: "reduce" });
     await preset(page, "daily-unsolved", "&fx=ascii");
     await enterFromHome(page, "daily-file");
-    await solve(page, getDailyPuzzle(TEST_DATE));
+    await solve(page, getDailyPuzzle(TEST_DATE)!);
     const coin = page.locator(".graded__coins.fxcoin");
     await expect(coin).toBeVisible();
     expect(await litDots(page, ".graded__coins.fxcoin")).toBeGreaterThan(40);

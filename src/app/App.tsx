@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { trackFor } from "../audio/director";
 import { music } from "../audio/music";
 import { AdmissionScreen } from "../screens/AdmissionScreen";
+import { DailyArchive, PastDailyPlay } from "../screens/DailyArchive";
 import { DailyChallenge } from "../screens/DailyChallenge";
 import { DetectiveProfile } from "../screens/DetectiveProfile";
 import { HomeIso } from "../screens/HomeIso";
@@ -10,7 +11,7 @@ import { PracticePlay } from "../screens/PracticeRoom";
 import { PromotionExam } from "../screens/PromotionExam";
 import { StoryCaseScreen } from "../story/scenes/StoryCaseScreen";
 import { DemoPanel, isDemoMode } from "./DemoPanel";
-import { navigate, toHash, useRoute, type Route } from "./router";
+import { navigate, toHash, useRoute, useVisit, type Route } from "./router";
 import { useGame } from "./store";
 
 function Screen({ route }: { route: Route }) {
@@ -20,6 +21,10 @@ function Screen({ route }: { route: Route }) {
       return <HomeIso />;
     case "daily":
       return <DailyChallenge />;
+    case "daily-past":
+      return <DailyArchive />;
+    case "daily-past-play":
+      return <PastDailyPlay id={route.id} />;
     case "practice":
       return <PracticeIso />;
     case "practice-play":
@@ -36,6 +41,7 @@ function Screen({ route }: { route: Route }) {
 export function App() {
   const game = useGame();
   const route = useRoute();
+  const visit = useVisit();
   const [demo] = useState(isDemoMode);
   // 입학 버튼을 누른 직후에는 발급 연출을 끝까지 보여 주기 위해, 사용자가 들어갈 때까지 입학 화면에 머문다.
   const [welcoming, setWelcoming] = useState(false);
@@ -66,7 +72,7 @@ export function App() {
           }}
         />
       ) : (
-        <Screen key={toHash(route)} route={route} />
+        <Screen key={`${toHash(route)}@${visit}`} route={route} />
       )}
       {demo && <DemoPanel />}
     </div>

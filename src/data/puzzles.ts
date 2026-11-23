@@ -6,7 +6,7 @@
  * solution 이 맞는지는 src/tests 가 전수 탐색으로 확인한다.
  */
 import type { CodePuzzle, Puzzle, RankId, SchedulePuzzle, TruthPuzzle } from "../engine/types";
-import { daysBetween, isDateKey } from "../engine/time";
+import { addDays, daysBetween, isDateKey } from "../engine/time";
 import { DAILY_SET, DAILY_WEEK_1_COUNT } from "./dailySet";
 import { daon, doyun, hana, harin, junho, minjae, sea, sera } from "./people";
 import { RANKS } from "./ranks";
@@ -230,8 +230,10 @@ export const CONTENT_VERSION = 2;
 /* ───────── 오늘의 추리: 날짜별 배정 ─────────
  * 모든 사용자가 같은 날 같은 문제를 받는다(Asia/Seoul 날짜 기준). 서버가 없으므로 정해 둔 순서를 날짜로 센다.
  * 지금은 열네 문제가 차례로 붙는다(첫날의 '자료실 금고의 암호' + 일일 문제 열셋).
- * 새 문제는 order 의 맨 뒤에만 덧붙인다: 앞의 순서와 이름표가 바뀌면 지나간 날짜의 배정과 기록이 뒤바뀐다.
- * 열닷새째부터의 처리(지금은 처음으로 돌아가 풀었던 문제가 다시 붙는다)는 dailyIndex 가 정한다.
+ * 새 문제는 order 의 맨 뒤에만 덧붙인다: 앞의 순서와 이름표가 바뀌면 지나간 날짜의 배정과 기록이 뒤바뀐다
+ * (날짜 ↔ 이름표의 표는 src/tests/daily-calendar.test.ts 가 못박아 둔다).
+ * 달력은 돌지 않는다: 마지막 문제의 다음 날부터는 오늘의 추리가 없다(getDailyPuzzle 이 null).
+ * 풀었던 문제를 새 문제처럼 다시 붙이지 않고, 지난 사건(pastDailies)을 다시 보게 한다.
  */
 export const DAILY_CALENDAR = {
   /** 이 날 첫 문제가 붙는다 */
@@ -239,11 +241,22 @@ export const DAILY_CALENDAR = {
   order: [DAILY_CODE, ...DAILY_SET].map((p) => p.id),
 } as const;
 
-/** 그 날짜에 붙는 문제의 순번 (0부터). 시작일 이전의 날짜도 같은 주기로 센다. */
-export function dailyIndex(dateKey: string): number {
-  const length = DAILY_CALENDAR.order.length;
-  const days = isDateKey(dateKey) ? daysBetween(DAILY_CALENDAR.start, dateKey) : 0;
-  return ((days % length) + length) % length;
+/** 그 날짜에 붙는 문제의 순번 (0부터). 달력 밖의 날짜(시작일 이전, 마지막 문제의 다음 날부터)와 날짜가 아닌 값은 null */
+export function dailyIndex(dateKey: string): number | null {
+  if (!isDateKey(dateKey)) return null;
+  const days = daysBetween(DAILY_CALENDAR.start, dateKey);
+  return days >= 0 && days < DAILY_CALENDAR.order.length ? days : null;
+}
+
+/** 달력의 마지막 문제가 붙는 날 */
+export function dailyLastDate(): string {
+  return addDays(DAILY_CALENDAR.start, DAILY_CALENDAR.order.length - 1);
+}
+
+/** 그 문제가 달력에서 붙는 날짜. 달력에 없는 문제면 null */
+export function dailyDateOf(puzzleId: string): string | null {
+  const index = DAILY_CALENDAR.order.indexOf(puzzleId);
+  return index < 0 ? null : addDays(DAILY_CALENDAR.start, index);
 }
 
 /**
@@ -261,10 +274,42 @@ function previewDay(): number | null {
 
 const PREVIEW_DAY = previewDay();
 
-/** 그 날짜(Asia/Seoul, YYYY-MM-DD)의 오늘의 추리 */
-export function getDailyPuzzle(dateKey: string): Puzzle {
+/** 그 날짜(Asia/Seoul, YYYY-MM-DD)의 오늘의 추리. 달력이 끝난 날(과 시작 전)에는 없다(null). */
+export function getDailyPuzzle(dateKey: string): Puzzle | null {
   if (PREVIEW_DAY) return DAILY_SET[PREVIEW_DAY - 1];
-  return PUZZLE_BY_ID[DAILY_CALENDAR.order[dailyIndex(dateKey)]];
+  const index = dailyIndex(dateKey);
+  return index === null ? null : PUZZLE_BY_ID[DAILY_CALENDAR.order[index]];
+}
+
+/** 지난 사건 한 줄: 그 날짜에 붙었던 오늘의 추리 */
+export interface DailyEntry {
+  /** 붙은 날짜 (Asia/Seoul, YYYY-MM-DD) */
+  date: string;
+  /** 달력의 몇째 날인가 (1부터) */
+  day: number;
+  puzzle: Puzzle;
+}
+
+/**
+ * 지난 사건: 달력의 첫날부터 그 날짜까지 붙었던 문제(그 날짜의 것 포함), 날짜 순서대로.
+ * 아직 오지 않은 날의 문제는 들어 있지 않다. 날짜가 아닌 값이면 빈 목록이다.
+ */
+export function pastDailies(dateKey: string): DailyEntry[] {
+  if (!isDateKey(dateKey)) return [];
+  const days = Math.min(daysBetween(DAILY_CALENDAR.start, dateKey), DAILY_CALENDAR.order.length - 1);
+  const out: DailyEntry[] = [];
+  for (let i = 0; i <= days; i++) out.push({ date: addDays(DAILY_CALENDAR.start, i), day: i + 1, puzzle: PUZZLE_BY_ID[DAILY_CALENDAR.order[i]] });
+  return out;
+}
+
+/**
+ * 그 문제를 그 날짜에 열 수 있는가: 달력에서 그 날짜까지 붙은 문제만 열린다(오지 않은 날의 문제와 달력에 없는 문제는 열리지 않는다).
+ * 검수용 일차 전환(?demo=1&day=)으로 오늘 자리에 놓인 문제는 날짜와 상관없이 열린다.
+ */
+export function dailyOpenOn(puzzleId: string, dateKey: string): boolean {
+  if (PREVIEW_DAY && DAILY_SET[PREVIEW_DAY - 1].id === puzzleId) return true;
+  const date = dailyDateOf(puzzleId);
+  return date !== null && isDateKey(dateKey) && daysBetween(date, dateKey) >= 0;
 }
 
 /* ───────── 연습실 · 승급 시험 ───────── */

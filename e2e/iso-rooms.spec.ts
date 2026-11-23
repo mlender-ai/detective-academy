@@ -35,7 +35,7 @@ test.describe("자료실(암호 풀이)", () => {
     await expect(play).toHaveAttribute("data-at", "desk");
     await expect(page.getByTestId("record")).toBeVisible();
     // 아래 단추로도 오간다. 끝까지 풀면 보상이 들어온다.
-    await solve(page, getDailyPuzzle(TEST_DATE));
+    await solve(page, getDailyPuzzle(TEST_DATE)!);
     await expect(page.getByTestId("reward")).toContainText("+60");
   });
 

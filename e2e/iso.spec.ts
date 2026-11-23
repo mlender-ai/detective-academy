@@ -115,7 +115,7 @@ test("오늘의 추리를 풀고 돌아오면 게시판은 해결로 바뀌고 �
   await preset(page, "daily-unsolved");
   await arrived(page, "board");
   await page.getByTestId("daily-file-cta").click();
-  await solve(page, getDailyPuzzle(TEST_DATE));
+  await solve(page, getDailyPuzzle(TEST_DATE)!);
   await expect(page.getByTestId("reward")).toBeVisible();
   await page.goto("/?demo=1#/");
   await expect(home(page)).toHaveAttribute("data-home", "iso");

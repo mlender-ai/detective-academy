@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { todayKey } from "../app/clock";
-import { goBack } from "../app/router";
+import { goBack, navigate } from "../app/router";
 import { ensureContext, playSound } from "../app/sound";
 import { gameStore, useGame } from "../app/store";
 import { PenMark } from "../art/pixel";
@@ -11,7 +11,7 @@ import { CreditTag } from "../components/CreditReward";
 import { IdCard } from "../components/IdCard";
 import { ALL_PUZZLES, PRACTICE_PUZZLES, getDailyPuzzle } from "../data/puzzles";
 import { RANKS, nextRank, rankLabel } from "../data/ranks";
-import { NICKNAME_MAX, getProgress, solvedCount } from "../engine/progressEngine";
+import { NICKNAME_MAX, emptyProgress, getProgress, solvedCount } from "../engine/progressEngine";
 import { dottedDate, formatDuration } from "../engine/time";
 import type { PuzzleProgress } from "../engine/types";
 
@@ -60,8 +60,9 @@ export function DetectiveProfile() {
   const upcoming = nextRank(game.rank);
   const lastPromotion = game.promotions[game.promotions.length - 1] ?? null;
   const issuedAt = lastPromotion?.at ?? game.enrolledAt;
+  // 달력이 끝난 날에는 오늘의 추리가 없다(null)
   const daily = getDailyPuzzle(todayKey());
-  const dailyProgress = getProgress(game, daily.id);
+  const dailyProgress = daily ? getProgress(game, daily.id) : emptyProgress();
   const dailySolved = solvedCount(game, "daily");
   const practiceSolved = solvedCount(game, "practice");
   // 가장 최근에 해결한 연습 과제
@@ -189,8 +190,12 @@ export function DetectiveProfile() {
                 {dailyProgress.status === "solved" && <PenMark kind="check" />}
               </span>
               <span className="records__cat">오늘의 추리 · 지금까지 {dailySolved}개 해결</span>
-              <span className="records__title">{daily.title}</span>
-              <span className="records__line hand num">{recordLine(dailyProgress)}</span>
+              <span className="records__title">{daily ? daily.title : "새 사건 준비 중"}</span>
+              <span className="records__line hand num">{daily ? recordLine(dailyProgress) : "새 사건을 준비하고 있습니다"}</span>
+              {/* 지난 사건: 게시판에 붙었던 오늘의 추리를 다시 본다 */}
+              <button type="button" className="minibtn leaf records__more" onClick={() => navigate({ name: "daily-past" })} data-testid="record-past">
+                지난 사건 보기
+              </button>
             </li>
             <li data-status={practiceSolved > 0 ? "solved" : "new"} data-testid="record-practice">
               <span className="tickbox" aria-hidden="true">

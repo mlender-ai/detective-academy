@@ -2,7 +2,7 @@
  * 진행 상태 엔진. 모든 함수는 GameState 를 받아 새 GameState 를 돌려주는 순수 함수다.
  * 저장(localStorage)과 화면은 이 파일을 모른다.
  */
-import { ALL_PUZZLES, PRACTICE_PUZZLES, PUZZLE_BY_ID, getDailyPuzzle } from "../data/puzzles";
+import { ALL_PUZZLES, PRACTICE_PUZZLES, PUZZLE_BY_ID, dailyOpenOn, getDailyPuzzle } from "../data/puzzles";
 import { PROMOTION_RULES, RANKS, rankIndex, submitLimit, type PromotionRule } from "../data/ranks";
 import { CASES } from "../story/cases";
 import { emptyStory, hydrateStory } from "../story/engine/storyEngine";
@@ -446,6 +446,9 @@ export function submitAnswer(
 ): { state: GameState; outcome: SubmitOutcome } {
   if (puzzle.category === "exam") return submitExamAnswer(state, puzzle, answer, now);
   if (!canPlay(state, puzzle)) return { state, outcome: REJECTED };
+  // 오늘의 추리는 달력에서 그날까지 붙은 문제만 채점한다: 아직 오지 않은 날의 문제는 풀리지 않고 보상도 없다.
+  // 지나간 날의 문제는 언제든 풀 수 있다(처음 해결이면 보상을 한 번 받는다).
+  if (puzzle.category === "daily" && !dailyOpenOn(puzzle.id, seoulDateKey(now))) return { state, outcome: REJECTED };
 
   const before = getProgress(state, puzzle.id);
   const correct = checkAnswer(puzzle, answer);
@@ -639,7 +642,9 @@ export function buildDemoState(preset: DemoPreset, now: Date = new Date()): Game
     state = submitAnswer(state, puzzle, puzzle.solution, now).state;
   };
 
-  solve(getDailyPuzzle(seoulDateKey(now)));
+  // 달력이 끝난 날에는 오늘의 추리가 없다: 풀 것이 없는 채로 넘어간다
+  const daily = getDailyPuzzle(seoulDateKey(now));
+  if (daily) solve(daily);
   if (preset === "daily-solved") return state;
 
   const target = PRESET_TARGET[preset];

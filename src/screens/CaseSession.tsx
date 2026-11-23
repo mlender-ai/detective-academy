@@ -9,11 +9,13 @@ import { ScenePlay } from "./codeux/ScenePlay";
 import { EvidencePlay } from "./cases/EvidencePlay";
 import { SealPlay } from "./cases/SealPlay";
 import { DeskPlay } from "./DeskPlay";
-import { DeskResult } from "./DeskResult";
+import { DeskResult, type ResultBack } from "./DeskResult";
 
 interface Props {
   puzzle: Puzzle;
   onExit: () => void;
+  /** 결과 화면에서 돌아갈 곳. 없으면 학원 홀이다. (지난 사건에서 연 문제는 지난 사건의 목록으로 돌아간다) */
+  back?: ResultBack;
 }
 
 /**
@@ -21,7 +23,7 @@ interface Props {
  * 결과는 모두 추리 책상의 채점 기록으로 이어진다.
  * 이미 해결한 문제는 기록을 먼저 보여 주고, 원하면 보상 없이 다시 풀 수 있다.
  */
-export function CaseSession({ puzzle, onExit }: Props) {
+export function CaseSession({ puzzle, onExit, back }: Props) {
   const game = useGame();
   const progress = getProgress(game, puzzle.id);
   const [outcome, setOutcome] = useState<SubmitOutcome | null>(null);
@@ -30,10 +32,10 @@ export function CaseSession({ puzzle, onExit }: Props) {
   // 방금 맞힌 문제는 정답 연출이 끝난 뒤(onSolved) 결과 화면으로 넘어간다.
   const [solvedOnArrival] = useState(progress.status === "solved");
 
-  if (outcome) return <DeskResult puzzle={puzzle} outcome={outcome} />;
+  if (outcome) return <DeskResult puzzle={puzzle} outcome={outcome} back={back} />;
 
   if (solvedOnArrival && !replay) {
-    return <DeskResult puzzle={puzzle} outcome={null} onReplay={() => withTransition(() => setReplay(true))} />;
+    return <DeskResult puzzle={puzzle} outcome={null} back={back} onReplay={() => withTransition(() => setReplay(true))} />;
   }
 
   const exit = replay ? () => withTransition(() => setReplay(false), "back") : onExit;
