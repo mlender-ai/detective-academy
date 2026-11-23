@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { practiceOfRank } from "../src/data/puzzles";
 import { offToneRatio, preset, shot } from "./helpers";
+import { patchState } from "./solve";
 
 /**
  * 연습실의 과제 목록 (V3 RELEASE: 서류함의 과제가 셋에서 대여섯으로 늘었다).
@@ -156,8 +157,14 @@ for (const [w, h] of SIZES) {
     });
 
     test("과제 다섯 줄의 서류함: 권하는 과제가 창 밖에 있으면 거기까지 밀어 놓고, 셋뿐인 서류함은 밀리지 않는다", async ({ page }) => {
-      // D급에서 C급 시험을 앞둔 상태: F 서류함의 앞 넷을 풀었다. 풀지 않은 것은 다섯째(엎질러진 잉크병)
+      // D급에서 F 서류함의 앞 넷을 푼 상태를 만든다. 풀지 않은 것은 다섯째(엎질러진 잉크병)
       await preset(page, "ready-c");
+      const [first, , third, fourth] = practiceOfRank("F").map((p) => p.id);
+      await patchState(page, (state) => {
+        // 이미 푼 첫 과제의 기록을 본떠 셋째·넷째도 해결로 둔다
+        state.puzzles[third] = { ...state.puzzles[first] };
+        state.puzzles[fourth] = { ...state.puzzles[first] };
+      });
       await page.goto("/?demo=1#/practice");
       // 들어섰을 때 서는 곳의 규칙은 그대로다: 풀지 않은 과제가 남은 가장 낮은 등급의 서류함
       await expect(room(page)).toHaveAttribute("data-at", "F");

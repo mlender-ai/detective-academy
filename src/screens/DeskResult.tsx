@@ -1,5 +1,5 @@
 import { useEffect, useState, type CSSProperties } from "react";
-import { NEXT_STEP_ACTION, nextStep } from "../app/flow";
+import { nextAction } from "../app/flow";
 import { prefersReducedMotion } from "../app/motion";
 import { navigate } from "../app/router";
 import { playSound } from "../app/sound";
@@ -267,8 +267,7 @@ export function DeskResult({ puzzle, outcome, onReplay, back = HOME_BACK }: Prop
   const progress = getProgress(game, puzzle.id);
   const fresh = outcome !== null;
   const rewarded = fresh && outcome.reward > 0;
-  const step = nextStep(game);
-  const next = step === "none" ? null : NEXT_STEP_ACTION[step];
+  const next = nextAction(game);
 
   useEffect(() => {
     if (!fresh) return;

@@ -100,10 +100,17 @@ test.describe("홈의 사건 수사", () => {
     await preset(page, "promoted");
     await expect(page.locator(".isospot")).toHaveCount(5);
     for (const [id] of HALL) await expect(page.getByTestId(id)).toBeVisible();
-    // 들어서면 탐정이 가는 곳(오늘 할 일)은 사건이 아니다: 사건이 생겨도 주 동선은 바뀌지 않는다
-    await expect(page.getByTestId("home-screen")).toHaveAttribute("data-at", "practice");
+    // 오늘의 추리를 푼 D급에게는 사건이 다음 할 일이다(다음 시험이 사건 해결을 기다린다). 탐정이 접수함 앞에 선다
+    await expect(page.getByTestId("home-screen")).toHaveAttribute("data-at", "case");
+    await expect(page.getByTestId("story-entry")).toHaveAttribute("data-primary", "true");
+    await expect(page.getByTestId("practice-entry")).toHaveAttribute("data-primary", "false");
+    // 오늘의 추리가 남은 날에는 사건이 있어도 게시판이 먼저다: 사건이 일일 추리의 자리를 빼앗지 않는다
+    await page.goto("/?demo=1&date=2026-11-23");
+    await expect(page.getByTestId("home-screen")).toHaveAttribute("data-at", "board");
+    await expect(page.getByTestId("daily-file")).toHaveAttribute("data-primary", "true");
     await expect(page.getByTestId("story-entry")).toHaveAttribute("data-primary", "false");
-    await expect(page.getByTestId("practice-entry")).toHaveAttribute("data-primary", "true");
+    await page.goto("/?demo=1");
+    await expect(page.getByTestId("home-screen")).toHaveAttribute("data-at", "case");
     await enterFromHome(page, "story-entry");
     await expect(page.getByTestId("story-file")).toBeVisible();
     await page.getByTestId("story-back").click();
@@ -115,8 +122,10 @@ test.describe("홈의 사건 수사", () => {
   test("방 안의 사건 접수함(텔레비전)을 누르면 걸어가 살펴보고, 한 번 더 누르면 들어간다", async ({ page }) => {
     await preset(page, "promoted");
     const home = page.getByTestId("home-screen");
-    await expect(home).toHaveAttribute("data-at", "practice");
-    // 텔레비전을 손가락으로 누른다: 들어가지 않고 그 앞에서 살펴본다
+    await expect(home).toHaveAttribute("data-at", "case");
+    // 다른 곳(보관함)에 가 있다가 텔레비전을 손가락으로 누른다: 들어가지 않고 그 앞에서 살펴본다
+    await page.getByTestId("identity").tap();
+    await expect(home).toHaveAttribute("data-at", "archive");
     await page.getByTestId("story-entry").tap();
     await expect(home).toHaveAttribute("data-at", "case");
     await expect(page.getByTestId("story-entry")).toHaveAttribute("data-on", "true");
@@ -470,7 +479,7 @@ for (const size of [
       // 홈의 배치를 크기별로 샅샅이 보는 것은 iso.spec.ts 다. 여기서는 사건 접수함이 더해진 D급의 홈만 본다.
       await preset(page, "promoted");
       const home = page.getByTestId("home-screen");
-      await expect(home).toHaveAttribute("data-at", "practice");
+      await expect(home).toHaveAttribute("data-at", "case");
       const stage = (await page.getByTestId("iso-stage").boundingBox())!;
       for (const [id] of HALL) {
         const box = (await page.getByTestId(id).boundingBox())!;
@@ -482,7 +491,7 @@ for (const size of [
       }
       const overflow = () => home.evaluate((el) => el.scrollHeight - el.clientHeight);
       expect(await overflow()).toBeLessThanOrEqual(0);
-      await page.getByTestId("story-entry").tap();
+      // D급의 홈은 탐정이 접수함 앞에 선 채로 열린다
       await expect(home).toHaveAttribute("data-at", "case");
       await expectLayoutOk(page, '[data-testid="story-entry-go"]');
       expect(await overflow(), "접수함을 골랐을 때 홈이 세로로 넘친다").toBeLessThanOrEqual(0);

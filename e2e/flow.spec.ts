@@ -214,10 +214,10 @@ test("처음 방문한 사용자가 입학해서 문제를 풀고 D급으로 승
   await expect(page.getByTestId("home-screen")).toBeVisible();
   await expect(page.getByTestId("home-rank")).toHaveText("D급 초급 탐정");
   await expect(page.getByTestId("credit-balance")).toHaveText("240");
-  // 오늘의 사건은 끝났다(게시판은 해결). 다음 할 일은 새로 열린 연습실 서류함이고, 다음 시험은 응시 전이다.
+  // 오늘의 사건은 끝났다(게시판은 해결). D급이 되면 사건 접수함이 놓이고 그것이 다음 할 일이다: 다음 시험(C급)은 사건을 해결해야 열린다.
   await expect(page.getByTestId("daily-file")).toHaveAttribute("aria-label", /오늘의 추리 \[해결\]/);
-  await expect(page.getByTestId("practice-entry")).toHaveAttribute("data-primary", "true");
-  await expect(page.getByTestId("exam-wait")).toHaveAttribute("aria-label", /C급 과제 3\/5/);
+  await expect(page.getByTestId("story-entry")).toHaveAttribute("data-primary", "true");
+  await expect(page.getByTestId("exam-wait")).toHaveAttribute("aria-label", /C급 사건 미해결/);
   await shot(page, "14-home-promoted");
   // 끝난 사건의 게시판을 고르면 큰 단추는 채점 기록으로 간다
   await page.getByTestId("daily-file").click();
@@ -389,8 +389,8 @@ test("QA 패널은 ?demo=1 에서만 보이고 진행 상태들을 만든다", a
 
   await preset(page, "promoted");
   await expect(page.getByTestId("home-rank")).toHaveText("D급 초급 탐정");
-  // D급에서는 다음 시험(C급)이 응시 전이다
-  await expect(page.getByTestId("exam-wait")).toHaveAttribute("aria-label", /C급 과제 3\/5/);
+  // D급에서는 다음 시험(C급)이 응시 전이다: 과제 수는 채웠고 사건(D-001)을 해결해야 열린다
+  await expect(page.getByTestId("exam-wait")).toHaveAttribute("aria-label", /C급 사건 미해결/);
 
   await preset(page, "ready-s");
   await expect(page.getByTestId("home-rank")).toHaveText("A급 수석 탐정");

@@ -42,8 +42,8 @@ test("D급으로 승급한 예전 저장: 홈이 뜨고 등급 · 크레딧 · �
   await expect(page.getByTestId("daily-file-status")).toHaveText("해결");
   // D급이라 사건 접수함이 놓여 있고, 다음 시험(D→C)의 응시 조건은 예전에 푼 과제 둘부터 센다
   await expect(page.getByTestId("story-entry")).toBeVisible();
-  await expect(page.getByTestId("promo-count")).toHaveText("2/5");
-  await expect(page.getByTestId("exam-wait")).toHaveAttribute("aria-label", /C급 과제 2\/5/);
+  await expect(page.getByTestId("promo-count")).toHaveText("2/3");
+  await expect(page.getByTestId("exam-wait")).toHaveAttribute("aria-label", /C급 과제 2\/3/);
 
   // 열기만 해서는 저장을 고쳐 쓰지 않는다(읽은 값 그대로다)
   expect(await stored(page)).toEqual(MAIN_SAVE_D);

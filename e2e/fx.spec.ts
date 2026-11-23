@@ -89,7 +89,7 @@ test.describe("?fx=ascii", () => {
     await preset(page, "promoted", "&fx=ascii");
     const home = page.getByTestId("home-screen");
     await expect(home).toHaveAttribute("data-home", "iso");
-    await expect(home).toHaveAttribute("data-at", "practice");
+    await expect(home).toHaveAttribute("data-at", "case");
     await expect(page.locator(".fxcanvas")).toHaveCount(0);
     await page.waitForTimeout(700);
     expect(await offToneRatio(page)).toBeLessThan(0.005);

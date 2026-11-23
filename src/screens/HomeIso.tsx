@@ -61,7 +61,7 @@ const DECOR: Record<HallDecor, string> = {
   stand: "우산꽂이에 젖은 우산이 둘. 먼저 온 사람이 있다.",
 };
 
-const STEP_SPOT: Record<NextStep, HallSpot | null> = { daily: "board", practice: "practice", exam: "exam", none: null };
+const STEP_SPOT: Record<NextStep, HallSpot | null> = { daily: "board", practice: "practice", exam: "exam", case: "case", none: null };
 
 /** 도착해서 화면이 바뀌기 전의 짧은 박자 */
 const ARRIVE_BEAT_MS = 200;

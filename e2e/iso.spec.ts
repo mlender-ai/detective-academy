@@ -69,7 +69,7 @@ test("문을 누르면 걸어가 살펴보고, 한 번 더 누르면 들어간�
 
 test("이름표를 눌러도 그곳으로 간다(창이나 의자로 새지 않는다)", async ({ page }) => {
   await preset(page, "promoted");
-  await arrived(page, "practice");
+  await arrived(page, "case");
   for (const [id, spot] of [
     ["story-entry", "case"],
     ["identity", "archive"],
@@ -90,16 +90,16 @@ test("이름표를 눌러도 그곳으로 간다(창이나 의자로 새지 않�
 
 test("이름표는 오늘 할 일과 고른 곳에만 남고, 둘러볼 때는 모두 보인다. 할 일 단추로 돌아간다.", async ({ page }) => {
   await preset(page, "promoted");
-  await arrived(page, "practice");
+  await arrived(page, "case");
   // 들어선 직후에는 모두 보인다
   await expect(page.getByTestId("identity").locator(".isotag")).toBeVisible();
   await page.getByTestId("identity").tap();
   await arrived(page, "archive");
-  // 잠시 뒤에는 고른 곳(보관함)과 오늘 할 일(연습실)의 것만 남는다
+  // 잠시 뒤에는 고른 곳(보관함)과 오늘 할 일(사건 접수함)의 것만 남는다
   await expect(page.getByTestId("daily-file").locator(".isotag")).toBeHidden();
   await expect(page.getByTestId("identity").locator(".isotag")).toBeVisible();
-  await expect(page.getByTestId("practice-entry").locator(".isotag")).toBeVisible();
-  await expect(page.getByTestId("practice-entry").locator(".isotag")).toContainText("!");
+  await expect(page.getByTestId("story-entry").locator(".isotag")).toBeVisible();
+  await expect(page.getByTestId("story-entry").locator(".isotag")).toContainText("!");
   // 가려진 이름표의 물건도 그대로 눌린다
   await page.getByTestId("daily-file").tap();
   await arrived(page, "board");
@@ -108,7 +108,7 @@ test("이름표는 오늘 할 일과 고른 곳에만 남고, 둘러볼 때는 �
   await expect(home(page)).toHaveAttribute("data-at", "");
   await expect(page.getByTestId("exam-wait").locator(".isotag")).toBeVisible();
   await page.getByTestId("iso-todo").tap();
-  await arrived(page, "practice");
+  await arrived(page, "case");
 });
 
 test("오늘의 추리를 풀고 돌아오면 게시판은 해결로 바뀌고 탐정은 다음 할 일로 간다", async ({ page }) => {
@@ -264,7 +264,7 @@ test("키보드로도 간다: 누르는 자리로 옮겨 가 Enter", async ({ pa
 
 test("두 색뿐이다: 방, 이름표, 아래 창", async ({ page }) => {
   await preset(page, "promoted");
-  await arrived(page, "practice");
+  await arrived(page, "case");
   expect(await offToneRatio(page)).toBeLessThan(0.0005);
   await page.getByTestId("exam-wait").tap();
   await arrived(page, "exam");
@@ -342,10 +342,10 @@ for (const [w, h] of SIZES) {
 
     test("D급(갈 곳 다섯): 넘치지 않고, 방의 문과 물건이 모두 화면 안에서 눌린다", async ({ page }) => {
       await preset(page, "promoted");
-      await arrived(page, "practice");
+      await arrived(page, "case");
       const overflow = await home(page).evaluate((el) => el.scrollHeight - el.clientHeight);
       expect(overflow).toBeLessThanOrEqual(0);
-      await expectLayoutOk(page, '[data-testid="practice-entry-go"]');
+      await expectLayoutOk(page, '[data-testid="story-entry-go"]');
       const stage = (await page.getByTestId("iso-stage").boundingBox())!;
       const caption = (await page.locator(".isostage .narr").boundingBox())!;
       for (const id of ["daily-file", "practice-entry", "exam-wait", "story-entry", "identity"]) {
@@ -360,14 +360,14 @@ for (const [w, h] of SIZES) {
       // 서술 띠는 누름을 삼킨다: 띠 밑에 가려진 창으로 걸어가지 않는다
       await page.touchscreen.tap(caption.x + caption.width * 0.6, caption.y + caption.height / 2);
       await page.waitForTimeout(300);
-      await expect(home(page)).toHaveAttribute("data-at", "practice");
+      await expect(home(page)).toHaveAttribute("data-at", "case");
       await expect(page.locator(".isocard")).toHaveCount(1);
       // 곳마다 가서 아래 창이 화면 안에 다 들어오는지 본다(창의 높이는 못박혀 있어 방이 밀리지 않는다)
       const before = (await page.getByTestId("iso-canvas").boundingBox())!;
       for (const [id, spot, go] of [
         ["daily-file", "board", "daily-file-cta"],
         ["exam-wait", "exam", "exam-wait-go"],
-        ["story-entry", "case", "story-entry-go"],
+        ["practice-entry", "practice", "practice-entry-go"],
         ["identity", "archive", "identity-go"],
       ] as const) {
         await page.getByTestId(id).tap();
