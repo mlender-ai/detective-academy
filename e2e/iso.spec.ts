@@ -61,7 +61,7 @@ test("문을 누르면 걸어가 살펴보고, 한 번 더 누르면 들어간�
   await page.getByTestId("practice-entry").tap();
   await arrived(page, "practice");
   await expect(page.locator(".isocard")).toContainText("연습실");
-  await expect(page.locator(".isocard")).toContainText("해결 0/15");
+  await expect(page.locator(".isocard")).toContainText("해결 0/22");
   await expect(page).toHaveURL(/#\/$|\/\?[^#]*$/);
   await page.getByTestId("practice-entry").tap();
   await expect(page).toHaveURL(/#\/practice/);

@@ -1,7 +1,7 @@
 import { useEffect, useState, type CSSProperties } from "react";
 import { NEXT_STEP_ACTION, nextStep } from "../app/flow";
 import { prefersReducedMotion } from "../app/motion";
-import { navigate, type Route } from "../app/router";
+import { navigate } from "../app/router";
 import { playSound } from "../app/sound";
 import { useGame } from "../app/store";
 import { FX_ASCII } from "../app/variant";
@@ -26,10 +26,10 @@ import { DotGrid, gridWords } from "../games/SealMatch/SealMatch";
 export interface ResultBack {
   short: string;
   label: string;
-  route: Route;
+  go: () => void;
 }
 
-const HOME_BACK: ResultBack = { short: "학원 홀", label: "학원 홀로", route: { name: "home" } };
+const HOME_BACK: ResultBack = { short: "학원 홀", label: "학원 홀로", go: () => navigate({ name: "home" }, { replace: true }) };
 
 interface Props {
   puzzle: Puzzle;
@@ -276,7 +276,7 @@ export function DeskResult({ puzzle, outcome, onReplay, back = HOME_BACK }: Prop
     return () => window.clearTimeout(id);
   }, [fresh]);
 
-  const goHome = () => navigate(back.route, { replace: true });
+  const goHome = back.go;
 
   const lead = !fresh
     ? `${progress.solvedAt ? seoulDateLabel(new Date(progress.solvedAt)) : ""}에 해결한 수사 과제입니다.`

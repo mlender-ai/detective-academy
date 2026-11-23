@@ -425,7 +425,7 @@
 /* 단추 둘을 한 줄에: 왼쪽은 곁길(지난 사건), 오른쪽이 주 단추. 창의 높이는 단추 하나일 때와 같다. */
 .isocard__gos {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   margin: 8px 10px 10px;
 }
 
@@ -434,13 +434,25 @@
   width: auto;
   min-width: 0;
   margin: 0 0 4px;
-  padding: 0 8px;
+  padding: 0 6px;
   white-space: nowrap;
 }
 
 .isowin .isocard__gos .isocard__go:first-child {
   flex: none;
   font-size: 16px;
+}
+
+/* 둘이 나란할 때 주 단추의 ▶ 는 뺀다(추리 책상의 아래 단추 줄과 같다): 375px 폭에서 32px 글자 여섯 자가 들어갈 자리를 낸다 */
+.isocard__gos .inkbtn--wine::before {
+  content: none;
+}
+
+/* 375px 보다 좁은 화면에서는 주 단추의 글자도 16px 로 낮춘다(32px 이면 잘린다) */
+@media (max-width: 374px) {
+  .isowin .isocard__gos .isocard__go {
+    font-size: 16px;
+  }
 }
 
 /* ───────── 지난 사건(추리 책상): 기록부 한 장에 과제 줄이 날짜 순서로 놓인다 ───────── */

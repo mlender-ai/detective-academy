@@ -222,6 +222,19 @@
   --lock-extra: 218px;
 }
 
+/* 새겨진 글이 있는 금고 앞은 메모 · 글 · 자물쇠(가장 낮을 때 164px)가 다 들어갈 높이를 먼저 잡는다.
+   이 자리는 제 안의 내용으로 높이가 정해지지 않으므로(container-type: size), 잡아 두지 않으면 낮은 화면에서
+   위의 방(자료실)이 줄지 않은 채 내용이 가운데에서 위아래로 넘쳐 "내 메모" 줄의 윗부분이 방 밑으로 잘린다
+   (375×629 에서 글 두 줄일 때 7px, 390×664 에서 5px. 방이 쿼터뷰로 바뀌어 띠가 높아진 뒤로 생겼다).
+   높이를 잡아 두면 모자라는 만큼 위의 방이 줄어든다(196px 까지). 값은 내용의 높이에 메모 줄의 테(2px)가 잘리지 않을 여유 8px 를 더한 것이다. */
+.sceneplay__safe[data-engraved="1"] {
+  min-height: 244px;
+}
+
+.sceneplay__safe[data-engraved="2"] {
+  min-height: 264px;
+}
+
 /* ───────── C안 · 혼합형 (수사 수첩) ─────────
    위: 수사 수첩(접힘 · 간편 보기) → 자물쇠(남는 자리를 모두 쓴다) → 단추 줄. 전체 보기는 화면을 덮는다. */
 
@@ -586,5 +599,14 @@
   .sceneplay__safe:not([data-engraved="0"]) .carry {
     padding: 0 10px;
     line-height: 20px;
+  }
+
+  /* 틈을 줄인 만큼 잡아 둘 높이도 낮다 */
+  .sceneplay__safe[data-engraved="1"] {
+    min-height: 216px;
+  }
+
+  .sceneplay__safe[data-engraved="2"] {
+    min-height: 234px;
   }
 }

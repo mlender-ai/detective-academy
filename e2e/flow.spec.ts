@@ -92,9 +92,10 @@ test("처음 방문한 사용자가 입학해서 문제를 풀고 D급으로 승
   await expect(page.getByTestId("result-next")).toHaveText("연습실로 이동");
   await page.getByTestId("result-next").click();
   await expect(page.getByTestId("practice-room")).toBeVisible();
-  // 지금 등급(F)의 서류함이 골라져 있고, 과제 셋이 놓여 있다
+  // 지금 등급(F)의 서류함이 골라져 있고, 그 서류함의 과제 다섯이 한 줄씩 놓여 있다(창에는 세 줄 남짓 보이고 나머지는 밀어서 본다)
   await expect(page.getByTestId("practice-room")).toHaveAttribute("data-drawer", "F");
-  await expect(page.locator(".isotask")).toHaveCount(3);
+  await expect(page.locator(".isotask")).toHaveCount(5);
+  await expect(page.getByTestId("drawer-count")).toHaveText("해결 0/5");
   await shot(page, "07-practice-room");
   await page.getByTestId("practice-file-practice-truth-001").click();
   await expect(page.getByTestId("play-screen")).toBeVisible();
@@ -141,7 +142,7 @@ test("처음 방문한 사용자가 입학해서 문제를 풀고 D급으로 승
   await page.getByTestId("result-next").click();
   await expect(page.getByTestId("practice-room")).toBeVisible();
   await expect(page.getByTestId("practice-status-practice-truth-001")).toHaveText("해결");
-  await expect(page.getByTestId("drawer-count")).toHaveText("해결 1/3");
+  await expect(page.getByTestId("drawer-count")).toHaveText("해결 1/5");
   await page.getByTestId("practice-file-practice-code-f").click();
   await solve(page, PUZZLE_BY_ID["practice-code-f"]);
   await expect(page.getByTestId("result-screen")).toBeVisible();
@@ -228,7 +229,7 @@ test("처음 방문한 사용자가 입학해서 문제를 풀고 D급으로 승
   await expect(page.getByTestId("id-rank")).toHaveText("D급 초급 탐정");
   await expect(page.getByTestId("id-nickname")).toHaveText("서하윤");
   await expect(page.getByTestId("record-exam")).toContainText("D급 승급 시험 합격");
-  await expect(page.getByTestId("record-practice")).toContainText("과제 2/15 해결");
+  await expect(page.getByTestId("record-practice")).toContainText("과제 2/22 해결");
   await shot(page, "15-profile");
 
   /* ── 새로고침해도 유지된다 ── */

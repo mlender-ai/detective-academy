@@ -57,16 +57,18 @@ async function wrongThenRight(page: Page, puzzle: Puzzle) {
 test.describe("오늘의 추리: 둘째 주의 여섯 문제", () => {
   test("달력의 9~14일째(11월 30일~12월 5일)에 새 문제가 차례로 붙는다", async ({ page }) => {
     await preset(page, "daily-unsolved");
+    // 쿼터뷰 홈에서 그날의 제목은 게시판을 고른 아래 창에 적힌다(풀지 않은 날에는 들어서면 게시판이 골라져 있다)
+    const board = page.locator('.isocard[data-spot="board"]');
     for (const puzzle of DAILY_WEEK_2) {
       await page.goto(`/?demo=1&date=${dateOf(puzzle)}`);
-      await expect(page.getByTestId("daily-file"), dateOf(puzzle)).toContainText(puzzle.title);
+      await expect(board, dateOf(puzzle)).toContainText(puzzle.title);
       await expect(page.getByTestId("daily-file-status")).toHaveText("미해결");
     }
     // 앞 여덟 날의 배정은 그대로다
     await page.goto("/?demo=1&date=2026-11-29");
-    await expect(page.getByTestId("daily-file")).toContainText("다시 붙은 봉투의 인장");
+    await expect(board).toContainText("다시 붙은 봉투의 인장");
     await page.goto("/?demo=1&date=2026-11-23");
-    await expect(page.getByTestId("daily-file")).toContainText("사라진 자료실 열쇠");
+    await expect(board).toContainText("사라진 자료실 열쇠");
   });
 
   for (const puzzle of DAILY_WEEK_2) {

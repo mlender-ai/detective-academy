@@ -95,7 +95,11 @@ export function withTransition(update: () => void, direction: "forward" | "back"
   const doc = document as TransitionDocument;
   if (typeof doc.startViewTransition === "function" && !prefersReducedMotion()) {
     doc.documentElement.dataset.nav = direction;
-    doc.startViewTransition(() => flushSync(update));
+    const transition = doc.startViewTransition(() => flushSync(update)) as { ready?: Promise<unknown>; finished?: Promise<unknown> } | undefined;
+    // 전환이 끝나기 전에 다음 전환이 시작되면(주소로 바로 온 화면이 곧바로 다른 화면으로 돌려보낼 때) 앞의 전환은 건너뛴다.
+    // 화면은 이미 바뀌어 있으므로 잘못된 것이 아니다: 건너뛰었다는 거절을 받아 둔다(받지 않으면 처리되지 않은 오류로 남는다).
+    transition?.ready?.catch(() => undefined);
+    transition?.finished?.catch(() => undefined);
   } else {
     update();
   }

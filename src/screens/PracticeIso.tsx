@@ -119,7 +119,9 @@ export function PracticeIso() {
       const target = list.querySelector<HTMLElement>('[data-primary="true"]');
       // 목록 안에서 그 줄의 아랫변이 놓인 자리(지금 밀린 만큼을 더해 목록의 맨 위에서 잰다)
       const bottom = target ? target.getBoundingClientRect().bottom - list.getBoundingClientRect().top + list.scrollTop : 0;
-      list.scrollTop = bottom > list.clientHeight ? Math.ceil(bottom - list.clientHeight) : 0;
+      // 마지막 줄이면 끝까지 민다(목록의 아래 여백까지): 머리의 ▼ 가 남지 않는다
+      const last = !!target && target.closest("li") === list.lastElementChild;
+      list.scrollTop = bottom <= list.clientHeight ? 0 : last ? list.scrollHeight : Math.ceil(bottom - list.clientHeight);
     }
     measure();
     // 고른 서류함이 바뀔 때만 다시 한다

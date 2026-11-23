@@ -116,7 +116,8 @@ export function DailyArchive() {
   );
 }
 
-const PAST_BACK: ResultBack = { short: "지난 사건", label: "지난 사건으로", route: { name: "daily-past" } };
+/** 결과 화면에서는 학원 홀이 아니라 지난 사건의 목록으로 돌아간다(온 길이 있으면 그 길로: 뒤로 가기를 두 번 누르지 않게) */
+const PAST_BACK: ResultBack = { short: "지난 사건", label: "지난 사건으로", go: () => goBack({ name: "daily-past" }) };
 
 /**
  * 지난 사건 하나의 풀이. 달력에서 오늘까지 붙었던 문제만 열린다:
