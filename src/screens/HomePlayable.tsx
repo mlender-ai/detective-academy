@@ -5,6 +5,7 @@ import { prefersReducedMotion } from "../app/motion";
 import { navigate, type Route } from "../app/router";
 import { playSound } from "../app/sound";
 import { useGame } from "../app/store";
+import { FX_ASCII } from "../app/variant";
 import { Crest, RankMark } from "../art/objects";
 import { LiveScene, type LiveSceneHandle } from "../components/LiveScene";
 import { Narration } from "../components/Narration";
@@ -402,6 +403,7 @@ export function HomePlayable() {
           examOpen,
           mark: stepSpot && selected !== stepSpot ? stepSpot : null,
           caseStatus: story,
+          fx: FX_ASCII,
         }}
         onArrive={onArrive}
         onPick={look}

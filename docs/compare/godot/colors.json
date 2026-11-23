@@ -1,0 +1,266 @@
+[
+ {
+  "scene": "01-corridor",
+  "size": "390x844",
+  "product": {
+   "total": 1316640,
+   "other": 0,
+   "ratio": 0
+  },
+  "godot": {
+   "total": 1316640,
+   "other": 0,
+   "ratio": 0
+  }
+ },
+ {
+  "scene": "02-vault-desk",
+  "size": "390x844",
+  "product": {
+   "total": 1316640,
+   "other": 0,
+   "ratio": 0
+  },
+  "godot": {
+   "total": 1316640,
+   "other": 0,
+   "ratio": 0
+  }
+ },
+ {
+  "scene": "03-vault-safe",
+  "size": "390x844",
+  "product": {
+   "total": 1316640,
+   "other": 0,
+   "ratio": 0
+  },
+  "godot": {
+   "total": 1316640,
+   "other": 0,
+   "ratio": 0
+  }
+ },
+ {
+  "scene": "03b-vault-dialed",
+  "size": "390x844",
+  "product": {
+   "total": 1316640,
+   "other": 0,
+   "ratio": 0
+  },
+  "godot": {
+   "total": 1316640,
+   "other": 0,
+   "ratio": 0
+  }
+ },
+ {
+  "scene": "04-solved",
+  "size": "390x844",
+  "product": {
+   "total": 1316640,
+   "other": 0,
+   "ratio": 0
+  },
+  "godot": {
+   "total": 1316640,
+   "other": 0,
+   "ratio": 0
+  }
+ },
+ {
+  "scene": "03-vault-safe-closeup",
+  "size": "390x844",
+  "godot": {
+   "total": 1316640,
+   "other": 0,
+   "ratio": 0
+  }
+ },
+ {
+  "scene": "04-solved-closeup",
+  "size": "390x844",
+  "godot": {
+   "total": 1316640,
+   "other": 0,
+   "ratio": 0
+  }
+ },
+ {
+  "scene": "01-corridor",
+  "size": "390x664",
+  "product": {
+   "total": 1035840,
+   "other": 0,
+   "ratio": 0
+  },
+  "godot": {
+   "total": 1035840,
+   "other": 0,
+   "ratio": 0
+  }
+ },
+ {
+  "scene": "02-vault-desk",
+  "size": "390x664",
+  "product": {
+   "total": 1035840,
+   "other": 0,
+   "ratio": 0
+  },
+  "godot": {
+   "total": 1035840,
+   "other": 0,
+   "ratio": 0
+  }
+ },
+ {
+  "scene": "03-vault-safe",
+  "size": "390x664",
+  "product": {
+   "total": 1035840,
+   "other": 0,
+   "ratio": 0
+  },
+  "godot": {
+   "total": 1035840,
+   "other": 0,
+   "ratio": 0
+  }
+ },
+ {
+  "scene": "03b-vault-dialed",
+  "size": "390x664",
+  "product": {
+   "total": 1035840,
+   "other": 0,
+   "ratio": 0
+  },
+  "godot": {
+   "total": 1035840,
+   "other": 0,
+   "ratio": 0
+  }
+ },
+ {
+  "scene": "04-solved",
+  "size": "390x664",
+  "product": {
+   "total": 1035840,
+   "other": 0,
+   "ratio": 0
+  },
+  "godot": {
+   "total": 1035840,
+   "other": 0,
+   "ratio": 0
+  }
+ },
+ {
+  "scene": "03-vault-safe-closeup",
+  "size": "390x664",
+  "godot": {
+   "total": 1035840,
+   "other": 0,
+   "ratio": 0
+  }
+ },
+ {
+  "scene": "04-solved-closeup",
+  "size": "390x664",
+  "godot": {
+   "total": 1035840,
+   "other": 0,
+   "ratio": 0
+  }
+ },
+ {
+  "scene": "01-corridor",
+  "size": "375x629",
+  "product": {
+   "total": 943500,
+   "other": 0,
+   "ratio": 0
+  },
+  "godot": {
+   "total": 943500,
+   "other": 0,
+   "ratio": 0
+  }
+ },
+ {
+  "scene": "02-vault-desk",
+  "size": "375x629",
+  "product": {
+   "total": 943500,
+   "other": 0,
+   "ratio": 0
+  },
+  "godot": {
+   "total": 943500,
+   "other": 0,
+   "ratio": 0
+  }
+ },
+ {
+  "scene": "03-vault-safe",
+  "size": "375x629",
+  "product": {
+   "total": 943500,
+   "other": 0,
+   "ratio": 0
+  },
+  "godot": {
+   "total": 943500,
+   "other": 0,
+   "ratio": 0
+  }
+ },
+ {
+  "scene": "03b-vault-dialed",
+  "size": "375x629",
+  "product": {
+   "total": 943500,
+   "other": 0,
+   "ratio": 0
+  },
+  "godot": {
+   "total": 943500,
+   "other": 0,
+   "ratio": 0
+  }
+ },
+ {
+  "scene": "04-solved",
+  "size": "375x629",
+  "product": {
+   "total": 943500,
+   "other": 0,
+   "ratio": 0
+  },
+  "godot": {
+   "total": 943500,
+   "other": 0,
+   "ratio": 0
+  }
+ },
+ {
+  "scene": "03-vault-safe-closeup",
+  "size": "375x629",
+  "godot": {
+   "total": 943500,
+   "other": 0,
+   "ratio": 0
+  }
+ },
+ {
+  "scene": "04-solved-closeup",
+  "size": "375x629",
+  "godot": {
+   "total": 943500,
+   "other": 0,
+   "ratio": 0
+  }
+ }
+]

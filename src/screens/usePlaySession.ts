@@ -45,6 +45,8 @@ export interface ExamView {
   total: number;
   /** 남은 시간(ms). 제한이 없으면 null */
   remainingMs: number | null;
+  /** 제한 시간 전체(ms). 제한이 없으면 null */
+  limitMs: number | null;
   /** 이 문제에 남은 제출 횟수와 한도. 제한이 없으면 null */
   submitsLeft: number | null;
   submitsMax: number | null;
@@ -71,6 +73,7 @@ export function usePlaySession(puzzle: Puzzle, { replay, reactionMs, onSolved }:
           no: examNo + 1,
           total: examRule.examPuzzleIds.length,
           remainingMs: examRemainingMs(game.exam, gameNow()),
+          limitMs: examRule && examRule.exam.timeLimitSec !== null ? examRule.exam.timeLimitSec * 1000 : null,
           submitsMax,
           submitsLeft: submitsMax === null ? null : onThis ? Math.max(0, submitsMax - game.exam.submits) : null,
           hints: examRule.exam.hints,

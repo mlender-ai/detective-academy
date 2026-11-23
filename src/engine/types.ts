@@ -370,6 +370,17 @@ export interface ExamSession {
   failedBy: "time" | "submits" | null;
 }
 
+/**
+ * 소리 설정. 효과음과 음악은 따로 켜고 끄며 음량도 따로다. 둘 다 기본은 꺼짐이다.
+ * 음량은 1~4 단계(4가 가장 크다).
+ */
+export interface GameSettings {
+  sound: boolean;
+  music: boolean;
+  soundVolume: number;
+  musicVolume: number;
+}
+
 export interface GameState {
   version: 1;
   enrolled: boolean;
@@ -386,5 +397,5 @@ export interface GameState {
   examDays: Partial<Record<RankId, { dateKey: string; count: number }>>;
   /** 스토리(등급별 사건 수사)의 진행. 장마다 따로 남는다. */
   story: import("../story/engine/storyTypes").StoryState;
-  settings: { sound: boolean };
+  settings: GameSettings;
 }

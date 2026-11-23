@@ -4,11 +4,13 @@ import { prefersReducedMotion } from "../app/motion";
 import { navigate } from "../app/router";
 import { playSound } from "../app/sound";
 import { useGame } from "../app/store";
+import { FX_ASCII } from "../app/variant";
 import { CoinsArt } from "../art/objects";
 import { PenMark, Sprite } from "../art/pixel";
 import { Portrait } from "../art/portraits";
 import { DeskWood } from "../components/DeskWood";
 import { useCountUp } from "../components/CreditReward";
+import { FxCoin } from "../fx/FxCanvas";
 import { Stamp } from "../components/Stamp";
 import { getProgress, type SubmitOutcome } from "../engine/progressEngine";
 import { allCards, derivationPath } from "../engine/evidence";
@@ -59,10 +61,11 @@ export function Reward({ amount, balance, delayMs = REWARD_DELAY_MS }: { amount:
   const shown = useCountUp(amount, 0, 720, delayMs);
   const total = useCountUp(balance, balance - amount, 720, delayMs);
   return (
-    <div className="graded__reward" data-testid="reward">
+    <div className="graded__reward" data-testid="reward" data-fx={FX_ASCII ? "coin" : undefined}>
       <Sprite name="sparkle" className="pxsparkle" />
       <Sprite name="sparkle" className="pxsparkle" />
-      <CoinsArt className="graded__coins" />
+      {/* 보상 애니메이션 실험(?fx=ascii): 동전 더미 대신 크레딧 한 닢이 숫자가 오르기 시작할 때 한 바퀴 돌고 멈춘다 */}
+      {FX_ASCII ? <FxCoin className="graded__coins" delayMs={delayMs} /> : <CoinsArt className="graded__coins" />}
       <p className="graded__amount num">
         <span className="sr-only">획득한 수사 크레딧 </span>+{shown}
       </p>

@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react";
+import { trackFor } from "../audio/director";
+import { music } from "../audio/music";
 import { AdmissionScreen } from "../screens/AdmissionScreen";
 import { DailyChallenge } from "../screens/DailyChallenge";
 import { DetectiveProfile } from "../screens/DetectiveProfile";
+import { HomeIso } from "../screens/HomeIso";
 import { HomePlayable } from "../screens/HomePlayable";
 import { PracticePlay, PracticeRoom } from "../screens/PracticeRoom";
 import { PromotionExam } from "../screens/PromotionExam";
@@ -9,12 +12,13 @@ import { StoryCaseScreen } from "../story/scenes/StoryCaseScreen";
 import { DemoPanel, isDemoMode } from "./DemoPanel";
 import { navigate, toHash, useRoute, type Route } from "./router";
 import { useGame } from "./store";
+import { VIEW_ISO } from "./variant";
 
 function Screen({ route }: { route: Route }) {
   switch (route.name) {
     case "home":
-      // 홈은 플레이 가능한 복도다 (V3 GATE 02 에서 고른 B안)
-      return <HomePlayable />;
+      // 홈은 플레이 가능한 복도다 (V3 GATE 02 에서 고른 B안). ?view=iso 면 쿼터뷰 학원 홀(사용자가 고르기 전의 비교안)
+      return VIEW_ISO ? <HomeIso /> : <HomePlayable />;
     case "daily":
       return <DailyChallenge />;
     case "practice":
@@ -42,6 +46,15 @@ export function App() {
   }, [game.enrolled]);
 
   const admitting = !game.enrolled || welcoming;
+
+  // 배경 음악: 설정(기본 꺼짐)을 따르고, 화면에 맞는 곡으로 겹쳐 넘긴다
+  const track = trackFor(route, game, admitting);
+  useEffect(() => {
+    music.configure(game.settings.music, game.settings.musicVolume);
+  }, [game.settings.music, game.settings.musicVolume]);
+  useEffect(() => {
+    music.play(track);
+  }, [track]);
 
   return (
     <div className="app">

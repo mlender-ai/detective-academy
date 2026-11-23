@@ -28,6 +28,8 @@ interface Caps {
 }
 
 const PITCH = 0.14; // 카메라가 살짝 내려다본다(모자챙이 타원으로 보인다)
+/** 쿼터뷰 장면의 내려다보는 각도(30도): 모자챙이 둥글게 보이고 걸음이 앞뒤로 벌어져 보인다 */
+export const PITCH_ISO = Math.PI / 6;
 const TAU = Math.PI * 2;
 
 function rig(pose: Pose) {
@@ -133,25 +135,25 @@ function rig(pose: Pose) {
 const cache = new Map<string, Sprite>();
 
 /** 걷기는 12장면, 그 밖의 동작은 시간에 따라 잘게 나눈 장면으로 미리 굳혀 둔다(같은 장면은 다시 그리지 않는다). */
-export function detectiveSprite(h: number, pose: Pose): Sprite {
+export function detectiveSprite(h: number, pose: Pose, pitch = PITCH): Sprite {
   const dir = Math.round(((pose.facing % TAU) + TAU) / (TAU / 16)) % 16;
   const frame = pose.action === "walk" ? Math.floor((((pose.t % 1) + 1) % 1) * 12) : Math.round(pose.t * 12);
-  const key = `${h}|${pose.action}|${dir}|${frame}`;
+  const key = `${h}|${pose.action}|${dir}|${frame}${pitch === PITCH ? "" : `|${pitch}`}`;
   const hit = cache.get(key);
   if (hit) return hit;
-  const sprite = raster(h, { action: pose.action, t: pose.action === "walk" ? frame / 12 : frame / 12, facing: (dir * TAU) / 16 });
+  const sprite = raster(h, { action: pose.action, t: pose.action === "walk" ? frame / 12 : frame / 12, facing: (dir * TAU) / 16 }, pitch);
   if (cache.size > 4000) cache.clear();
   cache.set(key, sprite);
   return sprite;
 }
 
-function raster(h: number, pose: Pose): Sprite {
+function raster(h: number, pose: Pose, pitch: number): Sprite {
   const { caps, head, brim, handL, handR } = rig(pose);
   const phi = pose.facing;
   const cf = Math.cos(phi);
   const sf = Math.sin(phi);
-  const cp = Math.cos(PITCH);
-  const sp = Math.sin(PITCH);
+  const cp = Math.cos(pitch);
+  const sp = Math.sin(pitch);
   const W = Math.ceil(h * 0.62) | 1;
   const H = Math.ceil(h * 1.1);
   const cx = (W - 1) / 2;

@@ -22,8 +22,8 @@ export const BOX = {
   exam: [244, 32, 40, FLOOR - 32],
   window: [306, 30, 26, 40],
   clock: [38, 28, 15, 15],
-  /** 사건 접수함: 창 아래의 낡은 텔레비전과 받침대 */
-  case: [305, 78, 24, FLOOR - 78],
+  /** 사건 접수함: 시험실 문과 창 사이, 창턱 아래의 낡은 텔레비전과 받침대. 휴대폰 폭에서는 오른쪽 끝의 기둥이 x≈315 부터 가리므로 그 안쪽에 둔다. */
+  case: [291, 78, 22, FLOOR - 78],
 } as const;
 
 export interface Placed {
@@ -450,11 +450,11 @@ export function paintSide(): SideArt {
       rectDots(s, 1, 4, cw - 2, 16, 1);
       rectDots(s, 2, 5, cw - 4, 14, -1);
       // 화면(왼쪽)과 다이얼(오른쪽)
-      rectDots(s, 3, 6, 14, 12, 1);
-      rectDots(s, 4, 7, 12, 10, -1);
-      putDot(s, 19, 8, 1);
-      putDot(s, 19, 11, 1);
-      rectDots(s, 18, 15, 3, 1, 1);
+      rectDots(s, 3, 6, 12, 12, 1);
+      rectDots(s, 4, 7, 10, 10, -1);
+      putDot(s, 17, 8, 1);
+      putDot(s, 17, 11, 1);
+      rectDots(s, 16, 15, 3, 1, 1);
       screen(s);
       // 받침대
       rectDots(s, 0, 20, cw, 2, 1);
@@ -464,20 +464,20 @@ export function paintSide(): SideArt {
       return placed(s, cx, cy);
     };
     const noise = (seed: number) => (s: Sprite) => {
-      for (let y = 0; y < 10; y++) for (let x = 0; x < 12; x++) if ((x * 7 + y * 13 + seed * 5 + ((x * y + seed) % 3)) % 4 === 0) putDot(s, 4 + x, 7 + y, 1);
+      for (let y = 0; y < 10; y++) for (let x = 0; x < 10; x++) if ((x * 7 + y * 13 + seed * 5 + ((x * y + seed) % 3)) % 4 === 0) putDot(s, 4 + x, 7 + y, 1);
     };
     ink.caseNoise0 = body(noise(0));
     ink.caseNoise1 = body(noise(1));
     // 잡음 사이로 스치는 것: 긴 귀 둘과 얼굴
     ink.caseMask = body((s) => {
-      rectDots(s, 7, 8, 1, 4, 1);
-      rectDots(s, 12, 8, 1, 4, 1);
-      rectDots(s, 6, 12, 8, 4, 1);
-      putDot(s, 8, 13, -1);
-      putDot(s, 11, 13, -1);
+      rectDots(s, 6, 8, 1, 4, 1);
+      rectDots(s, 11, 8, 1, 4, 1);
+      rectDots(s, 5, 12, 8, 4, 1);
+      putDot(s, 7, 13, -1);
+      putDot(s, 10, 13, -1);
     });
     // 꺼진 화면: 가운데에 남은 한 점
-    ink.caseOff = body((s) => putDot(s, 10, 12, 1));
+    ink.caseOff = body((s) => putDot(s, 9, 12, 1));
   }
 
   // 전경: 양 끝의 기둥. 카메라가 밀릴 때 복도보다 빨리 민다.

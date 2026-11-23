@@ -1,0 +1,43 @@
+/* 환경·보상 애니메이션 실험 (?fx=ascii 일 때만 화면에 놓인다).
+   ASCII Magic 의 조각을 1비트 점으로 고쳐 옮긴 것이다(src/fx/ascii). 색은 두 가지, 점 하나는 2px. */
+
+.fxcanvas {
+  flex: none;
+  display: block;
+  image-rendering: pixelated;
+}
+
+/* 채점 결과의 보상: 동전 더미 자리에 크레딧 한 닢(54px).
+   가운데 맞춤을 쓰지 않는다: 줄의 높이가 홀수(75px)라 가운데에 놓으면 반 화소에 걸린다. 위에서 짝수 px 만큼 내려 2px 격자에 맞춘다. */
+.graded__coins.fxcoin {
+  align-self: start;
+  margin: 10px 2px 0 0;
+}
+
+/* 반짝이는 주화에도 금액에도 붙지 않게, 주화의 깎인 모서리 바깥(오른쪽 위 · 왼쪽 아래)에 띄워 놓는다. 주화가 멈춘 뒤에 켠다. */
+.graded__reward[data-fx="coin"] .pxsparkle {
+  left: 44px;
+  top: -2px;
+  animation-delay: 2400ms;
+}
+
+.graded__reward[data-fx="coin"] .pxsparkle + .pxsparkle {
+  left: -8px;
+  top: 58px;
+  animation-delay: 2850ms;
+}
+
+/* 시험의 위 막대: 남은 시간 칸 안의 작은 모래시계(22×28px).
+   칸을 32px 높이의 한 묶음으로 만들고 안쪽 여백을 처음부터 잡아 둔다: 1분 아래에서 칸이 뒤집혀도 자리가 밀리지 않는다. */
+.deskbar__tag .deskbar__timer[data-glass] {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 6px 0 4px;
+}
+
+/* 겹친 자리의 색을 뒤집어 찍는다(표시들과 같은 방식): 칸이 흰 바탕으로 뒤집히면 모래시계는 검게 찍힌다 */
+.deskbar__tag .deskbar__timer[data-glass] .fxglass {
+  mix-blend-mode: difference;
+}

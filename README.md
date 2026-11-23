@@ -7,6 +7,8 @@
 **바로 해 보기:** <https://mlender-ai.github.io/detective-academy/> (휴대폰 사파리·크롬. 공유 → "홈 화면에 추가"를 하면 주소창 없이 전체 화면으로 열립니다.)
 
 > 이 브랜치(`feat/v3-indie-experience`)는 V3 작업 중이다. 홈이 걸어 다니는 복도로, 암호 해독이 자료실 장면(책상의 기록 ↔ 금고의 자물쇠)으로 바뀌었고, 새 퍼즐 두 가지(증거 조합, 인장 대조)가 더해졌다. GATE 05 에서 오늘의 추리가 날짜별로 배정되고, 연습실이 등급별 서랍이 되고, 승급 시험이 F→S 다섯 단계(제한 시간 · 제출 횟수 · 하루 응시 횟수)가 됐다(`/lab/gate05/` 에서 장면을 골라 플레이). 위 주소의 배포본(main)은 아직 예전 홈과 예전 풀이 화면이고 문제는 셋이다. 진행 상황은 `lab/README.md`.
+>
+> `feat/v3-studio-rnd` 에서는 여기에 사건 수사(CASE D-001 제1장)와 실험 셋이 더해졌다: 움직이는 효과(주소에 `?fx=ascii` 를 붙였을 때만. 비 내리는 창 · 촛불 · 회전하는 크레딧 · 모래시계), 배경 음악 네 곡(기본은 꺼짐. 신분증 화면에서 켠다), Godot 4 로 같은 장면을 만들어 본 비교(결과는 보류). 그리고 **쿼터뷰 홈**: 홈을 비스듬히 내려다본 방(학원 홀)으로 다시 만든 비교안으로, 주소에 `?view=iso` 를 붙이면 열린다(바닥을 눌러 걷고, 문과 물건을 눌러 살펴본다). 나란히 보는 곳은 `/lab/iso/` · `/lab/ascii/` · `/lab/audio/` · `/lab/godot/`. 작업 방식(역할과 검수 절차)은 `docs/studio/README.md`.
 
 `main` 에 올리면 깃허브 액션이 단위 테스트와 빌드를 거쳐 자동으로 배포합니다(`.github/workflows/pages.yml`).
 
@@ -72,7 +74,7 @@ E2E 테스트를 처음 돌리는 기기에서는 `npx playwright install chromi
 
 ```text
 src/
-  app/        앱 조립 — App, 해시 라우터, 저장소(localStorage), 게임의 시계(clock.ts: 검수용 날짜 옮기기), 효과음, 다음 행동 판단, 배경 그림(backdrop.ts), QA 패널
+  app/        앱 조립 — App, 해시 라우터, 저장소(localStorage), 게임의 시계(clock.ts: 검수용 날짜 옮기기), 효과음, 다음 행동 판단, 배경 그림(backdrop.ts), QA 패널, 화면 갈래(variant.ts: ?play=c · ?fx=ascii)
   engine/     화면과 무관한 순수 로직
     types.ts            문제·입력·저장 상태 타입
     puzzleValidator.ts  전수 탐색 정답 검증, 답안 채점, 힌트·해설 점검
@@ -89,9 +91,13 @@ src/
     ranks.ts            등급, 승급 조건, 시험마다의 규칙(문제 · 제한 시간 · 제출 횟수 · 수사 지원 · 하루 응시 횟수 · 보상)
   art/        그림 재료 — pixel.tsx(격자에 점을 찍어 만든 스프라이트와 표시, 초상·엠블럼·휘장), objects.tsx(엠블럼·봉투·열쇠 등), portraits.tsx(학생 초상)
   assets/art/ 배경 — mono/(복도 세 장·시험실·책상)
+  assets/audio/ 배경 음악 네 곡 (AAC, 합쳐 3.5MB. 음악을 켰을 때 그 화면의 곡만 내려받는다)
+  audio/      배경 음악 — tracks(곡과 루프 구간) · music(Web Audio 재생: 겹쳐 넘기기, 첫 조작에서 깨우기, 가려지면 멈춤) · director(화면 → 곡)
+  iso/        쿼터뷰 홈(비교안, ?view=iso) — iso(투영 · 점 층 · 깊이 정렬 · 밝기 일곱 단계) · path(길 찾기) · hallArt(학원 홀의 그림과 갈 곳) · hallScene(걷기와 장면) · IsoCanvas
+  fx/         움직이는 효과(실험, ?fx=ascii) — dots(밝기 + 먹 격자를 점묘로) · ascii/(ASCII Magic 의 조각 넷을 점 격자용으로 고쳐 옮긴 것) · corridorFx(복도) · FxCanvas(동전 · 모래시계)
   games/      퍼즐별 조작 화면 — CodeBreaker, TruthDeduction, SchedulePuzzle, EvidenceBoard(증거 조합), SealMatch(인장 대조)
   scene/      살아 있는 장면 — 점 찍는 도구, 탐정(관절 모형), 밝기 층을 점묘로 바꾸는 stage, 홈의 옆에서 본 복도(sideArt·sideScene), 암호 해독의 자료실(vaultArt·vaultScene)
-  screens/    입학(복도), 홈(HomePlayable: 걸어 다니는 복도), 연습실(PracticeRoom: 등급별 서랍)·풀이(DeskPlay)·채점 결과(DeskResult)·신분증(책상),
+  screens/    입학(복도), 홈(HomePlayable: 걸어 다니는 복도 · HomeIso: 쿼터뷰 학원 홀, ?view=iso 로만), 연습실(PracticeRoom: 등급별 서랍)·풀이(DeskPlay)·채점 결과(DeskResult)·신분증(책상),
               승급 시험(PromotionExam: 봉투 → 문제 → 다음 시험지 → 승급 또는 시험 종료)
               cases/  증거 조합(EvidencePlay)·인장 대조(SealPlay)의 풀이
               codeux/ 암호 해독의 풀이 — ScenePlay(자료실 장면, 기본) · NotebookPlay(수사 수첩, ?play=c 로만. 다른 문제용 후보)
@@ -105,10 +111,13 @@ src/
               art/     방송실 그림(broadcastArt: 164×92점, 네 시점)
   styles/     tokens.css(색·글꼴 이름) · 배치(base·components·art·hall·desk·rooms, @layer layout)
               · 겉모습(mono·mono-rooms. 그 아래에 pixel·pixel-rooms 를 mono-pixel.css 가 한 층으로 깐다)
-              · 화면별(live 홈의 장면 · codeux 암호 풀이 · cases 증거·인장 · growth 연습실 서랍·시험 안내·등급별 휘장과 신분증 · story 사건 수사)
+              · 화면별(live 홈의 장면 · codeux 암호 풀이 · cases 증거·인장 · growth 연습실 서랍·시험 안내·등급별 휘장과 신분증 · story 사건 수사 · fx 움직이는 효과와 소리 설정)
   tests/      Vitest 단위 테스트
 e2e/          Playwright 테스트 (solve.ts: 문제 자료를 읽어 화면의 조작만으로 답을 넣는 도우미)
 scripts/      배경 굽기(mono-art), 화면 캡처(shot, capture-all), 캡처를 WebP 로(to-webp)
+lab/          실험과 비교 페이지 (제품 코드와 분리. 의존성은 lab/package.json 에만) — gate01~05 · story · ascii · audio · godot
+public/       THIRD-PARTY-NOTICES.txt (빌드에 함께 실리는 오픈소스 고지)
+project.yaml  작업 방식의 운영 값 (modes.rigor: minimal) · .claude/agents(역할 10개) · .claude/skills(studio · playcheck) · docs/studio/README.md
 docs/screenshots/  E2E 테스트가 찍은 주요 화면
 docs/compare/      안끼리 비교한 문서와 그림
 docs/archive/      안을 고를 때마다 묶어 둔 소스·빌드본, 폐기한 후보
@@ -141,6 +150,14 @@ docs/v1/           V1 캡처와 빌드본
 | 홈의 서술 문장, 줄마다의 내용 | `src/screens/HomePlayable.tsx` |
 | 복도의 물건 자리, 설 자리, 누를 영역 | `src/scene/sideArt.ts` 의 `BOX`, `src/scene/sideScene.ts` 의 `SPOTS` |
 | 자막 화면의 빠르기 | `src/components/CineCard.tsx` 의 `TYPE_MS`·`HOLD_MS` |
+| 화면마다 나오는 곡 | `src/audio/director.ts` 의 `trackFor` |
+| 곡 파일과 루프 구간, 곡 사이를 넘기는 시간, 음량 단계 | `src/audio/tracks.ts` 의 `TRACKS`, `src/audio/music.ts` 의 `FADE`·`LEVEL` |
+| 소리의 기본값(꺼짐, 음량 단계) | `src/engine/progressEngine.ts` 의 `defaultSettings` |
+| 움직이는 효과를 켤지 | `src/app/variant.ts` 의 `FX_ASCII` (지금은 주소에 `?fx=ascii` 가 있을 때만) |
+| 홈을 쿼터뷰로 열지 | `src/app/variant.ts` 의 `VIEW_ISO` (지금은 주소에 `?view=iso` 가 있을 때만) |
+| 쿼터뷰 홀의 물건 자리, 갈 곳의 설 자리 · 누를 영역 · 이름표 자리, 전등과 창의 빛 | `src/iso/hallArt.ts` 의 `CABINET`·`TV`·`BENCH`·`STAND`, `spots`·`decor`, `LAMPS`·`WINDOWS` |
+| 쿼터뷰 홈의 서술 문장, 이름표, 살펴보는 것의 문장 | `src/screens/HomeIso.tsx` |
+| 복도의 효과가 놓이는 자리 | `src/fx/corridorFx.ts` 의 `GLASS`·`LIGHT`·`CANDLE_AT` |
 
 응시 조건·시험 규칙·크레딧 수치는 모두 초기 실험값입니다. 지금의 값:
 
@@ -156,12 +173,21 @@ docs/v1/           V1 캡처와 빌드본
 
 ## 저장
 
-진행 상태는 브라우저 `localStorage` 의 `detective-academy:v1` 키에 저장됩니다. 입학 여부, 닉네임, 등급, 크레딧, 문제별 상태·입력값·힌트 단계·풀이 시간·제출 횟수·보상 수령 여부, 승급 기록, 치르고 있는 시험(문제 순번·남은 시간·쓴 제출 횟수), 등급별 오늘의 응시 횟수, 사건 수사의 진행(`story`: 장마다 있던 장면·조사한 곳·얻은 증거·고른 기록·확정한 사실·낸 결론과 근거·오답 수·수사 지원 단계·보상 수령·해결 시각), 효과음 설정이 들어갑니다. 사건 수사가 없던 때의 저장을 읽으면 기존 기록은 그대로 두고 빈 진행으로 채웁니다. 서버·계정은 없습니다.
+진행 상태는 브라우저 `localStorage` 의 `detective-academy:v1` 키에 저장됩니다. 입학 여부, 닉네임, 등급, 크레딧, 문제별 상태·입력값·힌트 단계·풀이 시간·제출 횟수·보상 수령 여부, 승급 기록, 치르고 있는 시험(문제 순번·남은 시간·쓴 제출 횟수), 등급별 오늘의 응시 횟수, 사건 수사의 진행(`story`: 장마다 있던 장면·조사한 곳·얻은 증거·고른 기록·확정한 사실·낸 결론과 근거·오답 수·수사 지원 단계·보상 수령·해결 시각), 소리 설정(`settings`: 효과음 · 음악을 켰는지와 각각의 음량 1~4단계)이 들어갑니다. 사건 수사나 음악 설정이 없던 때의 저장을 읽으면 기존 기록은 그대로 두고 빈 진행과 기본값(소리 꺼짐)으로 채웁니다. 서버·계정은 없습니다.
 
 시험의 남은 시간과 횟수는 저장된 값에서 이어지므로 새로고침으로 되돌아가지 않습니다. 다만 브라우저 저장소는 사용자가 고칠 수 있어 조작을 막지는 못합니다. 순위 같은 경쟁 기능을 붙일 때는 시험 한 번의 기록(`ExamSession`)을 서버로 옮겨 검증해야 합니다.
 
 `detective-academy:cine` 키를 `off` 로 두면 사건을 열 때의 자막 화면이 뜨지 않습니다(자동 테스트가 씁니다. 주소에 `cine=0` 을 붙여도 같습니다). `detective-academy:date` 키에 날짜(`2026-11-22`)를 두면 게임의 날짜가 그날로 옮겨집니다(QA 패널의 "다음 날로"와 자동 테스트가 씁니다).
 
+## 쓴 오픈소스와 고지
+
+빌드에 함께 실리는 고지는 `public/THIRD-PARTY-NOTICES.txt` 입니다.
+
+- **ASCII Magic** (`ascii-magic-art` 1.1.0, MIT, Copyright (c) 2026 ASCII Magic): 움직이는 효과 넷(비 내리는 유리 · 촛불 · 회전하는 주화 · 모래시계)은 이 모음의 조각을 바탕으로 1비트 점 격자용으로 고쳐 옮긴 것입니다(`src/fx/ascii/`. 파일마다 원본과 바꾼 것을 적었고 라이선스 전문은 `src/fx/ascii/LICENSE.ascii-magic-art.txt`). 라이브러리 자체는 제품에 들어 있지 않고 실험실(`lab/`)에서만 씁니다. 사진을 옮긴 두 조각(Unsplash 라이선스)은 쓰지 않았습니다.
+- **음악**: 네 곡은 이 프로젝트에서 지은 네 마디 모티프를 바탕으로 음악 생성 모델 ACE-Step 1.5(MIT)로 편곡한 AI 생성 음원입니다. 기존 곡이나 녹음을 입력으로 쓰지 않았습니다. 모델과 생성 도구는 저장소와 빌드에 들어 있지 않습니다. 프롬프트 · 모델 판 · 씨앗 · 측정값은 `lab/audio/ost.json` 에 있습니다.
+- **글꼴**: Neo둥근모(`@kfonts/neodgm`, OFL-1.1), Galmuri(`galmuri`, OFL-1.1).
+- **작업 방식**: 역할 구성과 `project.yaml` 의 형식은 Claude Code Game Studios(MIT)를 참고해 이 프로젝트에 맞게 새로 썼습니다(`docs/studio/README.md`). 그쪽의 스킬 · 훅 · 설정은 들이지 않았습니다.
+
 ## 이번 버전에 없는 것
 
-사건 수사의 2장 이후(지금은 CASE D-001 의 제1장만 있다), 서버·계정·순위표, 결제·광고, 푸시 알림, AI 문제 생성, 특별 시험 모드, 상점.
+사건 수사의 2장 이후(지금은 CASE D-001 의 제1장만 있다), 사건 해결·승급의 짧은 곡(Case Closed · Promotion), 서버·계정·순위표, 결제·광고, 푸시 알림, AI 문제 생성, 특별 시험 모드, 상점.

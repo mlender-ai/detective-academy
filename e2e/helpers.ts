@@ -6,6 +6,17 @@ export const STORAGE_KEY = "detective-academy:v1";
 export const TEST_DATE = "2026-11-22";
 
 /**
+ * 게임의 "지금"(ms). 테스트는 게임 날짜를 TEST_DATE 로 옮겨 놓고 돌므로, 게임의 시계는 실제 시각에서 날짜만큼 밀려 있다
+ * (src/app/clock.ts 의 gameNow 와 같은 셈). 저장된 상태에 시각을 써 넣을 때는 Date.now() 가 아니라 이것을 쓴다:
+ * 실제 날짜가 TEST_DATE 와 다른 날에는 둘이 하루 넘게 어긋나, 제한 시간이 영영 끝나지 않는다(2026-11-23 에 실제로 겪었다).
+ */
+export function gameNowMs(): number {
+  const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Seoul" }).format(new Date());
+  const days = Math.round((Date.parse(`${TEST_DATE}T00:00:00Z`) - Date.parse(`${today}T00:00:00Z`)) / 86_400_000);
+  return Date.now() + days * 86_400_000;
+}
+
+/**
  * 자막 화면을 켜고 돌릴 때의 저장소: 자막을 끄는 값만 빼고, 게임 날짜는 그대로 고정한다.
  * (playwright.config.ts 의 기본값은 자막을 끄고 날짜를 고정한다)
  */

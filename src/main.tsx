@@ -18,6 +18,9 @@ import "./styles/codeux.css";
 import "./styles/cases.css";
 import "./styles/growth.css";
 import "./styles/story.css";
+import "./styles/fx.css";
+import "./styles/sound.css";
+import "./styles/iso.css";
 
 import { App } from "./app/App";
 import { ALL_PUZZLES } from "./data/puzzles";

@@ -12,3 +12,23 @@ export type PlayVariant = "scene" | "notebook";
 const play = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("play") : null;
 
 export const PLAY_VARIANT: PlayVariant = play === "c" ? "notebook" : "scene";
+
+/**
+ * 환경·보상 애니메이션 실험 (V3 추가 지시 · ASCII Magic, 2026-11-22).
+ * ASCII Magic 의 조각을 1비트 점으로 고쳐 옮긴 것(src/fx/ascii)을 화면에 얹는다:
+ * 복도의 비 내리는 창 · 촛불 · 시계추 · 전등 둘레의 먼지, 채점 결과의 회전하는 크레딧, 제한 시간 시험의 모래시계.
+ * - (없음)    : 지금의 화면 그대로 (사용자가 고르기 전의 기본값)
+ * - ?fx=ascii : 효과를 켠다. 나란히 보는 곳은 lab/ascii/
+ */
+const fx = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("fx") : null;
+
+export const FX_ASCII: boolean = fx === "ascii";
+
+/**
+ * 홈의 보는 방식 (2026-11-23. 사용자: "아예 ux가 달라졌으면하는데 … 뭔가 쿼터뷰로 본다던가.. 지금 ux가 차별화가되어야하는데").
+ * - (없음)    : 옆에서 본 복도 + 명령 창 (V3 GATE 02 에서 고른 B안. 사용자가 새 안을 고르기 전의 기본값)
+ * - ?view=iso : 쿼터뷰 학원 홀. 화면의 대부분이 방이고, 갈 곳의 목록 대신 방 안의 문과 물건을 누른다. 나란히 보는 곳은 lab/iso/
+ */
+const view = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("view") : null;
+
+export const VIEW_ISO: boolean = view === "iso";

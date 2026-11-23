@@ -1,3 +1,5 @@
+import { FX_ASCII } from "../app/variant";
+import { FxHourglass } from "../fx/FxCanvas";
 import type { ReactNode } from "react";
 import { Sprite } from "../art/pixel";
 import { CineCard } from "../components/CineCard";
@@ -73,6 +75,8 @@ export function PlayBar({ puzzle, session, variant, replay, onExit }: BarProps) 
     variant === "exam" ? (exam && exam.total > 1 ? `승급 시험 ${exam.no}/${exam.total}` : "승급 시험") : `${replay ? "다시 풀기 · " : ""}${puzzle.typeLabel}`;
   // 제한 시간이 있는 시험은 남은 시간을, 아니면 흐른 시간을 보여 준다
   const countdown = variant === "exam" && exam && exam.remainingMs !== null ? exam.remainingMs : null;
+  // 제한 시간 애니메이션 실험(?fx=ascii): 제한 시간 전체(ms). 0 이면 모래시계를 놓지 않는다.
+  const glassMs = FX_ASCII ? (exam?.limitMs ?? 0) : 0;
   return (
     <header className="deskbar">
       <button type="button" className="tilebtn" aria-label="뒤로" onClick={onExit} data-testid="play-back">
@@ -88,8 +92,11 @@ export function PlayBar({ puzzle, session, variant, replay, onExit }: BarProps) 
               className="deskbar__timer num"
               data-testid="countdown"
               data-low={countdown <= 60_000}
+              data-glass={glassMs > 0 ? true : undefined}
               aria-label={`남은 시간 ${formatCountdown(countdown)}`}
             >
+              {/* 제한 시간 애니메이션 실험(?fx=ascii): 남은 시간만큼 모래가 남은 모래시계. 시간 칸 안에 있어, 1분 아래에서 칸과 함께 뒤집혀 깜빡인다. */}
+              {glassMs > 0 ? <FxHourglass spent={1 - countdown / glassMs} /> : null}
               {formatCountdown(countdown)}
             </span>
           ) : (

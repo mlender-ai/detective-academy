@@ -1,0 +1,303 @@
+/* 쿼터뷰 홈 (?view=iso 일 때만 열린다). 층 밖이고 새 이름만 쓴다.
+   위에서부터: 학원 이름과 등급 → 방(화면의 대부분. 누르는 게임 장면) → 서술 한 줄과 지금 선 곳의 창 */
+
+.hall--iso {
+  overflow: hidden;
+}
+
+/* 방: 남는 높이를 모두 쓴다. 캔버스(392×600px = 196×300점)는 아래에 붙이고, 화면이 낮으면 어두운 위쪽부터 가려진다. */
+.isostage {
+  position: relative;
+  flex: 1 1 0;
+  min-height: 280px;
+  overflow: hidden;
+  background: #000;
+  border-bottom: 2px solid var(--m-w);
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.isostage__world {
+  position: absolute;
+  left: calc(50% - 196px);
+  left: round(down, calc(50% - 196px), 2px);
+  bottom: 0;
+  width: 392px;
+  height: 600px;
+  cursor: pointer;
+}
+
+/* 아래에 붙이되 2px 격자에서 어긋나지 않게 한다: 방의 틀의 높이가 홀수이면(화면 높이가 홀수일 때) 한 화소 올려 짝수 자리에 둔다 */
+@supports (top: round(down, 1px, 2px)) {
+  .isostage__world {
+    top: round(down, calc(100% - 600px), 2px);
+    bottom: auto;
+  }
+}
+
+.isostage canvas {
+  display: block;
+  width: 392px;
+  height: 600px;
+  image-rendering: pixelated;
+}
+
+/* 누르는 자리: 문과 물건 위에 겹쳐 놓은 보이지 않는 단추 */
+.isospot {
+  position: absolute;
+  margin: 0;
+  padding: 0;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.isospot:focus-visible {
+  outline: 2px solid var(--m-w);
+  outline-offset: 2px;
+}
+
+/* 이름표: 물건 위에 뜬 작은 꼬리말. 탐정이 선 곳(가는 곳)의 것은 뒤집힌다. */
+.isotag {
+  position: absolute;
+  /* 다른 물건의 누르는 자리 위에 걸쳐도 이름표가 위다 */
+  z-index: 1;
+  transform: translate(-50%, calc(-100% - 4px));
+  transform: translate(round(down, -50%, 2px), calc(-100% - 4px));
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 4px;
+  font-family: var(--m-cap);
+  font-size: 12px;
+  line-height: 16px;
+  white-space: nowrap;
+  color: var(--m-w);
+  background: #000;
+  box-shadow: 0 0 0 2px var(--m-w);
+  /* 이름표도 그 물건의 단추다: 눌러도 그곳으로 간다(단추의 영역 밖에 떠 있어도 단추의 자식이라 누름이 단추로 간다) */
+  cursor: pointer;
+}
+
+/* 이름표의 누르는 자리를 글자보다 넉넉하게: 위아래 6px, 좌우 4px */
+.isotag::after {
+  content: "";
+  position: absolute;
+  inset: -6px -4px;
+}
+
+.isotag b {
+  font-weight: 400;
+}
+
+/* 가려 둔 이름표: 물건 자체는 그대로 눌린다 */
+.isospot[data-tag="false"] .isotag {
+  visibility: hidden;
+}
+
+.isospot[data-on="true"] .isotag,
+.isospot:active .isotag {
+  color: #000;
+  background: var(--m-w);
+  box-shadow: 0 0 0 2px var(--m-w), 0 0 0 4px #000;
+}
+
+/* 서술 한 줄: 방 위쪽의 어둠에 얹는다(영화의 자막처럼). 화면이 낮아 방의 윗부분과 겹칠 때는 검은 띠가 그 뒤를 가린다. */
+.isostage .narr {
+  position: absolute;
+  inset: 0 0 auto 0;
+  z-index: 2;
+  min-height: 60px;
+  padding: 8px 12px 8px;
+  background: #000;
+  /* 띠는 누름을 받아 삼킨다: 화면이 낮아 띠가 방의 윗부분을 덮을 때, 글자를 눌렀는데 밑의 창으로 걸어가는 일이 없게 */
+}
+
+/* 음악 켜고 끄기: 방의 오른쪽 아래 구석(바닥 판 바깥의 어둠). 켜면 뒤집힌다. 누르는 자리는 글자보다 넓게 잡는다. */
+.isomusic {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  width: 76px;
+  height: 48px;
+  margin: 0;
+  padding: 0 8px 8px 0;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.isomusic span {
+  padding: 0 4px;
+  font-family: var(--m-cap);
+  font-size: 12px;
+  line-height: 16px;
+  white-space: nowrap;
+  color: var(--m-w);
+  background: #000;
+  box-shadow: 0 0 0 2px var(--m-w);
+}
+
+.isomusic[aria-checked="true"] span,
+.isomusic:active span {
+  color: #000;
+  background: var(--m-w);
+}
+
+.isomusic:focus-visible {
+  outline: 2px solid var(--m-w);
+  outline-offset: -4px;
+}
+
+/* 아래의 창: 지금 선 곳의 이름 · 상태 · 할 일 하나 */
+.isowin {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  /* 높이를 못박는다: 선 곳에 따라 창의 내용이 달라져도 위의 방이 밀리지 않는다 */
+  box-sizing: content-box;
+  height: 170px;
+  padding: 10px 10px calc(10px + env(safe-area-inset-bottom));
+  background: #000;
+}
+
+/* 아무 곳도 고르지 않았을 때: 조작 안내와, 오늘 할 일로 돌아가는 단추 */
+.isowin__idle {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 10px;
+  height: 100%;
+}
+
+.isowin__hint {
+  margin: auto 0;
+  font-family: var(--m-cap);
+  font-size: 12px;
+  line-height: 16px;
+  text-align: center;
+  color: var(--m-w);
+}
+
+.isowin .isowin__todo {
+  margin: 0;
+}
+
+.isocard {
+  box-shadow: var(--m-frame);
+  animation: m-open 160ms steps(2) both;
+}
+
+.isocard__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+  margin: 0;
+  padding: 0 10px 0 6px;
+  font-family: var(--m-font);
+  font-size: 16px;
+  line-height: 22px;
+  color: #000;
+  background: var(--m-w);
+}
+
+.isocard__name {
+  flex: none;
+}
+
+.isocard__state {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.isocard__body {
+  display: grid;
+  gap: 2px;
+  padding: 8px 10px 0;
+  font-family: var(--m-font);
+  font-size: 16px;
+  line-height: 22px;
+  color: var(--m-w);
+}
+
+.isocard__subject {
+  font-size: 32px;
+  line-height: 36px;
+}
+
+.isocard__line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 10px;
+}
+
+.isowin .isocard__go {
+  display: block;
+  width: calc(100% - 20px);
+  margin: 8px 10px 10px;
+}
+
+@media (max-height: 700px) {
+  .isostage .narr {
+    min-height: 52px;
+    padding-top: 6px;
+    padding-bottom: 2px;
+  }
+
+  .isowin {
+    height: 156px;
+    padding-top: 8px;
+  }
+
+  .isocard__subject {
+    font-size: 16px;
+    line-height: 22px;
+  }
+}
+
+/* 주소창이 보이는 작은 휴대폰(높이 640px 아래, 예: 375×629): 위 띠와 아래 창을 더 조여 게시판 윗변까지 방이 다 보이게 한다 */
+@media (max-height: 640px) {
+  .hall--iso .hall__top {
+    padding-top: calc(6px + env(safe-area-inset-top));
+    padding-bottom: 4px;
+  }
+
+  .isostage .narr {
+    min-height: 50px;
+    padding: 4px 12px 2px;
+  }
+
+  .isowin {
+    height: 150px;
+    padding-top: 6px;
+    padding-bottom: calc(6px + env(safe-area-inset-bottom));
+  }
+
+  .isocard__body {
+    padding-top: 6px;
+  }
+
+  .isowin .isocard__go {
+    margin: 6px 10px 8px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .isocard {
+    animation: none;
+  }
+}

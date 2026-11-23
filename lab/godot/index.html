@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>탐정학원 · Godot 엔진 독립 실험</title>
+<style>
+@font-face { font-family: "NeoDGM"; src: url("../../node_modules/@kfonts/neodgm/neodgm.woff2") format("woff2"); }
+@font-face { font-family: "Galmuri11"; src: url("../../node_modules/galmuri/dist/Galmuri11.woff2") format("woff2"); }
+* { box-sizing: border-box; }
+html, body { margin: 0; background: #000; color: #f1f1ea; }
+body { font: 16px/1.5 "NeoDGM", monospace; -webkit-font-smoothing: none; }
+main { padding: 20px 16px 48px; max-width: 1180px; }
+h1 { font-size: 32px; line-height: 40px; font-weight: 400; margin: 0 0 6px; }
+h2 { font-size: 16px; line-height: 24px; font-weight: 400; margin: 22px 0 6px; padding: 0 6px; display: inline-block; color: #000; background: #f1f1ea; }
+p { margin: 0 0 8px; }
+a { color: inherit; }
+code, pre { font: 12px/1.7 "Galmuri11", monospace; }
+pre { margin: 0 0 10px; padding: 8px 10px; box-shadow: inset 0 0 0 2px #f1f1ea; overflow-x: auto; white-space: pre-wrap; word-break: break-all; }
+.note, li { font: 12px/1.7 "Galmuri11", monospace; }
+ul { margin: 0 0 10px; padding-left: 18px; }
+.lead { padding: 10px 12px; box-shadow: inset 0 0 0 2px #f1f1ea, inset 0 0 0 4px #000, inset 0 0 0 6px #f1f1ea; margin: 10px 0 4px; }
+.bar { display: flex; flex-wrap: wrap; gap: 8px 20px; align-items: center; margin: 12px 0 8px; }
+.bar span { font: 12px/1.5 "Galmuri11", monospace; }
+.seg { display: flex; flex-wrap: wrap; gap: 2px; }
+.seg button, .again { min-height: 32px; padding: 0 10px; font: 16px "NeoDGM", monospace; color: #f1f1ea; background: #000; border: 0; box-shadow: inset 0 0 0 2px #f1f1ea; cursor: pointer; }
+.seg button[aria-pressed="true"] { color: #000; background: #f1f1ea; }
+.again:active { color: #000; background: #f1f1ea; }
+.stage { display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start; }
+.stage figure { margin: 0; }
+.stage figcaption { margin-bottom: 6px; }
+.phone { display: block; border: 0; background: #000; box-shadow: 0 0 0 2px #f1f1ea; }
+table { border-collapse: collapse; margin: 6px 0 10px; font: 12px/1.6 "Galmuri11", monospace; }
+th, td { padding: 4px 12px 4px 0; text-align: left; vertical-align: top; border-bottom: 2px dotted #f1f1ea; font-weight: 400; }
+th { border-bottom: 2px solid #f1f1ea; }
+td b, li b, p b { font-weight: 400; color: #000; background: #f1f1ea; padding: 0 3px; }
+.shots { display: grid; gap: 14px; }
+.shots img { display: block; max-width: 100%; height: auto; image-rendering: pixelated; }
+</style>
+</head>
+<body>
+<main>
+  <h1>탐정학원 · Godot 엔진 독립 실험</h1>
+  <p>"Godot 가 지금의 React + Canvas 표현보다 실제로 더 나은 게임 경험을 주는가"를 실제로 플레이되는 세 장면(학원 복도 · 자료실 · 암호 해독)으로 확인했다. 제품의 장면 코드로 구운 같은 그림을 쓰고, 같은 문제(자료실 금고의 암호)를 푼다. 2026-11-22~23, Godot 4.7.2-stable.</p>
+  <div class="lead">
+    <p>결론: <b>보류</b>. 같은 그림으로 같은 점이 찍혔다(기준 장면 열 곳에서 다른 점 0, 두 색이 아닌 화소 0). 그래서 Godot 로 옮겨도 화면은 더 좋아지지 않는다. 대신 처음 받는 양이 0.25MB 에서 10.5MB 로, 첫 장면까지가 0.2초에서 1초(빠른 4G 에서는 0.4초에서 10초)로 늘어난다.</p>
+    <p class="note">Godot 가 덜어 준 일은 카메라(금고로 다가가기)와 셰이더(점묘 · 화면 반전 · 격자 전환)였고, 더 든 일은 화면의 글자와 배치를 전부 손으로 그리는 것, 편집기 없이 장면을 짜는 것, 내보낸 뒤에야 드러나는 문제를 찾는 것이었다. 아래에 잰 값과 근거가 있다. 실제 휴대폰에서는 확인하지 못했다.</p>
+  </div>
+
+  <h2>여는 법</h2>
+  <pre>cd ~/Desktop/detective-academy-rnd/godot
+python3 -m http.server 5190 --bind 127.0.0.1 --directory export/web      # Godot 웹 내보내기 → http://localhost:5190/
+# 제품의 개발 서버(5183)가 떠 있으면 이 페이지에서 둘을 나란히 볼 수 있다: http://localhost:5183/lab/godot/
+
+tools/export-web.sh                                    # 다시 내보내기(약 4초). 엔진은 engine/ 안의 것을 쓴다
+node tools/web/play.mjs --w 390 --h 664                # 터치로 처음부터 끝까지 조작해 보는 자동 확인
+node tools/web/parity.mjs                              # 제품의 기준 장면과 점 단위로 견주기
+tools/godot.sh --path da-godot --script "$PWD/tools/check_puzzle.gd"   # 정답이 하나뿐인지 전수 탐색</pre>
+  <p class="note">Godot 쪽 주소 값: <code>?scene=vault</code> 자료실부터 · <code>?closeup=0</code> 금고 앞에서 카메라가 다가가지 않음(제품과 같은 구도) · <code>?motion=0</code> 움직임 줄이기 · <code>?solved=1</code> 이미 푼 상태.</p>
+
+  <h2>나란히 보기 (실제로 조작된다)</h2>
+  <div class="bar">
+    <span>화면 크기</span>
+    <div class="seg" id="size">
+      <button data-v="390x844" aria-pressed="true">390×844</button>
+      <button data-v="390x664" aria-pressed="false">390×664 주소창 보임</button>
+      <button data-v="375x629" aria-pressed="false">375×629 13 미니 사파리</button>
+    </div>
+    <span>장면</span>
+    <div class="seg" id="scene">
+      <button data-v="hall" aria-pressed="true">학원 복도</button>
+      <button data-v="vault" aria-pressed="false">자료실(암호 해독)</button>
+    </div>
+    <span>Godot 의 금고 클로즈업</span>
+    <div class="seg" id="closeup">
+      <button data-v="1" aria-pressed="true">켬</button>
+      <button data-v="0" aria-pressed="false">끔(제품과 같은 구도)</button>
+    </div>
+    <button class="again" id="again">처음부터 다시</button>
+  </div>
+  <div class="stage">
+    <figure>
+      <figcaption>제품 · React + Canvas 2D (개발 서버 5183)</figcaption>
+      <iframe class="phone" id="product" title="제품"></iframe>
+    </figure>
+    <figure>
+      <figcaption>Godot 4.7.2 · 웹 내보내기 (정적 서버 5190)</figcaption>
+      <iframe class="phone" id="godot" title="Godot"></iframe>
+    </figure>
+  </div>
+  <p class="note" style="margin-top:8px">두 화면 모두: 장면의 물건을 누르면 걸어가 살펴보고 한 번 더 누르면 들어간다. 아래 줄을 누르면 걸어가서 곧바로 들어간다. Godot 쪽에서 실제로 들어갈 수 있는 곳은 시험 게시판(자료실)뿐이고, 연습실 · 시험실 · 보관함은 걸어가 살펴보는 데까지다. 제품 쪽은 게임 날짜를 2026-11-22 로 고정해 같은 문제(자료실 금고의 암호)가 붙게 했다. 오른쪽이 비어 있으면 5190 서버가 꺼져 있는 것이다.</p>
+
+  <h2>잰 값</h2>
+  <table>
+    <tr><th></th><th>제품 · React + Canvas 2D</th><th>Phaser 4.2 (GATE 01 의 기록)</th><th>Godot 4.7.2 · 웹 내보내기</th></tr>
+    <tr><td>내보낸 용량</td><td>스크립트 589KB (gzip 173KB) · 스타일 144KB (26KB) · 글꼴 1.11MB · 그림 94KB<br>빌드본 전체 5.60MB (gzip 4.94MB. 그중 음악 3.65MB)</td><td>JS 1,360KB (gzip 356KB)<br>복도 한 장면만</td><td><b>40.28MB (gzip 10.50MB)</b><br>엔진 wasm 39.51MB (10.05MB) · js 280KB (68KB) · 게임 꾸러미 pck 438KB (342KB)</td></tr>
+    <tr><td>첫 장면까지 받은 양</td><td>0.25MB (글꼴까지 다 받으면 0.75MB)</td><td>적지 않음</td><td>10.59MB</td></tr>
+    <tr><td>첫 장면까지 · 브라우저를 새로 띄울 때마다 (GPU)</td><td>187~204ms</td><td rowspan="2">약 550ms (GPU 없음)</td><td>1,040~1,209ms</td></tr>
+    <tr><td>같은 값 · GPU 없음</td><td>126~132ms</td><td>1,381~1,494ms</td></tr>
+    <tr><td>첫 장면까지 · CPU 4배 감속</td><td>380ms</td><td>490ms</td><td>3,122ms</td></tr>
+    <tr><td>첫 장면까지 · 빠른 4G (9Mbps, 지연 60ms)</td><td>395ms</td><td>재지 않음</td><td><b>9,955ms</b></td></tr>
+    <tr><td>초당 장면 · GPU (대기 / 걷기 / 걷기 4배 감속)</td><td>60 / 60 / 59.6</td><td rowspan="2">60 / 60 (보통 / 4배 감속)</td><td>60 / 60 / 60</td></tr>
+    <tr><td>초당 장면 · GPU 없음</td><td>60 / 60 / 60</td><td>58.8 / 59 / <b>45</b> (가장 긴 간격 200ms)</td></tr>
+    <tr><td>한 장면에 든 주 스레드 시간 · GPU</td><td>2.19 / 2.72 / 7.81ms</td><td rowspan="2">0.74 / 3.09ms (보통 / 4배 감속)</td><td>2.04 / 1.72 / 4.72ms</td></tr>
+    <tr><td>같은 값 · GPU 없음</td><td>1.72 / 2.34 / 5.91ms</td><td>16.70 / 16.46 / 22.24ms</td></tr>
+    <tr><td>메모리</td><td>JS 힙 5.6MB</td><td>JS 힙 9.8MB</td><td>JS 힙 11.7MB + WASM 46.1MB</td></tr>
+    <tr><td>두 색이 아닌 화소</td><td>0% (찍은 15장)</td><td>0 (정지 장면 네 곳)</td><td>0% (조작하며 찍은 54장 + 견주려고 찍은 21장)</td></tr>
+    <tr><td>제품의 기준 장면과 다른 점</td><td>기준</td><td>0 (GATE 01 의 장면)</td><td><b>0</b> (복도 6곳 · 자료실 4곳, 장면마다 20,085~29,055점)</td></tr>
+    <tr><td>터치 조작 (에뮬레이션)</td><td>이번에는 누르기만 확인(끌기는 제품의 기존 테스트가 본다)</td><td>적지 않음</td><td>누르기 · 끌기 · 걷는 중 건너뛰기 모두 통과 (390×844 · 390×664 · 375×629)</td></tr>
+    <tr><td>누른 뒤 새 화면이 만들어지기까지 (게시판 앞에서 줄을 누름)</td><td>79~81ms</td><td>적지 않음</td><td>297~299ms (첫 번째만 598ms)</td></tr>
+    <tr><td>"금고 앞으로"를 누른 뒤 자물쇠가 뜨기까지</td><td>30~47ms</td><td>적지 않음</td><td>63~66ms</td></tr>
+  </table>
+  <ul>
+    <li>잰 곳: 맥(M5)의 헤드리스 크로미움, 390×844, 화면 배율 2. GPU 는 Metal(<code>--use-angle=metal</code>), "GPU 없음"은 SwiftShader 다. <b>실제 휴대폰 값이 아니다.</b></li>
+    <li>제품의 용량과 첫 장면은 저장소에 있던 빌드본(dist, 2026-11-22 20:26)을 읽어 쟀다. 다시 빌드하지 않았다. 프레임과 메모리는 개발 서버(5183)의 지금 코드다.</li>
+    <li>두 쪽 모두 gzip 으로 줄여 보내는 정적 서버로 쟀다(<code>tools/serve.mjs</code>). 받는 시간은 Godot 쪽이 wasm 10MB 를 받느라 대부분을 쓴다. brotli 로 줄이면 더 작아지겠지만 재지 않았다(추측).</li>
+    <li>"주 스레드 시간"에는 GPU 가 칠하는 시간이 들어 있지 않다. GPU 가 있으면 Godot 가 제품보다 조금 적게 쓰고(점묘를 GPU 가 한다), GPU 가 없으면 Godot 는 그리기를 CPU 로 하느라 한 장면을 꽉 채운다.</li>
+    <li>Phaser 열은 <code>lab/README.md</code> GATE 01 의 값을 그대로 옮겼다. 그때의 장면(240×160점, 390×700, 화면 배율 3)과 조건이 달라 나란히 견줄 수 있는 값이 아니다. 같은 에셋으로 Phaser 판을 다시 만들지는 않았다.</li>
+    <li>"누른 뒤" 두 줄은 페이지 안에서 누른 시각과 화면이 바뀐 시각을 같은 시계로 잰 것이다(세 번씩). Godot 는 앞 화면이 격자로 뜯기는 0.2초가 지난 뒤에 화면을 바꾸게 짰고, 제품은 곧바로 바꾼 뒤 전환을 입힌다. 전환이 끝나기까지는 제품 0.62초, Godot 0.42초로 정해 둔 값이다.</li>
+    <li>Godot 의 첫 장면이 처음 한 번 4.6초 걸린 적이 있다(GPU 를 켠 첫 실행). 그 뒤로는 다시 나오지 않았다. 셰이더를 처음 컴파일한 시간으로 짐작한다(추측).</li>
+  </ul>
+
+  <h2>세 장면에서 된 것</h2>
+  <table>
+    <tr><th>장면</th><th>된 것</th><th>Godot 에서 쓴 것</th></tr>
+    <tr><td>01 학원 복도</td><td>흑백 도트 배경, 탐정의 대기 · 걷기 · 손 뻗기 · 살피기, 누른 곳으로 걸어가기(0.45~0.9초, 한 번 더 누르면 건너뜀), 카메라 따라가기, 게시판 · 문 · 보관함 살펴보기와 들어가기, 연습실 문이 열리며 빛이 쏟아짐, 전경 기둥이 1.2배 빨리 밀림, 등이 13초마다 두 번 깜빡임, 종이가 11초마다 팔랑임, 벽시계는 실제 시각</td><td>SubViewport(216×150점) · Camera2D · Parallax2D · Sprite2D · AnimatedSprite2D(탐정, 시험지) · AnimationPlayer(등) · Area2D + 네모 모양(누를 영역) · 점묘 셰이더</td></tr>
+    <tr><td>02 자료실</td><td>복도에서 격자 전환으로 넘어옴, 탐정이 문에서 책상까지 걸어옴, 책상(기록)과 금고를 눌러 오감, 가야 할 곳에 모서리 괄호가 깜빡임, <b>금고 앞에서 카메라가 금고로 다가감(제품에 없는 것)</b>, 자물쇠가 뜸</td><td>격자 전환 셰이더 · Camera2D 의 배율과 자리를 AnimationPlayer 가 두 박자로 끊어 옮김</td></tr>
+    <tr><td>03 암호 해독</td><td>시도 기록 다섯 줄, 숫자 메모(제외 · 후보, 겹친 자리의 색을 뒤집는 표시), 수사 지원 두 단계, 드럼을 꺾쇠 · 누르기 · 끌기로 돌림, 겹친 숫자 알림, 오답(자물쇠가 흔들리고 쪽지), 정답(화면이 두 번 뒤집히고 금고가 열리고 탐정이 모자에 손을 댐), 채점 결과, 복도로 돌아오면 시험지에 가위표</td><td>뒤집기 셰이더(정확히 두 색) · 직접 그린 조작부 · 제품과 같은 판정 규칙(GDScript, 504가지를 전수 탐색해 정답이 4·2·6 하나임을 확인)</td></tr>
+  </table>
+  <p class="note">안 된 것 · 다르게 한 것: 채점 결과는 제품의 추리 책상 화면이 아니라 간단한 창이다. 수사 지원은 크레딧을 쓰지 않는다. 연습실 · 시험실 · 보관함에는 들어갈 수 없다. 소리가 없다. 저장이 없다(새로고침하면 처음부터). 화면 낭독기가 읽을 글이 없다(캔버스 하나다). 금고 클로즈업에서는 먹선의 점이 4px 로 커진다(밝기의 점묘는 2px 그대로): "점 하나는 2px" 규칙에서 벗어나므로 끈 판과 나란히 두었다.</p>
+
+  <h2>기술별로 써 본 것</h2>
+  <table>
+    <tr><th>기술</th><th>써 본 결과</th></tr>
+    <tr><td>Sprite2D · AnimatedSprite2D</td><td>그대로 쓸 수 있었다. 다만 제품의 탐정은 코드로 찍는 관절 모형이라 그림 파일이 없고, Godot 에서는 그 모형이 찍은 장면을 미리 구워야 했다(키 60점 310칸 984×884px, 키 46점 266칸). 서 있는 자세를 60초 치 구웠더니 1,386칸이 돼 6.8초로 줄였다. 크기나 각도를 새로 쓰려면 다시 구워야 한다.</td></tr>
+    <tr><td>Camera2D</td><td>복도의 따라가기는 제품과 같은 식으로 직접 계산해 자리만 넘겼다(정수 점에 맞추려고). 금고로 다가가기는 배율 한 줄이면 돼서 가장 값싸게 얻은 연출이다.</td></tr>
+    <tr><td>점묘 셰이더</td><td>밝기 층 12장을 층 묶음 텍스처 한 장으로 가져와 조각 셰이더 한 번으로 합치고 4×4 베이어로 가른다. 8비트 정수 계산을 흉내 내 제품과 한 점도 다르지 않다. 카메라가 다가가도 점묘는 2px 로 다시 갈린다.</td></tr>
+    <tr><td>AnimationPlayer</td><td>등의 깜빡임(13초 · 17초 되풀이)과 카메라의 두 박자 움직임에 썼다. 편집기 없이 코드로 키를 넣었다.</td></tr>
+    <tr><td>Area2D</td><td>누를 영역 네 곳과 두 곳을 네모 모양으로 두었다. SubViewport 에 물체 고르기를 켜면 터치가 그대로 들어온다.</td></tr>
+    <tr><td>장면 전환</td><td>화면 전체를 덮는 네모에 셰이더를 걸어 제품의 격자 전환(8px 칸, 다섯 장면)을 같은 모양으로 냈다.</td></tr>
+    <tr><td>글자</td><td>Neo둥근모 WOFF2 는 그대로 가져와 16 · 32 · 48px 로 흐림 없이 찍혔다. <b>갈무리11 WOFF2 는 Godot 가 열지 못했다</b>(FreeType 오류). TTF 는 5.4MB 라, 브라우저가 12px 로 찍은 2,463자를 비트맵 글꼴로 구워 넣었다.</td></tr>
+    <tr><td>TileMapLayer</td><td><b>써 보지 않았다.</b> 복도와 자료실은 칸 단위 그림이 아니라 점 단위로 직접 찍은 한 장이라 타일로 나눌 곳이 없었다(융단의 술, 마룻바닥 이음매 정도). 타일로 짜려면 그림을 격자에 맞춰 다시 그려야 한다.</td></tr>
+    <tr><td>모바일 터치</td><td>크로미움의 터치 에뮬레이션으로 누르기 · 끌기를 확인했다. 실제 휴대폰은 미검증.</td></tr>
+    <tr><td>웹 내보내기</td><td>스레드 없는 판(COOP/COEP 헤더 없이 열림). 내보내기 4초. iOS 사파리 실기기와 WebKit 엔진은 <b>미검증</b>.</td></tr>
+    <tr><td>네이티브 내보내기</td><td><b>해 보지 않았다.</b> 받은 템플릿 묶음에 ios.zip(203MB) · android_*.apk 가 들어 있는 것만 확인했다. iOS 는 Xcode 와 애플 개발자 서명, 안드로이드는 Android SDK · JDK 와 서명 키가 더 필요하다(문서 기준, 미검증).</td></tr>
+  </table>
+
+  <h2>MCP(godot-mcp)가 실제로 한 일</h2>
+  <p class="note">연결은 됐다(stdio 로 직접 붙어 도구 14개 확인, 호출 약 40번). 한 일은 장면 파일 둘의 뼈대다: 복도 13개 · 자료실 10개 노드를 만들고 그림 일곱 장을 붙였다. 최종 장면의 노드 53개 가운데 23개가 MCP 로 만든 것이고, 좌표 · 스크립트 · 충돌 모양 · 재질 · 스프라이트 프레임 · 애니메이션은 전부 직접 쓴 조립 스크립트(<code>tools/build_scenes.gd</code>)가 넣었다. 코드로 치면 MCP 의 몫은 없다(게임의 GDScript 2,800줄쯤과 셰이더 넷 146줄, 조립 · 확인 스크립트 350줄은 모두 직접 썼다).</p>
+  <ul>
+    <li>넣지 못하는 것: 좌표(Vector2 를 세 가지 꼴로 줘 봤지만 모두 조용히 버려졌다), 뿌리 노드의 스크립트, 충돌 모양, 애니메이션, 타일.</li>
+    <li>믿기 어려운 답: 없는 부모에 노드를 더하라고 하면 "성공"이라고 답한다(실제로는 더해지지 않는다). 반대로 프로젝트에 관계없는 오류가 하나 있으면 모든 호출이 "실패"라고 답한다(실제로는 됐다). <code>update_project_uids</code> 는 장면 0개를 찾고 "성공"이라고 한다.</li>
+    <li>창을 띄우는 도구 둘(<code>launch_editor</code> · <code>run_project</code>)은 쓰지 않았다. 그래서 실행 결과를 보는 일에는 MCP 가 도움이 되지 않았고, 웹 내보내기 + 헤드리스 브라우저로 봤다.</li>
+    <li>호출 하나에 0.25~1초(엔진을 매번 띄운다), 답이 1.2~3.2KB 인데 대부분 디버그 줄이다. <code>create_scene</code> 의 답에는 PATH · HOME · USER 값이 실린다.</li>
+    <li>코드는 읽어 보았다: 네트워크를 쓰지 않고, 엔진 실행 파일만 인자 배열로 띄우며, 쓰는 곳은 프로젝트 폴더 안이다. 경로 검사는 <code>..</code> 를 막는 것뿐이다.</li>
+  </ul>
+
+  <h2>쿼터뷰(아이소메트릭) 화면이라면</h2>
+  <p class="note">만들어 보지는 않았다. 아래는 Godot 4 의 기능을 아는 대로 적은 것이다. TileMapLayer 는 타일 모양을 아이소메트릭(마름모)으로 두면 칸 좌표와 화면 좌표의 변환, 마름모 칸 고르기, 길 찾기용 격자(AStarGrid2D 의 아이소메트릭 모드)를 엔진이 맡는다. Y 정렬(y_sort_enabled)을 켜면 캐릭터와 가구 · 벽이 발끝의 y 값 순서로 그려져, 기둥 뒤로 걸어 들어갔다 앞으로 나오는 겹침을 손으로 따지지 않아도 된다. 지금의 Canvas 코드로 같은 것을 하려면 좌표 변환 · 그리는 순서 · 칸 고르기를 직접 짜야 하므로, 쿼터뷰 방이 여러 개가 된다면 여기가 Godot 가 가장 많이 덜어 주는 곳이다. 비용은 셋이다. 첫째, 그림을 마름모 격자(예: 32×16점)에 맞춰 타일로 다시 그려야 한다. 지금의 복도 · 자료실은 한 장짜리 그림이라 그대로 쓸 수 없다. 둘째, 지금의 빛은 밝기 층을 합쳐 점묘로 가르는 방식인데, Y 정렬로 섞여 그려지는 타일과 캐릭터에 이것을 그대로 걸 수 있는지는 해 봐야 안다(화면 전체를 한 번 더 가르는 셰이더로는 될 것으로 짐작한다. 추측). 셋째, 위의 표에 적은 웹의 값(10.5MB, 첫 장면 1초 이상)은 그대로 따라온다. 쿼터뷰가 필요한 것이 방 한두 개라면 Canvas 에 마름모 변환과 y 순서 정렬을 더하는 쪽이 더 싸다고 본다(추측).</p>
+
+  <h2>채택 · 보류 판단의 근거</h2>
+  <table>
+    <tr><th>기준</th><th>판단</th><th>근거</th></tr>
+    <tr><td>그래픽 완성도</td><td>같음</td><td>같은 그림에서 같은 점. 다른 점 0, 두 색이 아닌 화소 0</td></tr>
+    <tr><td>캐릭터 움직임</td><td>같음(재료는 불리)</td><td>같은 장면을 같은 박자로 보인다. 다만 코드 모형을 그림으로 구워야 해서 크기 · 각도가 묶인다</td></tr>
+    <tr><td>깊이감</td><td>Godot 조금 유리</td><td>전경 기둥은 같다. 카메라가 다가가는 연출을 값싸게 얻었다(먹선의 점이 커지는 값은 치른다)</td></tr>
+    <tr><td>조작 반응</td><td>같음</td><td>누른 뒤 반응 시간이 같은 수준. 드럼은 꺾쇠 · 누르기 · 끌기 모두 된다</td></tr>
+    <tr><td>글자 가독성</td><td>같음(접근성은 불리)</td><td>같은 글꼴이 같은 점으로 찍힌다. 그러나 화면 낭독기 · 글자 고르기 · 브라우저의 글자 키우기가 없다</td></tr>
+    <tr><td>로딩</td><td><b>Godot 불리</b></td><td>첫 장면 0.2초 → 1.0초, 4배 감속 0.38초 → 3.1초, 빠른 4G 0.4초 → 10초</td></tr>
+    <tr><td>프레임</td><td>GPU 가 있으면 같음</td><td>둘 다 60. GPU 가 없으면 Godot 가 45 까지 떨어졌다</td></tr>
+    <tr><td>메모리</td><td>Godot 불리</td><td>5.6MB → 58MB(JS 힙 + WASM)</td></tr>
+    <tr><td>용량</td><td><b>Godot 불리</b></td><td>첫 화면에 0.25MB → 10.5MB(gzip). 엔진이 10.1MB 이고 내용과 상관없이 붙는다</td></tr>
+    <tr><td>콘텐츠 제작 난이도</td><td>지금은 Godot 불리</td><td>문제 38개 · 화면 · 테스트가 TypeScript 에 있다. 화면 하나를 옮기는 데 GDScript 440줄(복도)과 730줄(자료실)을 손으로 그렸다. 편집기를 쓰면 장면 배치는 쉬워질 것이다(이번에는 창을 띄우지 않아 쓰지 못했다)</td></tr>
+    <tr><td>기존 코드 재사용</td><td>Godot 불리</td><td>그림은 구워서 재사용했다. 장면의 움직임 · 판정 규칙 · 화면은 다시 썼다(같은 식을 GDScript 로 옮겼다). 제품의 테스트 580개는 가져올 수 없다</td></tr>
+    <tr><td>Claude Code 개발 효율</td><td>Godot 불리</td><td>고치고 확인하는 한 바퀴가 내보내기 4초 + 브라우저 10초쯤으로 짧았지만, 내보낸 뒤에만 드러나는 문제 둘에 가장 오래 걸렸다(아래). MCP 는 뼈대만 만들었다</td></tr>
+  </table>
+  <ul>
+    <li>내보낸 뒤에만 드러난 것 1: <code>@export var 이름: PackedStringArray = []</code> 처럼 기본값을 빈 배열 글자로 적은 값은 프로젝트에서 돌리면 남고 <b>내보내면 사라졌다</b>(장면이 검게 나왔다). <code>PackedStringArray()</code> 로 적으니 남았다.</li>
+    <li>내보낸 뒤에만 드러난 것 2: 그림을 실행 중에 묶으려고 GPU 에서 되읽었더니 웹에서 멈칫했다(ReadPixels). 가져올 때 층 묶음으로 만들어 두는 것으로 바꿨다.</li>
+    <li>맥의 Godot 4.7.2 는 XDG_* 환경 변수를 읽지 않는다. 설정 · 캐시를 실험 폴더 안에 두려면 HOME 을 바꿔 줘야 했다.</li>
+    <li>다시 볼 만한 때: 쿼터뷰 방이 여럿이 되거나, 앱 장터에 네이티브로 내야 하거나, 입자 · 물리 · 큰 지도처럼 Canvas 로 직접 짜기 버거운 것이 필요해질 때. 그때도 웹이 주 무대라면 첫 화면 10MB 를 먼저 따져야 한다.</li>
+  </ul>
+
+  <h2>캡처 (같은 장면 · 같은 크기)</h2>
+  <div class="shots" id="shots"></div>
+</main>
+<script>
+  // 제품은 게임 날짜를 달력의 첫날로 고정한다(그날의 오늘의 추리가 '자료실 금고의 암호'다)
+  const PRODUCT = "../../?demo=1&date=2026-11-22&save=godot-lab&preset=daily-unsolved&apply=1&cine=0";
+  const GODOT = "http://localhost:5190/index.html";
+  const pick = { size: "390x844", scene: "hall", closeup: "1" };
+  const show = () => {
+    const [w, h] = pick.size.split("x").map(Number);
+    for (const id of ["product", "godot"]) {
+      const f = document.getElementById(id);
+      f.width = w;
+      f.height = h;
+      f.style.width = `${w}px`;
+      f.style.height = `${h}px`;
+    }
+    const stamp = Date.now();
+    document.getElementById("product").src = `${PRODUCT}&t=${stamp}${pick.scene === "vault" ? "#/daily" : ""}`;
+    const q = new URLSearchParams();
+    if (pick.scene === "vault") q.set("scene", "vault");
+    if (pick.closeup === "0") q.set("closeup", "0");
+    q.set("t", String(stamp));
+    document.getElementById("godot").src = `${GODOT}?${q}`;
+  };
+  for (const key of Object.keys(pick)) {
+    const seg = document.getElementById(key);
+    seg.addEventListener("click", (e) => {
+      const b = e.target.closest("button");
+      if (!b) return;
+      pick[key] = b.dataset.v;
+      for (const other of seg.children) other.setAttribute("aria-pressed", String(other === b));
+      show();
+    });
+  }
+  document.getElementById("again").addEventListener("click", show);
+  show();
+
+  const shots = document.getElementById("shots");
+  const files = [];
+  for (const size of ["390x844", "390x664", "375x629"]) {
+    for (const scene of ["01-corridor", "02-vault-desk", "03-vault-safe", "04-solved"]) files.push(`pair-${scene}-${size}.png`);
+    files.push(`closeup-03-vault-safe-${size}.png`);
+  }
+  for (const file of files) {
+    const img = new Image();
+    img.loading = "lazy";
+    img.alt = file;
+    img.src = `../../docs/compare/godot/${file}`;
+    img.onerror = () => img.remove();
+    shots.append(img);
+  }
+</script>
+</body>
+</html>

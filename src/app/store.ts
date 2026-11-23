@@ -224,6 +224,16 @@ export const gameStore = {
     commit({ ...state, settings: { ...state.settings, sound: on } });
   },
 
+  setMusic(on: boolean) {
+    commit({ ...state, settings: { ...state.settings, music: on } });
+  },
+
+  /** 음량 단계(1~4)를 정한다 */
+  setVolume(kind: "sound" | "music", level: number) {
+    const value = Math.max(1, Math.min(4, Math.round(level)));
+    commit({ ...state, settings: { ...state.settings, [kind === "sound" ? "soundVolume" : "musicVolume"]: value } });
+  },
+
   applyPreset(preset: DemoPreset) {
     commit(buildDemoState(preset, gameNow()));
   },

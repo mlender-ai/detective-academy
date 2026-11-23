@@ -5,6 +5,7 @@ import { spriteCanvas } from "./dot";
 import { easeInOut, turnToward, type HomeScene, type SceneState, type SpotId } from "./homeScene";
 import { bracketSpots, cornerBrackets } from "./marks";
 import { BOX, WALK, WH, WW, clockHands, paintSide, rankPlate, type Placed, type SideArt } from "./sideArt";
+import { CorridorFx } from "../fx/corridorFx";
 import type { InkOp, StageFrame, ToneOp } from "./stage";
 
 type Box = readonly [number, number, number, number];
@@ -32,7 +33,7 @@ const SPOTS: Record<SpotId, Spot> = {
   practice: { x: BOX.practice[0] + BOX.practice[2] / 2, hit: [166, 16, 52, 92], frame: grow(BOX.practice, 9), arrive: "idle", face: 0 },
   exam: { x: BOX.exam[0] + BOX.exam[2] / 2, hit: [234, 10, 60, 98], frame: grow(BOX.exam, 10), arrive: "idle", face: 0 },
   // 사건 접수함(텔레비전)은 왼쪽에 서서 들여다본다. 맡을 사건이 있을 때만 복도에 놓인다.
-  case: { x: BOX.case[0] - 13, hit: [296, 72, 40, 36], frame: grow(BOX.case, 5), arrive: "examine", face: Math.PI / 2 },
+  case: { x: BOX.case[0] - 12, hit: [286, 72, 34, 36], frame: grow(BOX.case, 5), arrive: "examine", face: Math.PI / 2 },
 };
 
 const HOME_X = 152;
@@ -65,6 +66,8 @@ export class SideScene implements HomeScene {
   private clock: { key: string; art: Placed } | null = null;
   private brackets = cornerBrackets();
   private glass = [document.createElement("canvas"), document.createElement("canvas")];
+  /** 환경 애니메이션 실험(state.fx 가 참일 때만 만든다) */
+  private fx: CorridorFx | null = null;
   /** 실제로 보이는 폭(점). 카메라가 이만큼의 가운데에 탐정을 둔다. */
   private visible: { x0: number; x1: number };
 
@@ -197,9 +200,19 @@ export class SideScene implements HomeScene {
     add("board", 1, "add");
     add(open ? "practiceOpen" : "practiceGlass", 1, "add");
     add(this.state.examOpen ? "examLit" : "examDim", 1, "add");
-    add("moon", 1, "add");
-    // 창밖 나뭇가지의 그림자가 천천히 흔들린다
-    add("branch", 1, "mul", Math.round(Math.sin(time * 0.7) * 1.6));
+    // 환경 애니메이션 실험(state.fx): 블라인드를 걷어 비 내리는 창을 드러내므로, 살 모양의 달빛과 나뭇가지 그림자 대신
+    // 그 창으로 든 빛(창살의 그림자로 두 쪽이 난다)을 바닥에 눕힌다. 나뭇가지 그림자를 겹치면 빛이 조각나 창의 모양이 읽히지 않는다.
+    const fx = this.state.fx ? (this.fx ??= new CorridorFx()) : null;
+    if (fx) {
+      fx.update(time, cam);
+      tone.push(fx.floor(cam));
+    } else {
+      add("moon", 1, "add");
+      // 창밖 나뭇가지의 그림자가 천천히 흔들린다
+      add("branch", 1, "mul", Math.round(Math.sin(time * 0.7) * 1.6));
+    }
+    // 환경 애니메이션 실험: 촛불의 빛을 벽에 더한다
+    if (fx) tone.push(...fx.tone(cam));
 
     const ink: InkOp[] = [];
     const put = (p: Placed, shift = cam) => ink.push({ canvas: p.canvas, x: p.x - shift, y: p.y });
@@ -209,6 +222,8 @@ export class SideScene implements HomeScene {
     if (lamp2) put(art.ink.bulb2);
     put(art.ink[`paper${this.state.dailySolved ? "S" : "N"}${flutter}`]);
     put(open ? art.ink.practiceLeaf : art.ink.practiceClosed);
+    // 환경 애니메이션 실험: 비 내리는 창, 촛불
+    if (fx) ink.push(...fx.ink(cam));
 
     // 사건 접수함: 새 사건·수사 중이면 잡음이 일고 7초마다 토끼 가면이 스친다. 해결한 뒤에는 꺼져 있다.
     if (this.hasCase) {
@@ -264,7 +279,8 @@ export class SideScene implements HomeScene {
     // 전경의 기둥은 복도보다 조금 빨리 민다
     const fgShift = Math.round(cam * 1.2 - (WW - this.w) * 0.1);
     put(art.ink.pillarL, fgShift);
-    put(art.ink.pillarR, fgShift);
+    // 환경 애니메이션 실험에서는 오른쪽 기둥이 창을 가리지 않게 복도의 끝에 세운다(비 내리는 유리가 다 보이게)
+    put(art.ink.pillarR, fx ? Math.min(fgShift, cam - 4) : fgShift);
 
     return { tone, shadows: [{ x: Math.round(this.x) - cam, y: WALK, rx, ry }], ink };
   }

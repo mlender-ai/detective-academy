@@ -4,6 +4,7 @@
   "description": "탐정학원 V3 실험실 전용 의존성. 제품(package.json)에는 넣지 않는다. 채택이 확정된 것만 제품으로 옮긴다.",
   "type": "module",
   "dependencies": {
+    "ascii-magic-art": "1.1.0",
     "phaser": "^4.2.1",
     "pixi.js": "^8.23.0"
   }

@@ -2,7 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { PRACTICE_PUZZLES, PUZZLE_BY_ID } from "../src/data/puzzles";
 import { PROMOTION_RULES, rankLabel } from "../src/data/ranks";
 import type { Puzzle } from "../src/engine/types";
-import { expectLayoutOk, offToneRatio, preset, shot, stored, TEST_DATE } from "./helpers";
+import { expectLayoutOk, gameNowMs, offToneRatio, preset, shot, stored, TEST_DATE } from "./helpers";
 import { patchState, solve, submitWrong } from "./solve";
 
 /**
@@ -298,10 +298,11 @@ test.describe("승급 시험: 제한 시간", () => {
     expect((await stored(page)).examDays.C.count).toBe(1);
 
     // 1분 아래로 내려가면 남은 시간이 깜빡인다. 시간이 끝나면 시험실이 '시험 종료'로 바뀐다.
+    const now = gameNowMs();
     await patchState(page, (state) => {
       const exam = state.exam as { remainingMs: number; runningSince: number };
       exam.remainingMs = 2500;
-      exam.runningSince = Date.now();
+      exam.runningSince = now;
     });
     await expect(page.getByTestId("exam-failed")).toBeVisible({ timeout: 10_000 });
     await expect(page.getByTestId("failed-title")).toHaveText("시간이 끝났습니다");

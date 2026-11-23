@@ -19,6 +19,8 @@ export interface SceneState {
    * new 새 사건 · open 수사 중 · cleared 해결
    */
   caseStatus?: "locked" | "new" | "open" | "cleared";
+  /** 환경 애니메이션 실험(비 내리는 창, 촛불, 시계추, 전등 둘레의 먼지)을 켠다. 기본은 꺼짐. */
+  fx?: boolean;
 }
 
 /** 장면 하나가 지키는 약속. Id 는 갈 수 있는 곳의 이름, S 는 장면에 비치는 상태다. */

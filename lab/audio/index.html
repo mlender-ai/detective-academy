@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>탐정학원 · OST 비교</title>
+<style>
+@font-face { font-family: "NeoDGM"; src: url("../../node_modules/@kfonts/neodgm/neodgm.woff2") format("woff2"); }
+@font-face { font-family: "Galmuri11"; src: url("../../node_modules/galmuri/dist/Galmuri11.woff2") format("woff2"); }
+* { box-sizing: border-box; }
+html, body { margin: 0; background: #000; color: #f1f1ea; }
+body { font: 16px/1.5 "NeoDGM", monospace; -webkit-font-smoothing: none; }
+main { padding: 20px 16px 60px; max-width: 1240px; }
+h1 { font-size: 32px; line-height: 40px; font-weight: 400; margin: 0 0 6px; }
+h2 { font-size: 16px; line-height: 24px; font-weight: 400; margin: 26px 0 8px; padding: 0 6px; display: inline-block; color: #000; background: #f1f1ea; }
+h3 { font-size: 32px; line-height: 36px; font-weight: 400; margin: 18px 0 2px; }
+p { margin: 0 0 8px; max-width: 920px; }
+.note { font: 12px/1.7 "Galmuri11", monospace; }
+.bar { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; margin: 10px 0; position: sticky; top: 0; background: #000; padding: 8px 0; z-index: 2; border-bottom: 2px solid #f1f1ea; }
+button { min-height: 36px; padding: 0 12px; font: 16px "NeoDGM", monospace; color: #f1f1ea; background: #000; border: 0; box-shadow: inset 0 0 0 2px #f1f1ea; cursor: pointer; }
+button[aria-pressed="true"] { color: #000; background: #f1f1ea; }
+button:active { color: #000; background: #f1f1ea; }
+.seg { display: flex; gap: 2px; }
+.cands { display: grid; gap: 8px; margin: 8px 0 4px; }
+.cand { display: grid; grid-template-columns: 148px 1fr; gap: 6px 14px; padding: 10px; box-shadow: inset 0 0 0 2px #f1f1ea; }
+.cand[data-chosen="true"] { box-shadow: inset 0 0 0 2px #f1f1ea, inset 0 0 0 4px #000, inset 0 0 0 6px #f1f1ea; }
+.cand__play { display: grid; gap: 6px; align-content: start; }
+.cand__name { font-size: 16px; }
+.cand__name b { font-weight: 400; padding: 0 6px; color: #000; background: #f1f1ea; margin-left: 8px; }
+.cand dl { display: flex; flex-wrap: wrap; gap: 2px 18px; margin: 4px 0; font: 12px/1.6 "Galmuri11", monospace; }
+.cand dl div { display: flex; gap: 6px; }
+.cand dt::after { content: ":"; }
+.cand dd { margin: 0; }
+.cand img { display: block; width: 100%; max-width: 640px; height: 64px; image-rendering: auto; }
+.cand__cap { font: 12px/1.6 "Galmuri11", monospace; max-width: 760px; }
+table { border-collapse: collapse; margin: 6px 0 10px; font: 12px/1.6 "Galmuri11", monospace; }
+th, td { padding: 3px 12px 3px 0; text-align: left; vertical-align: top; border-bottom: 2px dotted #f1f1ea; font-weight: 400; }
+th { border-bottom: 2px solid #f1f1ea; }
+.phones { display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start; }
+.phone { display: block; border: 0; background: #000; box-shadow: 0 0 0 2px #f1f1ea; }
+@media (max-width: 720px) { .cand { grid-template-columns: 1fr; } .phones iframe { display: none; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>OST 비교</h1>
+  <p>탐정학원의 음악을 ACE-Step 1.5 로 이 맥에서 직접 생성했다. 방향은 "One-bit Psychological Mystery": 어둡고 절제된 피아노, 낮은 신시사이저, 아날로그 질감, 여백, 보컬 없음.</p>
+  <p class="note">곡들은 같은 네 마디 모티프(D 단조: D–F–A / G–E–C# / D–F–B♭ / A–E–D, 직접 지은 것)를 빠르기와 밀도만 바꿔 쓴 변주다. 모티프를 소리로 만든 뒤 ACE-Step 의 cover(선율과 박을 따라 편곡)로 넘겼다. 곡마다 후보가 셋이다: <b>모티프 편곡(강도 0.85)</b> · <b>모티프 편곡(강도 0.6)</b> · <b>글만으로 생성(모티프 없음, 비교용)</b>. 겹줄 테가 지금 게임에 실린 것이다.</p>
+  <p class="note"><b>이 음원들은 만든 쪽이 들어 보지 못했다.</b> 아래 숫자(선율 일치, 음량, 이음매)는 수치로 확인한 것이고, 분위기와 음질, 추리를 방해하는지는 들어 보고 정해야 한다. 마음에 드는 후보를 알려 주면 게임에 싣는 것을 바꾼다.</p>
+
+  <div class="bar">
+    <button id="stop">■ 멈춤</button>
+    <span class="note">음량</span>
+    <div class="seg" id="level"><button data-v="1">1</button><button data-v="2" aria-pressed="true">2</button><button data-v="3">3</button><button data-v="4">4</button></div>
+    <span class="note" id="now">멈춰 있음</span>
+  </div>
+
+  <h2>1. 곡별 후보</h2>
+  <p class="note">"처음부터"는 루프의 처음부터, "이음매"는 끝나기 4초 전부터 들려준다(끝에서 처음으로 넘어가는 자리를 바로 들을 수 있다). 게임과 같은 방식(Web Audio 의 구간 되풀이)으로 재생한다.</p>
+  <div id="tracks"></div>
+
+  <h2>2. 게임에서 듣기</h2>
+  <p class="note">음악을 켠 상태로 연다. 화면을 한 번 누르면 음악이 시작된다(브라우저는 조작 전에는 소리를 내지 않는다). 복도 → 문제를 열면 곡이 겹쳐 넘어가고, 제한 시간 시험의 시험지를 펼치면 카운트다운으로 바뀐다. 음량과 켬/끔은 신분증 화면에 있다.</p>
+  <div class="bar" style="position:static;border:0">
+    <div class="seg" id="scene"></div>
+  </div>
+  <div class="phones"><iframe class="phone" id="phone" width="390" height="664" title="탐정학원"></iframe></div>
+
+  <h2>3. 제작 기록</h2>
+  <table id="record"></table>
+  <p class="note">모델: ACE-Step 1.5 (acestep-v15-turbo, 8단계, shift 3.0, MLX · Apple M5 24GB). 코드와 가중치 모두 MIT 라이선스(github.com/ace-step/ACE-Step-1.5, huggingface.co/ACE-Step/Ace-Step1.5). 가중치(10.1GB)와 원본 음원은 저장소 밖에 있고, 게임에는 편집을 마친 압축 음원(AAC)만 싣는다. 생성형 AI 로 만든 음원이다.</p>
+</main>
+<script type="module" src="./index.ts"></script>
+</body>
+</html>

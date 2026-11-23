@@ -25,6 +25,22 @@ interface Props<Id extends string, S> {
 }
 
 /**
+ * 모션 줄이기에서 그리는 한 장면: 움직임이 다 끝난 뒤의 모습이다.
+ * 장면은 update 가 흘려 준 시간만큼만 카메라·문·금고를 목표 쪽으로 옮긴다. 시간을 흘리지 않으면(0) 탐정만 옮겨지고
+ * 카메라가 따라오지 않아, 복도 끝으로 간 탐정이 화면 밖에 선다.
+ * 그래서 한 박자를 앞으로 굴려 끝 상태에 이르게 한 뒤 같은 만큼 되감는다. 목표로 다가가는 값은 끝 상태에 남고,
+ * 장면의 시계는 제자리로 돌아온다: 환경의 박자(깜빡이는 등, 팔랑이는 종이, 표시 괄호)는 언제 그려도 같은 모습이다.
+ * 한 박자는 가장 느린 것(금고 문이 열리는 0.39초)보다 길고, 도착한 자세가 풀리는 시간(2.4초)보다 짧아야 한다.
+ */
+const SETTLE_SEC = 1;
+
+function drawStill<Id extends string, S>(scene: Scene<Id, S>, stage: Stage) {
+  scene.update(SETTLE_SEC);
+  scene.update(-SETTLE_SEC);
+  stage.draw(scene.frame());
+}
+
+/**
  * 살아 있는 장면. 캔버스 하나에 층으로 나눈 배경과 탐정을 그린다.
  * 화면을 떠나면 그리기를 멈추고, 내려갈 때 루프를 정리한다.
  */
@@ -64,13 +80,17 @@ export function LiveScene<Id extends string, S>({ kind, make, state, onArrive, o
       });
     };
     measure();
-    const observer = new ResizeObserver(measure);
+    const still = prefersReducedMotion();
+    const observer = new ResizeObserver(() => {
+      measure();
+      // 루프가 없으면 화면 폭이 바뀌어도 카메라가 그대로다: 새 폭에 맞춰 한 번 다시 그린다
+      if (still) drawStill(scene, stage);
+    });
     observer.observe(host);
 
-    if (prefersReducedMotion()) {
+    if (still) {
       // 움직임 없이 한 장면만 그린다. 상태가 바뀌면 다시 그린다(아래 effect).
-      scene.update(0);
-      stage.draw(scene.frame());
+      drawStill(scene, stage);
       return () => observer.disconnect();
     }
     const stop = runLoop((dt) => {
@@ -92,17 +112,13 @@ export function LiveScene<Id extends string, S>({ kind, make, state, onArrive, o
     const stage = stageRef.current;
     if (!scene || !stage || !prefersReducedMotion()) return;
     scene.state = state;
-    scene.update(0);
-    stage.draw(scene.frame());
+    drawStill(scene, stage);
   }, [state]);
 
   const redrawIfStill = () => {
     const scene = sceneRef.current;
     const stage = stageRef.current;
-    if (scene && stage && prefersReducedMotion()) {
-      scene.update(0);
-      stage.draw(scene.frame());
-    }
+    if (scene && stage && prefersReducedMotion()) drawStill(scene, stage);
   };
 
   useImperativeHandle(ref, () => ({

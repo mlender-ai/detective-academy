@@ -15,6 +15,60 @@ async function tapCorridor(page: Page, worldX: number, dotY: number) {
   await page.touchscreen.tap(scene.x + worldX * 2, canvas.y + dotY * 2);
 }
 
+/**
+ * 복도의 곳들(복도 좌표, 점): 탐정이 서는 자리, 누를 수 있는 가로 범위, 누를 세로 자리.
+ * src/scene/sideScene.ts 의 SPOTS 와 같아야 한다(겹치는 영역은 한쪽만 적었다).
+ */
+const CORRIDOR = {
+  archive: { stand: 77, hit: [20, 82], y: 84 },
+  board: { stand: 89, hit: [86, 156], y: 60 },
+  practice: { stand: 192, hit: [168, 216], y: 70 },
+  exam: { stand: 264, hit: [236, 284], y: 70 },
+  case: { stand: 279, hit: [296, 318], y: 92 },
+} as const;
+type Spot = keyof typeof CORRIDOR;
+/** 복도 전체의 폭(점)과, 아직 어디에도 서지 않았을 때 탐정의 자리 */
+const CORRIDOR_W = 340;
+const ENTRANCE_X = 152;
+
+/**
+ * 복도의 그 물건을 누른다. 카메라가 탐정이 선 곳(data-at)을 따라가 멈춰 있다고 보고, 그 카메라에서 물건이 그려진 자리를 누른다.
+ * 카메라가 따라가지 않았으면 엉뚱한 곳이 눌려 도착하지 못한다. 돌려주는 값은 그 카메라와 보이는 가로 범위(점).
+ */
+async function tapSpot(page: Page, id: Spot) {
+  const target = await page.evaluate(
+    ([spots, to, width, entrance]) => {
+      const host = document.querySelector('[data-testid="live-scene"]')!.getBoundingClientRect();
+      const canvas = document.querySelector<HTMLCanvasElement>('[data-testid="live-scene"] canvas')!;
+      const rect = canvas.getBoundingClientRect();
+      const k = canvas.width / rect.width;
+      const x0 = Math.max(0, (host.left - rect.left) * k);
+      const x1 = Math.min(canvas.width, (host.right - rect.left) * k);
+      const at = document.querySelector('[data-testid="home-screen"]')!.getAttribute("data-at") as keyof typeof spots | "";
+      const stand = at ? spots[at].stand : entrance;
+      const cam = Math.round(Math.max(-x0, Math.min(width - x1, stand - (x0 + x1) / 2)));
+      const [from, upto] = spots[to].hit;
+      // 물건의 가운데를 누르되, 화면 끝에 걸려 있으면 보이는 쪽을 누른다
+      const x = Math.max(Math.max(from, cam + x0 + 3), Math.min(Math.min(upto, cam + x1 - 3), (from + upto) / 2));
+      return { x: rect.left + (x - cam) / k, y: rect.top + spots[to].y / k, cam, x0, x1 };
+    },
+    [CORRIDOR, id, CORRIDOR_W, ENTRANCE_X] as const,
+  );
+  await page.touchscreen.tap(target.x, target.y);
+  return target;
+}
+
+/** 장면에 지금 그려진 점들(밝기)과 캔버스의 폭 */
+async function sceneDots(page: Page) {
+  return page.locator('[data-testid="live-scene"] canvas').evaluate((el) => {
+    const canvas = el as HTMLCanvasElement;
+    const data = canvas.getContext("2d")!.getImageData(0, 0, canvas.width, canvas.height).data;
+    const dots: number[] = [];
+    for (let i = 0; i < data.length; i += 4) dots.push(data[i]);
+    return { dots, w: canvas.width };
+  });
+}
+
 test.describe("홈 · 플레이 가능한 복도", () => {
   test("들어서면 탐정이 오늘 할 일 앞으로 가 서고, 명령 창의 줄을 누르면 곧바로 들어간다", async ({ page }) => {
     await preset(page, "daily-unsolved");
@@ -107,6 +161,43 @@ test.describe("홈 · 플레이 가능한 복도", () => {
     await page.getByTestId("practice-entry").click();
     await expect(page).toHaveURL(/#\/practice$/);
     expect(Date.now() - started).toBeLessThan(1500);
+  });
+
+  test("모션 줄이기 설정에서도 카메라가 탐정을 따라간다: 복도 끝으로 가도 탐정이 보이는 영역 안에 선다", async ({ page }) => {
+    // 걷지 않고 한 장면만 그릴 때 카메라가 처음 자리에 남아, 복도 끝으로 간 탐정이 화면 밖에 서던 문제의 회귀 테스트
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.setViewportSize({ width: 375, height: 629 });
+    await preset(page, "promoted");
+    const home = page.getByTestId("home-screen");
+    await expect(home).toHaveAttribute("data-at", "practice");
+    await page.waitForTimeout(150);
+    const atPractice = await sceneDots(page);
+
+    // 시험실 문은 복도의 오른쪽 끝에 있다
+    await tapSpot(page, "exam");
+    await expect(home).toHaveAttribute("data-at", "exam");
+    await page.waitForTimeout(150);
+    const atExam = await sceneDots(page);
+    expect(atExam.dots, "시험실로 간 뒤에도 장면이 그대로다").not.toEqual(atPractice.dots);
+
+    // 카메라가 오른쪽 끝까지 따라왔으면 그 옆의 사건 접수함(텔레비전)이 제자리에서 눌린다
+    const view = await tapSpot(page, "case");
+    await expect(home).toHaveAttribute("data-at", "case");
+    await page.waitForTimeout(150);
+    const atCase = await sceneDots(page);
+
+    // 두 장면은 카메라가 같고(복도의 오른쪽 끝) 탐정이 선 자리만 다르다: 달라진 점이 곧 탐정이 그려진 자리다
+    const xs = atExam.dots.flatMap((dot, i) => (dot === atCase.dots[i] ? [] : [i % atExam.w]));
+    expect(xs.length, "탐정이 그려지지 않았다").toBeGreaterThan(100);
+    expect(Math.min(...xs), "탐정이 보이는 영역의 왼쪽 밖에 그려졌다").toBeGreaterThanOrEqual(view.x0);
+    expect(Math.max(...xs), "탐정이 보이는 영역의 오른쪽 밖에 그려졌다").toBeLessThanOrEqual(view.x1);
+
+    // 왼쪽 끝으로 돌아갈 때도 따라간다: 연습실 → 게시판 → 기록 보관함
+    for (const id of ["practice", "board", "archive"] as const) {
+      await tapSpot(page, id);
+      await expect(home).toHaveAttribute("data-at", id);
+    }
+    await expect(page.getByTestId("identity")).toHaveAttribute("data-on", "true");
   });
 
   test("탐정이 걷는 중에 할 일이 바뀌어도, 새 할 일의 줄을 누르면 그곳으로 들어간다", async ({ page }) => {

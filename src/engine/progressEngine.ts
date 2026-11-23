@@ -11,6 +11,7 @@ import { checkAnswer } from "./puzzleValidator";
 import { seoulDateKey } from "./time";
 import type {
   ExamSession,
+  GameSettings,
   GameState,
   Puzzle,
   PuzzleCategory,
@@ -52,7 +53,7 @@ export function createInitialState(): GameState {
     exam: null,
     examDays: {},
     story: emptyStory(),
-    settings: { sound: false },
+    settings: defaultSettings(),
   };
 }
 
@@ -525,7 +526,26 @@ export function hydrate(raw: unknown): GameState {
     exam: hydrateExam(data.exam),
     examDays: hydrateExamDays(data.examDays),
     story: hydrateStory(data.story, CASES),
-    settings: { sound: data.settings?.sound === true },
+    settings: hydrateSettings(data.settings),
+  };
+}
+
+/** 소리는 기본이 꺼짐이다. 음량은 1~4 단계: 효과음은 가장 크게(예전과 같은 크기), 음악은 그 절반에서 시작한다. */
+export function defaultSettings(): GameSettings {
+  return { sound: false, music: false, soundVolume: 4, musicVolume: 2 };
+}
+
+const volumeLevel = (value: unknown, fallback: number) => (typeof value === "number" && Number.isFinite(value) ? Math.max(1, Math.min(4, Math.round(value))) : fallback);
+
+/** 저장된 설정을 읽는다. 음악·음량이 없던 때의 저장은 기본값으로 채운다. */
+export function hydrateSettings(raw: unknown): GameSettings {
+  const base = defaultSettings();
+  const data = raw && typeof raw === "object" ? (raw as Partial<GameSettings>) : {};
+  return {
+    sound: data.sound === true,
+    music: data.music === true,
+    soundVolume: volumeLevel(data.soundVolume, base.soundVolume),
+    musicVolume: volumeLevel(data.musicVolume, base.musicVolume),
   };
 }
 

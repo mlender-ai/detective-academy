@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { todayKey } from "../app/clock";
 import { goBack } from "../app/router";
-import { playSound } from "../app/sound";
+import { ensureContext, playSound } from "../app/sound";
 import { gameStore, useGame } from "../app/store";
 import { PenMark } from "../art/pixel";
 import { RankMark } from "../art/objects";
@@ -29,6 +29,29 @@ function recordLine(progress: PuzzleProgress): string {
 }
 
 /** 탐정 신분증: 책상 위에 신분증과 학생 기록부가 놓여 있다 */
+/** 음량 단추: 막대 넷 가운데 지금 단계만큼 찬다. 누르면 한 칸 올라가고 끝에서 처음으로 돌아간다. */
+function VolumeButton({ label, level, disabled, onStep, testId }: { label: string; level: number; disabled: boolean; onStep: () => void; testId: string }) {
+  return (
+    <button
+      type="button"
+      className="volbtn leaf"
+      onClick={onStep}
+      disabled={disabled}
+      aria-label={disabled ? `${label} 음량. ${label}이 꺼져 있습니다` : `${label} 음량 ${level}단계. 누르면 바뀝니다`}
+      data-level={level}
+      data-testid={testId}
+    >
+      {/* 꺼져 있으면 막대를 비운다(저장된 단계는 data-level 에 그대로 남는다) */}
+      <span className="volbtn__bars" aria-hidden="true">
+        {[1, 2, 3, 4].map((n) => (
+          <i key={n} data-on={!disabled && n <= level} />
+        ))}
+      </span>
+      <small aria-hidden="true">음량 {disabled ? "-" : level}</small>
+    </button>
+  );
+}
+
 export function DetectiveProfile() {
   const game = useGame();
   const [editing, setEditing] = useState(false);
@@ -56,6 +79,19 @@ export function DetectiveProfile() {
     const on = !game.settings.sound;
     gameStore.setSound(on);
     if (on) playSound("success");
+  };
+
+  const toggleMusic = () => {
+    // 사파리는 사용자의 조작 안에서 깨운 소리만 낸다
+    ensureContext();
+    gameStore.setMusic(!game.settings.music);
+  };
+
+  /** 음량 단계를 한 칸씩 올리고, 끝에서 처음으로 돌아간다 */
+  const stepVolume = (kind: "sound" | "music") => {
+    const now = kind === "sound" ? game.settings.soundVolume : game.settings.musicVolume;
+    gameStore.setVolume(kind, (now % 4) + 1);
+    if (kind === "sound") playSound("tick");
   };
 
   return (
@@ -181,22 +217,46 @@ export function DetectiveProfile() {
           </ul>
         </section>
 
-        <button
-          type="button"
-          className="soundswitch leaf"
-          role="switch"
-          aria-checked={game.settings.sound}
-          onClick={toggleSound}
-          data-testid="sound-toggle"
-        >
-          <span className="soundswitch__text">
-            <span>효과음</span>
-            <small>{game.settings.sound ? "켜짐" : "꺼짐 (기본)"}</small>
-          </span>
-          <span className="tickbox" aria-hidden="true">
-            {game.settings.sound && <PenMark kind="check" />}
-          </span>
-        </button>
+        <section className="soundset" aria-label="소리 설정">
+          <div className="soundset__row">
+            <button
+              type="button"
+              className="soundswitch leaf"
+              role="switch"
+              aria-checked={game.settings.sound}
+              onClick={toggleSound}
+              data-testid="sound-toggle"
+            >
+              <span className="soundswitch__text">
+                <span>효과음</span>
+                <small>{game.settings.sound ? "켜짐" : "꺼짐"}</small>
+              </span>
+              <span className="tickbox" aria-hidden="true">
+                {game.settings.sound && <PenMark kind="check" />}
+              </span>
+            </button>
+            <VolumeButton label="효과음" level={game.settings.soundVolume} disabled={!game.settings.sound} onStep={() => stepVolume("sound")} testId="sound-volume" />
+          </div>
+          <div className="soundset__row">
+            <button
+              type="button"
+              className="soundswitch leaf"
+              role="switch"
+              aria-checked={game.settings.music}
+              onClick={toggleMusic}
+              data-testid="music-toggle"
+            >
+              <span className="soundswitch__text">
+                <span>음악</span>
+                <small>{game.settings.music ? "켜짐" : "꺼짐"}</small>
+              </span>
+              <span className="tickbox" aria-hidden="true">
+                {game.settings.music && <PenMark kind="check" />}
+              </span>
+            </button>
+            <VolumeButton label="음악" level={game.settings.musicVolume} disabled={!game.settings.music} onStep={() => stepVolume("music")} testId="music-volume" />
+          </div>
+        </section>
       </div>
     </div>
   );
