@@ -299,8 +299,22 @@ export interface Knowledge {
  */
 const EXPOSED_PEOPLE: Named[] = [SANGMIN];
 
-/** 가진 증거와 어긋나지 않는 경우를 모두 돌려준다 */
+/** 이 장의 경우를 좁히는 데 쓰이는 증거 (나머지 증거는 경우를 지우지 않는다) */
+const USED3: readonly string[] = [E2.editlog, E3.door, E3.lobby, E3.access, E3.perms, E3.lies];
+const worldCache = new WeakMap<CaseData3, Map<string, World3[]>>();
+
+/**
+ * 가진 증거와 어긋나지 않는 경우를 모두 돌려준다.
+ * 5(고친 사람) × 2^5(편집실에 있던 사람) × 2^4(관리자) × 2(방문증) × 2 × 2 = 20480 가지를 모두 본다.
+ * 같은 증거로 다시 물으면 앞서 센 것을 돌려준다(돌려받은 목록을 고치지 않는다).
+ */
 export function worlds3(known: Knowledge, data: CaseData3 = CASE3): World3[] {
+  const key = USED3.filter((id) => known.evidence.includes(id)).join(",");
+  const cache = worldCache.get(data) ?? new Map<string, World3[]>();
+  worldCache.set(data, cache);
+  const hit = cache.get(key);
+  if (hit) return hit;
+
   const has = (id: string) => known.evidence.includes(id);
   const session = modifyingSession(data);
   const stayed = (spans: readonly Span[]) => covers(spans, session.from, session.to);
@@ -308,43 +322,39 @@ export function worlds3(known: Knowledge, data: CaseData3 = CASE3): World3[] {
   const holder = data.lobby.find((line) => line.pass === PASS && stayed(line.spans))?.who ?? OUTSIDER;
   const out: World3[] = [];
 
-  for (const modifier of SUSPECTS)
-    for (let room = 0; room < 1 << SUSPECTS.length; room++)
-      for (let rights = 0; rights < 1 << NAMED.length; rights++)
-        for (const pass of [DOHEE, OUTSIDER] as const)
-          for (const alive of [true, false])
-            for (const abroad of [true, false]) {
-              const inRoom = Object.fromEntries(SUSPECTS.map((who, i) => [who, (room & (1 << i)) !== 0])) as Record<Suspect, boolean>;
-              const admin = Object.fromEntries(NAMED.map((who, i) => [who, (rights & (1 << i)) !== 0])) as Record<Named, boolean>;
+  for (let room = 0; room < 1 << SUSPECTS.length; room++) {
+    const inRoom = Object.fromEntries(SUSPECTS.map((who, i) => [who, (room & (1 << i)) !== 0])) as Record<Suspect, boolean>;
+    // 진술 대조 기록: 거짓말을 했다는 것은 고친 사람을 좁히지 않는다. 드러난 위치만 남는다.
+    if (has(E3.lies) && EXPOSED_PEOPLE.some((who) => inRoom[who] !== stayed(doorOf(who, data)))) continue;
+    // 편집실 출입 기록: 지문이 등록된 사람은 기록 그대로다.
+    if (has(E3.door) && data.door.some((line) => line.who !== null && inRoom[line.who] !== stayed(line.spans))) continue;
 
-              // 제2장의 작업 기록: 영상은 편집실 PC 에서 고쳤다. 편집 프로그램은 그 PC 에서만 열리므로 고친 사람은 그 접속 내내 편집실에 있었다.
-              if (has(E2.editlog) && data.rules.editorOnlyOnEditPC && !inRoom[modifier]) continue;
+    for (const pass of [DOHEE, OUTSIDER] as const) {
+      // 편집실 출입 기록: 지문이 없는 사람은 방문증을 든 사람만 들어온다.
+      if (has(E3.door) && (inRoom[DOHEE] !== (passIn && pass === DOHEE) || inRoom[OUTSIDER] !== (passIn && pass === OUTSIDER))) continue;
+      // 건물 방문 기록: 그 시간에 방문증 3번을 받아 간 사람
+      if (has(E3.lobby) && pass !== holder) continue;
 
-              // 편집실 출입 기록: 지문이 등록된 사람은 기록 그대로다. 지문이 없는 사람은 방문증을 든 사람만 들어온다.
-              if (has(E3.door)) {
-                if (data.door.some((line) => line.who !== null && inRoom[line.who] !== stayed(line.spans))) continue;
-                if (inRoom[DOHEE] !== (passIn && pass === DOHEE)) continue;
-                if (inRoom[OUTSIDER] !== (passIn && pass === OUTSIDER)) continue;
-              }
+      for (let rights = 0; rights < 1 << NAMED.length; rights++) {
+        const admin = Object.fromEntries(NAMED.map((who, i) => [who, (rights & (1 << i)) !== 0])) as Record<Named, boolean>;
+        // 작업 권한표
+        if (has(E3.perms) && NAMED.some((who) => admin[who] !== data.perms[who].admin)) continue;
 
-              // 건물 방문 기록: 그 시간에 방문증 3번을 받아 간 사람
-              if (has(E3.lobby) && pass !== holder) continue;
-
-              // 계정 접근 기록: 그 접속은 관리자 권한으로 재설정해 나온 임시 비밀번호로 들어왔다.
-              // 임시 비밀번호는 재설정한 관리자의 화면에만 표시되므로, 고친 사람은 관리자 권한이 있다.
-              if (has(E3.access) && session.password === "temp" && data.rules.tempShownToResetterOnly) {
-                if (modifier === OUTSIDER || !admin[modifier]) continue;
-              }
-
-              // 작업 권한표
-              if (has(E3.perms) && NAMED.some((who) => admin[who] !== data.perms[who].admin)) continue;
-
-              // 진술 대조 기록: 거짓말을 했다는 것은 고친 사람을 좁히지 않는다. 드러난 위치만 남는다.
-              if (has(E3.lies) && EXPOSED_PEOPLE.some((who) => inRoom[who] !== stayed(doorOf(who, data)))) continue;
-
-              // 오상민의 두 번째 진술(끝 장면): 진술이다. 경우를 지우지 않는다.
-              out.push({ modifier, inRoom, admin, pass, alive, abroad });
-            }
+        for (const modifier of SUSPECTS) {
+          // 제2장의 작업 기록: 영상은 편집실 PC 에서 고쳤다. 편집 프로그램은 그 PC 에서만 열리므로 고친 사람은 그 접속 내내 편집실에 있었다.
+          if (has(E2.editlog) && data.rules.editorOnlyOnEditPC && !inRoom[modifier]) continue;
+          // 계정 접근 기록: 그 접속은 관리자 권한으로 재설정해 나온 임시 비밀번호로 들어왔다.
+          // 임시 비밀번호는 재설정한 관리자의 화면에만 표시되므로, 고친 사람은 관리자 권한이 있다.
+          if (has(E3.access) && session.password === "temp" && data.rules.tempShownToResetterOnly) {
+            if (modifier === OUTSIDER || !admin[modifier]) continue;
+          }
+          // 오상민의 두 번째 진술(끝 장면): 진술이다. 경우를 지우지 않는다.
+          for (const alive of [true, false]) for (const abroad of [true, false]) out.push({ modifier, inRoom, admin, pass, alive, abroad });
+        }
+      }
+    }
+  }
+  cache.set(key, out);
   return out;
 }
 
@@ -364,21 +374,11 @@ export function judge3(claim: string, known: Knowledge, data: CaseData3 = CASE3)
   return holds.length === 0 ? "refuted" : "open";
 }
 
-const leftCache = new WeakMap<CaseData3, Map<string, Suspect[]>>();
-const USED3: readonly string[] = [E2.editlog, E3.door, E3.lobby, E3.access, E3.perms, E3.lies];
-
-/** 그 증거들로 아직 지워지지 않은 용의자. 같은 증거로 다시 물으면 앞서 센 것을 돌려준다(경우를 다시 펼치지 않는다). */
-export function suspectsLeft(known: Knowledge, data: CaseData3 = CASE3): Suspect[] {
-  const key = USED3.filter((id) => known.evidence.includes(id)).join(",");
-  const cache = leftCache.get(data) ?? new Map<string, Suspect[]>();
-  leftCache.set(data, cache);
-  const hit = cache.get(key);
-  if (hit) return hit;
-  const left = worlds3({ evidence: USED3.filter((id) => known.evidence.includes(id)) }, data);
-  const found = SUSPECTS.filter((who) => left.some((w) => w.modifier === who));
-  cache.set(key, found);
-  return found;
-}
+/** 그 증거들로 아직 지워지지 않은 용의자 */
+export const suspectsLeft = (known: Knowledge, data: CaseData3 = CASE3): Suspect[] => {
+  const left = worlds3(known, data);
+  return SUSPECTS.filter((who) => left.some((w) => w.modifier === who));
+};
 
 /**
  * 최종 추론: 결론(누가)과 근거 둘을 함께 본다. 문제의 접속이 적힌 계정 접근 기록은 바탕으로 늘 깔려 있다.
