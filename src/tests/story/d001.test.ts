@@ -20,6 +20,7 @@ import {
 } from "../../story/cases/d001/logic";
 import {
   caseStatus,
+  chapterCleared,
   finishEnding,
   getChapter,
   goScene,
@@ -380,7 +381,9 @@ describe("진행: 처음부터 끝까지", () => {
     expect(getChapter(state, c, ch)).toMatchObject({ status: "cleared", scene: "ending", rewardClaimed: true, clearedAt: NOW.toISOString() });
     // 끝 장면의 새 기록이 노트에 들어온다
     expect(getChapter(state, c, ch).evidence).toEqual([E.broadcast, E.session, E.file, E.account]);
-    expect(caseStatus(state, c)).toBe("cleared");
+    // 사건은 전 4장이다: 1장을 해결해도 사건은 아직 수사 중이다
+    expect(chapterCleared(getChapter(state, c, ch))).toBe(true);
+    expect(caseStatus(state, c)).toBe("open");
 
     // 다시 제출해도 보상은 없고 기록도 바뀌지 않는다
     const again = submitDeduction(state, c, ch, deduction.id, "scheduled", E.file, NOW);

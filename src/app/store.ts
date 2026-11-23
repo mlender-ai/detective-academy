@@ -25,17 +25,29 @@ import {
 } from "../engine/progressEngine";
 import type { GameState, Puzzle, PuzzleInput } from "../engine/types";
 import {
+  arrangeOrder,
+  cancelReplay,
+  confront,
   finishEnding,
   goScene,
   investigate,
   linkItems,
+  markDifference,
   pickRecord,
   requestStoryHint,
+  restartChapter,
   seeIntro,
+  setAssign,
+  submitAssign,
   submitDeduction,
+  submitOrder,
+  type AssignOutcome,
+  type CompareOutcome,
+  type ConfrontOutcome,
   type DeduceOutcome,
   type InvestigateOutcome,
   type LinkOutcome,
+  type OrderOutcome,
   type PickOutcome,
   type StoryHintOutcome,
 } from "../story/engine/storyEngine";
@@ -193,7 +205,53 @@ export const gameStore = {
     return result.outcome;
   },
 
-  storyDeduce(c: StoryCase, ch: StoryChapter, scene: string, choice: string | null, basis: string | null): DeduceOutcome {
+  /** 두 판의 한 곳을 "달라졌다"고 짚는다 */
+  storyMark(c: StoryCase, ch: StoryChapter, scene: string, frame: string, field: string): CompareOutcome {
+    const result = markDifference(state, c, ch, scene, frame, field);
+    commit(result.state);
+    return result.outcome;
+  },
+
+  /** 카드를 옮겨 놓은 순서를 적어 둔다(채점하지 않는다) */
+  storyArrange(c: StoryCase, ch: StoryChapter, scene: string, order: readonly string[]) {
+    commit(arrangeOrder(state, c, ch, scene, order));
+  },
+
+  storyOrder(c: StoryCase, ch: StoryChapter, scene: string, order: readonly string[]): OrderOutcome {
+    const result = submitOrder(state, c, ch, scene, order);
+    commit(result.state);
+    return result.outcome;
+  },
+
+  /** 진술 하나와 기록 한 줄을 맞대어 본다 */
+  storyConfront(c: StoryCase, ch: StoryChapter, scene: string, statement: string, record: string): ConfrontOutcome {
+    const result = confront(state, c, ch, scene, statement, record);
+    commit(result.state);
+    return result.outcome;
+  },
+
+  /** 타임라인의 한 줄에 사람을 넣는다(null 이면 비운다) */
+  storyAssign(c: StoryCase, ch: StoryChapter, scene: string, row: string, option: string | null) {
+    commit(setAssign(state, c, ch, scene, row, option));
+  },
+
+  storySubmitAssign(c: StoryCase, ch: StoryChapter, scene: string): AssignOutcome {
+    const result = submitAssign(state, c, ch, scene);
+    commit(result.state);
+    return result.outcome;
+  },
+
+  /** 해결한 장을 처음 장면부터 다시 푼다(보상 없음) */
+  storyRestart(c: StoryCase, ch: StoryChapter) {
+    commit(restartChapter(state, c, ch));
+  },
+
+  /** 다시 풀던 것을 그만두고 처음의 기록으로 돌아간다 */
+  storyCancelReplay(c: StoryCase, ch: StoryChapter) {
+    commit(cancelReplay(state, c, ch));
+  },
+
+  storyDeduce(c: StoryCase, ch: StoryChapter, scene: string, choice: string | null, basis: string | readonly string[] | null): DeduceOutcome {
     const result = submitDeduction(state, c, ch, scene, choice, basis, gameNow());
     commit(result.state);
     return result.outcome;
@@ -203,8 +261,9 @@ export const gameStore = {
     commit(finishEnding(state, c, ch));
   },
 
-  storyHint(c: StoryCase, ch: StoryChapter): StoryHintOutcome {
-    const result = requestStoryHint(state, c, ch);
+  /** 수사 지원을 연다. 장면에 따로 있으면 그 장면의 것을, 없으면 장 전체의 것을 */
+  storyHint(c: StoryCase, ch: StoryChapter, scene?: string): StoryHintOutcome {
+    const result = requestStoryHint(state, c, ch, scene);
     commit(result.state);
     return result.outcome;
   },

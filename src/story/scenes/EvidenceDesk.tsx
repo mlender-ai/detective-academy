@@ -1,15 +1,15 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { playSound } from "../../app/sound";
 import { gameStore } from "../../app/store";
 import { DeskWood } from "../../components/DeskWood";
-import { StoryShell, type SceneProps } from "../components/StoryParts";
+import { StoryShell, nextLabel, type SceneProps } from "../components/StoryParts";
 import { sceneAfter } from "../engine/storyEngine";
 import type { LinkScene } from "../engine/storyTypes";
 
 /**
- * SCENE 03 · 증거 분석. 수사 책상에 두 기록이 나란히 놓여 있다.
+ * 증거 분석 · 증거 연결. 수사 책상에 두 기록이 나란히 놓여 있다.
  * 한쪽에서 항목 하나, 다른 쪽에서 하나를 골라 잇는다. 맞대어 나오는 것이 있으면 사실로 확정되고,
- * 없으면 까닭을 듣는다(채점되지 않는다). 사실 셋이 모여도 결론은 플레이어가 따로 내려야 한다.
+ * 없으면 까닭을 듣는다(채점되지 않는다). 사실이 다 모여도 결론은 플레이어가 따로 내려야 한다.
  */
 export function EvidenceDesk(props: SceneProps & { scene: LinkScene }) {
   const { c, ch, p, go, scene } = props;
@@ -18,6 +18,11 @@ export function EvidenceDesk(props: SceneProps & { scene: LinkScene }) {
   const [b, setB] = useState<string | null>(null);
   const [note, setNote] = useState<{ kind: "enter" | "fact" | "known" | "none"; text: string }>({ kind: "enter", text: scene.enter });
   const [fresh, setFresh] = useState<string | null>(null);
+  const noteRef = useRef<HTMLParagraphElement>(null);
+  // 맞대어 본 결과는 두 기록 아래에 뜬다: 낮은 화면에서는 보이는 곳까지 올린다
+  useEffect(() => {
+    if (note.kind !== "enter") noteRef.current?.scrollIntoView({ block: "nearest" });
+  }, [note]);
   const found = scene.facts.filter((f) => p.facts.includes(f.id));
   const all = found.length === scene.facts.length;
 
@@ -53,8 +58,8 @@ export function EvidenceDesk(props: SceneProps & { scene: LinkScene }) {
       current={scene.id}
       foot={
         all ? (
-          <button type="button" className="inkbtn inkbtn--wine deskfoot__submit" onClick={() => go(sceneAfter(ch, scene.id))} data-testid="story-next">
-            결론 내리기
+          <button type="button" className="inkbtn inkbtn--wine deskfoot__submit" data-long={nextLabel(ch, scene.id).length > 7} onClick={() => go(sceneAfter(ch, scene.id))} data-testid="story-next">
+            {nextLabel(ch, scene.id)}
           </button>
         ) : (
           <button type="button" className="inkbtn inkbtn--wine deskfoot__submit" data-ready={!!a && !!b} onClick={link} data-testid="link-items">
@@ -65,7 +70,7 @@ export function EvidenceDesk(props: SceneProps & { scene: LinkScene }) {
     >
       <DeskWood />
       <div className="story__scroll">
-        <div className="docs" data-linking={!!a && !!b}>
+        <div className="docs" data-linking={!!a && !!b} data-rows={Math.max(left.items.length, right.items.length)}>
           {[left, right].map((doc, side) => (
             <section className="doc leaf" key={doc.id} aria-label={doc.title}>
               <h2 className="doc__title">{doc.title}</h2>
@@ -90,7 +95,7 @@ export function EvidenceDesk(props: SceneProps & { scene: LinkScene }) {
           ))}
         </div>
 
-        <p className="docs__note" role="status" data-kind={note.kind} data-testid="link-status">
+        <p className="docs__note" ref={noteRef} role="status" data-kind={note.kind} data-testid="link-status">
           {note.text}
         </p>
 

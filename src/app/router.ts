@@ -13,8 +13,8 @@ export type Route =
   | { name: "practice-play"; id: string }
   | { name: "exam" }
   | { name: "profile" }
-  /** 사건 수사(스토리). id 는 사건의 이름표 */
-  | { name: "story"; id: string };
+  /** 사건 수사(스토리). id 는 사건의 이름표, chapter 는 열 장의 이름표나 "record"(사건 기록). 비우면 풀 차례의 곳을 연다 */
+  | { name: "story"; id: string; chapter?: string };
 
 export function toHash(route: Route): string {
   switch (route.name) {
@@ -31,13 +31,13 @@ export function toHash(route: Route): string {
     case "profile":
       return "#/profile";
     case "story":
-      return `#/story/${encodeURIComponent(route.id)}`;
+      return `#/story/${encodeURIComponent(route.id)}${route.chapter ? `/${encodeURIComponent(route.chapter)}` : ""}`;
   }
 }
 
 export function parseHash(hash: string): Route {
   const path = hash.replace(/^#\/?/, "");
-  const [head, tail] = path.split("/");
+  const [head, tail, sub] = path.split("/");
   switch (head) {
     case "daily":
       return { name: "daily" };
@@ -48,7 +48,8 @@ export function parseHash(hash: string): Route {
     case "profile":
       return { name: "profile" };
     case "story":
-      return tail ? { name: "story", id: decodeURIComponent(tail) } : { name: "home" };
+      if (!tail) return { name: "home" };
+      return sub ? { name: "story", id: decodeURIComponent(tail), chapter: decodeURIComponent(sub) } : { name: "story", id: decodeURIComponent(tail) };
     default:
       return { name: "home" };
   }

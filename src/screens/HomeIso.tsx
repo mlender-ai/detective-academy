@@ -15,7 +15,7 @@ import { IsoCanvas, type IsoHandle } from "../iso/IsoCanvas";
 import type { HallDecor, HallSpot } from "../iso/hallArt";
 import { HallScene } from "../iso/hallScene";
 import { CASES } from "../story/cases";
-import { caseStatus, getChapter } from "../story/engine/storyEngine";
+import { caseStatus, chapterCleared, getChapter, nextChapter } from "../story/engine/storyEngine";
 
 /** 지금 접수함에 들어 있는 사건 */
 const STORY = CASES[0];
@@ -205,9 +205,10 @@ export function HomeIso() {
 
   const selected = heading ?? here;
   const story = caseStatus(game, STORY);
-  const storyChapter = STORY.chapters[0];
-  const storyCleared = STORY.chapters.filter((ch) => getChapter(game, STORY, ch).status === "cleared").length;
-  const storyState = story === "cleared" ? `${storyCleared}장 해결` : story === "open" ? "수사 중" : "새 사건";
+  // 사건의 진행: 새 사건 / 수사 중 · 해결한 장 수 / 사건 해결. 보상은 풀 차례의 장의 것을 적는다.
+  const storyChapter = nextChapter(game, STORY) ?? STORY.chapters[0];
+  const storyCleared = STORY.chapters.filter((ch) => chapterCleared(getChapter(game, STORY, ch))).length;
+  const storyState = story === "cleared" ? "사건 해결" : story === "open" ? `수사 중 · ${storyCleared}/${STORY.chapters.length}장` : "새 사건";
   const order = ORDER.filter((id) => id !== "case" || story !== "locked");
   const practiceSolved = PRACTICE_PUZZLES.filter((p) => getProgress(game, p.id).status === "solved").length;
   const practiceNext = PRACTICE_PUZZLES.find((p) => practiceUnlocked(game, p) && getProgress(game, p.id).status !== "solved") ?? null;
@@ -367,7 +368,7 @@ export function HomeIso() {
       go: story === "cleared" ? "사건 기록 보기" : story === "open" ? "수사 이어서 하기" : "사건 파일 열기",
       body: (
         <span className="isocard__line">
-          <span>{STORY.title}</span>
+          <span>{story === "open" ? `제${storyChapter.no}장 · ${storyChapter.title}` : STORY.title}</span>
           <span className="num">{story === "cleared" ? "보상 받음" : `보상 +${storyChapter.reward}`}</span>
         </span>
       ),

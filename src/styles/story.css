@@ -1714,3 +1714,1229 @@
     animation: none;
   }
 }
+
+/* ═════════ 제2~4장: 새 장면들 (비교 · 순서 · 진술 대조 · 기록 고르기 · 타임라인), 사건 기록, 끝 장면의 그림 ═════════ */
+
+/* 인물 실루엣: 16×16점을 32px 로 (점 하나 2px). 색은 글자색을 따른다 */
+.bust {
+  flex: none;
+  display: block;
+}
+
+.storyintro__chapter {
+  display: block;
+  margin: -10px 0 10px;
+  font-size: 32px;
+  line-height: 36px;
+}
+
+/* 증거가 여러 장일 때: 카드만 스크롤되고 단추는 늘 보인다 */
+.gain__box {
+  min-height: 0;
+}
+
+.gain__box[data-many="true"] {
+  overflow: hidden;
+}
+
+.gain__cards {
+  flex: 0 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+  padding: 2px;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.gain__cards::-webkit-scrollbar {
+  display: none;
+}
+
+.storysheet__fold {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.storysheet__foldbtn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 44px;
+  padding: 0 8px;
+  font-family: var(--m-font);
+  font-size: 16px;
+  color: var(--m-w);
+  background: #000;
+  border: 0;
+  box-shadow: inset 0 0 0 2px var(--m-w);
+}
+
+.storysheet__foldbtn[aria-expanded="true"] {
+  color: #000;
+  background: var(--m-w);
+}
+
+.storysheet__list b {
+  display: inline;
+}
+
+/* ───────── 비교: 두 영상을 위아래로 ───────── */
+
+.cmp {
+  --cmp-h: 120px;
+  --cmp-top: -44px;
+  position: relative;
+  z-index: 1;
+  flex: 1 0 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  padding: 2px 0 0 calc((100% - 328px) / 2);
+  padding-left: round(down, calc((100% - 328px) / 2), 2px);
+  background: #000;
+}
+
+.cmp__pane {
+  width: 328px;
+}
+
+.cmp__label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 20px;
+  margin: 0;
+  font-family: var(--m-cap);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.cmp__label b {
+  padding: 0 6px;
+  font-weight: 400;
+  color: #000;
+  background: var(--m-w);
+}
+
+.cmp__pane[data-side="b"] .cmp__label b {
+  color: var(--m-w);
+  background: #000;
+  box-shadow: inset 0 0 0 2px var(--m-w);
+}
+
+.cmp__screen,
+.cmp__sheet {
+  position: relative;
+  width: 328px;
+  height: var(--cmp-h);
+  overflow: hidden;
+  background: #000;
+  box-shadow: var(--m-frame);
+}
+
+.cmp__screen .stream {
+  top: var(--cmp-top);
+}
+
+.cmp em {
+  padding: 0 4px;
+  font-family: var(--m-cap);
+  font-size: 12px;
+  font-style: normal;
+  line-height: 16px;
+  color: #000;
+  background: var(--m-w);
+}
+
+/* 화면(그림)을 짚는 자리: 자막 위쪽 전부 */
+.cmp__pic {
+  top: 6px;
+  right: 6px;
+  bottom: 68px;
+  left: 6px;
+}
+
+.cmp__pic em {
+  position: absolute;
+  top: 0;
+  right: 0;
+  box-shadow: 0 0 0 2px #000;
+}
+
+/* 제목·자막: 화면 아래쪽의 글자 상자. 누를 자리는 44px 이상이다 */
+.cmp__cap {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  left: 6px;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-end;
+  min-height: 44px;
+  padding: 0;
+  font-family: var(--m-font);
+  text-align: left;
+  color: var(--m-w);
+  background: none;
+  border: 0;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.cmp__caplabel {
+  display: inline-flex;
+  gap: 6px;
+  padding: 0 4px;
+  font-family: var(--m-cap);
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--m-w);
+  background: #000;
+}
+
+.cmp__captext {
+  max-width: 100%;
+  padding: 2px 6px;
+  font-size: 16px;
+  line-height: 20px;
+  color: var(--m-w);
+  background: #000;
+  box-shadow: inset 0 0 0 2px var(--m-w);
+}
+
+.cmp__cap[data-state="found"] .cmp__captext {
+  color: #000;
+  background: var(--m-w);
+  box-shadow: 0 0 0 2px #000;
+}
+
+.cmp__cap[data-state="same"] .cmp__captext {
+  box-shadow: none;
+  outline: 2px dotted var(--m-w);
+  outline-offset: -2px;
+}
+
+/* 파일 정보: 칸마다 한 줄 */
+.cmp__sheet {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 10px;
+}
+
+.cmp__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 44px;
+  padding: 0 8px;
+  font-family: var(--m-font);
+  font-size: 16px;
+  color: var(--m-w);
+  background: #000;
+  border: 0;
+  box-shadow: inset 0 0 0 2px var(--m-w);
+}
+
+.cmp__row span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cmp__row b {
+  font-weight: 400;
+}
+
+.cmp__row[data-state="found"] {
+  color: #000;
+  background: var(--m-w);
+}
+
+.cmp__row[data-state="found"] em {
+  color: var(--m-w);
+  background: #000;
+}
+
+.cmp__row[data-state="same"] {
+  box-shadow: none;
+  outline: 2px dotted var(--m-w);
+  outline-offset: -2px;
+}
+
+.cmp__tabs {
+  margin: 4px 0 2px;
+}
+
+.cmp__tabs .tline__tick span {
+  white-space: nowrap;
+}
+
+.cmp__ask {
+  margin: 0;
+  font-family: var(--m-cap);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+/* ───────── 순서: 기록 카드를 한 줄로 ───────── */
+
+.olog,
+.day {
+  flex: none;
+  padding: 0 8px 8px;
+  background: #000;
+  box-shadow: var(--m-frame);
+}
+
+.olog__bar {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0 -8px 8px;
+  padding: 2px 8px;
+  font-family: var(--m-cap);
+  font-size: 12px;
+  line-height: 16px;
+  color: #000;
+  background: var(--m-w);
+}
+
+.olog__list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.olog__row {
+  display: grid;
+  grid-template-columns: 24px 1fr;
+  align-items: stretch;
+}
+
+.olog__no {
+  display: flex;
+  align-items: center;
+  font-size: 16px;
+}
+
+.olog__card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  height: 46px;
+  padding: 0 28px 0 8px;
+  font-family: var(--m-font);
+  font-size: 16px;
+  line-height: 20px;
+  text-align: left;
+  color: var(--m-w);
+  background: #000;
+  border: 0;
+  box-shadow: inset 0 0 0 2px var(--m-w);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* 손잡이: 끌 수 있다는 표시 */
+.olog__card::after {
+  content: "";
+  position: absolute;
+  top: 16px;
+  right: 10px;
+  width: 10px;
+  height: 14px;
+  background: repeating-linear-gradient(to bottom, currentColor 0 2px, transparent 2px 6px);
+}
+
+.olog__label {
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.olog__tags {
+  display: flex;
+  gap: 6px;
+}
+
+.olog__tags i {
+  padding: 0 4px;
+  font-family: var(--m-cap);
+  font-size: 12px;
+  font-style: normal;
+  line-height: 16px;
+  color: #000;
+  background: var(--m-w);
+}
+
+.olog__card[aria-pressed="true"],
+.olog__card[data-dragging="true"] {
+  z-index: 3;
+  color: #000;
+  background: var(--m-w);
+  box-shadow: 0 0 0 2px #000, 0 0 0 4px var(--m-w);
+}
+
+.olog__card[aria-pressed="true"] .olog__tags i,
+.olog__card[data-dragging="true"] .olog__tags i {
+  color: var(--m-w);
+  background: #000;
+}
+
+.olog[data-dragging="true"] .olog__card:not([data-dragging="true"]) {
+  transition: transform 120ms steps(3);
+}
+
+.olog__card:disabled::after {
+  content: none;
+}
+
+.olog__list[data-shake="true"] {
+  animation: story-shake 300ms steps(4);
+}
+
+@keyframes story-shake {
+  25% {
+    transform: translateX(-4px);
+  }
+  50% {
+    transform: translateX(4px);
+  }
+  75% {
+    transform: translateX(-2px);
+  }
+}
+
+.olog__how {
+  margin: 6px 0 0;
+  font-family: var(--m-cap);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.olog__how::before {
+  content: "↕ ";
+}
+
+.olog__rules {
+  margin: 6px 0 0;
+  padding: 6px 0 0;
+  list-style: none;
+  font-family: var(--m-cap);
+  font-size: 12px;
+  line-height: 16px;
+  border-top: 2px dotted var(--m-w);
+}
+
+.olog__rules li {
+  padding-left: 12px;
+  text-indent: -12px;
+}
+
+.olog__rules li::before {
+  content: "· ";
+}
+
+/* ───────── 진술 대조 ───────── */
+
+.witness {
+  flex: none;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.witness__tab {
+  display: grid;
+  grid-template-columns: 32px 1fr;
+  grid-template-rows: 18px 14px 16px;
+  grid-template-areas: "bust name" "bust marks" "role role";
+  column-gap: 6px;
+  align-items: center;
+  min-width: 0;
+  min-height: 60px;
+  padding: 4px 6px;
+  font-family: var(--m-font);
+  text-align: left;
+  color: var(--m-w);
+  background: #000;
+  border: 0;
+  box-shadow: inset 0 0 0 2px var(--m-w);
+}
+
+.witness__tab .bust {
+  grid-area: bust;
+}
+
+.witness__name {
+  grid-area: name;
+  font-size: 16px;
+  line-height: 18px;
+  white-space: nowrap;
+}
+
+.witness__role {
+  grid-area: role;
+  overflow: hidden;
+  font-family: var(--m-cap);
+  font-size: 12px;
+  line-height: 16px;
+  white-space: nowrap;
+}
+
+.witness__marks {
+  grid-area: marks;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* 진술마다 한 칸: 빈 칸(아직) · 반 칸(기록과 맞음) · 꽉 찬 칸(기록과 어긋남) */
+.witness__marks i {
+  width: 8px;
+  height: 8px;
+  box-shadow: inset 0 0 0 2px currentColor;
+}
+
+.witness__marks i[data-mark="backed"] {
+  background: linear-gradient(currentColor, currentColor) bottom / 100% 4px no-repeat;
+}
+
+.witness__marks i[data-mark="broken"] {
+  background: currentColor;
+}
+
+.witness__tab[aria-selected="true"] {
+  color: #000;
+  background: var(--m-w);
+}
+
+.talk,
+.recs {
+  flex: none;
+  padding: 0 8px 8px;
+  background: #000;
+  box-shadow: var(--m-frame);
+}
+
+.talk__pick {
+  display: flex;
+  align-items: center;
+  margin: 0 -8px 6px;
+  padding-left: 8px;
+  border-bottom: 2px solid var(--m-w);
+}
+
+.talk__who {
+  margin-right: 8px;
+  font-family: var(--m-cap);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.talk__chip {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  font-family: var(--m-font);
+  font-size: 16px;
+  color: var(--m-w);
+  background: #000;
+  border: 0;
+  border-left: 2px solid var(--m-w);
+}
+
+.talk__chip:last-of-type {
+  border-right: 2px solid var(--m-w);
+}
+
+.talk__chip[aria-checked="true"] {
+  color: #000;
+  background: var(--m-w);
+}
+
+.talk__chip[data-mark="broken"]::after,
+.talk__chip[data-mark="backed"]::after {
+  content: "";
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 8px;
+  height: 8px;
+  background: currentColor;
+}
+
+.talk__chip[data-mark="backed"]::after {
+  height: 4px;
+  top: 10px;
+}
+
+.talk__tag {
+  margin: 0 8px 0 auto;
+  padding: 0 6px;
+  font-family: var(--m-cap);
+  font-size: 12px;
+  font-style: normal;
+  line-height: 16px;
+  color: #000;
+  background: var(--m-w);
+}
+
+.talk__text {
+  min-height: 66px;
+  margin: 0;
+}
+
+.talk[data-mark="broken"] .talk__text {
+  min-height: 0;
+  text-decoration: line-through 2px;
+}
+
+.talk__retort {
+  margin: 6px 0 0;
+  padding: 4px 8px;
+  color: #000;
+  background: var(--m-w);
+}
+
+.recs {
+  padding: 0 6px 6px;
+}
+
+.recs__title {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0 -6px 6px;
+  padding: 2px 8px;
+  font-family: var(--m-cap);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 16px;
+  color: #000;
+  background: var(--m-w);
+}
+
+.recs__title b {
+  flex: none;
+  font-weight: 400;
+}
+
+.recs__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.recs__item {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+  min-height: 56px;
+  padding: 2px 6px;
+  font-family: var(--m-font);
+  text-align: left;
+  color: var(--m-w);
+  background: #000;
+  border: 0;
+  box-shadow: inset 0 0 0 2px var(--m-w);
+}
+
+.recs__item[aria-checked="true"] {
+  position: relative;
+  z-index: 1;
+  color: #000;
+  background: var(--m-w);
+  box-shadow: 0 0 0 2px #000, 0 0 0 4px var(--m-w);
+}
+
+.docs__note b {
+  font-weight: 400;
+}
+
+/* ───────── 기록 고르기 (자료에 적힌 기록) ───────── */
+
+.picker__ask {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0 0 8px;
+}
+
+.picker__ask p {
+  margin: 0;
+}
+
+.picker__ask .inkbtn {
+  flex: none;
+  margin: 2px;
+  padding: 0 10px;
+}
+
+.term__row.picker__row {
+  grid-template-columns: 72px 1fr;
+  grid-template-areas: "id lines";
+  min-height: 76px;
+  padding: 4px 8px 4px 0;
+}
+
+.term__row.picker__row b {
+  margin: -4px 0;
+}
+
+.term__row.picker__row > .picker__lines {
+  grid-area: lines;
+  display: flex;
+  flex-direction: column;
+}
+
+.picker__lines > span {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.picker__lines i {
+  font-family: var(--m-cap);
+  font-size: 12px;
+  font-style: normal;
+  line-height: 22px;
+}
+
+/* ───────── 타임라인: 줄마다 사람을 넣는다 ───────── */
+
+.day__rows {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.day__row {
+  position: relative;
+  display: grid;
+  grid-template-columns: 60px 1fr;
+  grid-template-areas: "time text" "who text";
+  column-gap: 26px;
+  align-items: center;
+  width: 100%;
+  min-height: 48px;
+  padding: 4px 6px 4px 2px;
+  font-family: var(--m-font);
+  font-size: 16px;
+  line-height: 20px;
+  text-align: left;
+  color: var(--m-w);
+  background: #000;
+  border: 0;
+}
+
+.day__time {
+  grid-area: time;
+  align-self: end;
+  font-family: var(--m-cap);
+  font-size: 12px;
+  line-height: 16px;
+  text-align: right;
+}
+
+.day__who {
+  grid-area: who;
+  align-self: start;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.day__text {
+  grid-area: text;
+}
+
+/* 세로줄과 눈금: 채운 줄은 줄이 이어지고 눈금이 찬다 */
+.day__row::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 74px;
+  width: 2px;
+  background: repeating-linear-gradient(to bottom, currentColor 0 2px, transparent 2px 6px);
+}
+
+.day__row::after {
+  content: "";
+  position: absolute;
+  top: calc(50% - 6px);
+  left: 69px;
+  width: 12px;
+  height: 12px;
+  background: #000;
+  box-shadow: inset 0 0 0 2px var(--m-w);
+}
+
+.day__row[data-filled="true"]::before {
+  background: currentColor;
+}
+
+.day__row[data-filled="true"]::after {
+  background: var(--m-w);
+  box-shadow: 0 0 0 2px #000;
+}
+
+.day__row[aria-pressed="true"] {
+  color: #000;
+  background: var(--m-w);
+}
+
+.day__row[aria-pressed="true"]::after {
+  background: var(--m-w);
+  box-shadow: inset 0 0 0 2px #000;
+}
+
+.day__row[aria-pressed="true"][data-filled="true"]::after {
+  background: #000;
+  box-shadow: 0 0 0 2px var(--m-w);
+}
+
+/* 기록과 어긋난 줄: 점선을 두르고 이름 앞에 느낌표 */
+.day__row[data-flagged="true"] {
+  outline: 2px dotted currentColor;
+  outline-offset: -2px;
+}
+
+.day__row[data-flagged="true"] .day__who::before {
+  content: "! ";
+}
+
+.day__picks {
+  position: relative;
+  z-index: 2;
+  flex: none;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+  padding: 6px 12px;
+  background: #000;
+  border-top: 2px solid var(--m-w);
+}
+
+.day__pick {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 0;
+  min-height: 58px;
+  padding: 2px;
+  font-family: var(--m-font);
+  font-size: 16px;
+  line-height: 18px;
+  text-align: center;
+  word-break: keep-all;
+  color: var(--m-w);
+  background: #000;
+  border: 0;
+  box-shadow: inset 0 0 0 2px var(--m-w);
+}
+
+.day__pick .bust[data-bust="none"] {
+  display: none;
+}
+
+.day__pick[aria-pressed="true"] {
+  color: #000;
+  background: var(--m-w);
+}
+
+.day__pick:disabled {
+  box-shadow: none;
+  outline: 2px dotted var(--m-w);
+  outline-offset: -2px;
+}
+
+/* ───────── 최종 추론: 근거가 넷일 때는 두 줄로 ───────── */
+
+.verdict__basis[data-cols="2"] {
+  grid-template-columns: 1fr 1fr;
+}
+
+.verdict__basis[data-cols="2"] .verdict__card {
+  min-height: 48px;
+}
+
+.verdict__card[role="checkbox"][aria-checked="true"] b::after {
+  content: " ✓";
+}
+
+/* ───────── 사건 기록: 장을 고르는 곳 ───────── */
+
+.record__progress {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 8px 0 0;
+  font-family: var(--m-cap);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.record__progress i {
+  width: 16px;
+  height: 8px;
+  box-shadow: inset 0 0 0 2px var(--m-w);
+}
+
+.record__progress i[data-on="true"] {
+  background: var(--m-w);
+}
+
+.record__progress span {
+  margin-left: 6px;
+}
+
+.chapters {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 2px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chapters__row {
+  box-shadow: inset 0 0 0 2px var(--m-w);
+}
+
+/* 잠긴 장: 누를 수 없다 */
+.chapters__row[data-status="locked"] {
+  box-shadow: none;
+  outline: 2px dotted var(--m-w);
+  outline-offset: -2px;
+}
+
+.chapters__head {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  align-items: center;
+  column-gap: 8px;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 8px;
+  font-family: var(--m-font);
+  font-size: 16px;
+  line-height: 20px;
+  text-align: left;
+  color: var(--m-w);
+  background: none;
+  border: 0;
+}
+
+.chapters__no {
+  font-family: var(--m-cap);
+  font-size: 12px;
+}
+
+.chapters__status {
+  padding: 0 6px;
+  font-family: var(--m-cap);
+  font-size: 12px;
+  line-height: 16px;
+  color: #000;
+  background: var(--m-w);
+}
+
+.chapters__row[data-status="locked"] .chapters__status {
+  color: var(--m-w);
+  background: none;
+}
+
+.chapters__head[aria-expanded]::after {
+  content: "▼";
+  font-family: var(--m-cap);
+  font-size: 12px;
+}
+
+.chapters__head[aria-expanded="true"]::after {
+  content: "▲";
+}
+
+/* 풀 차례의 장: 줄 전체를 뒤집어 눈에 띄게 한다 */
+button.chapters__head[data-status="new"],
+button.chapters__head[data-status="open"] {
+  color: #000;
+  background: var(--m-w);
+}
+
+button.chapters__head[data-status="new"] .chapters__status,
+button.chapters__head[data-status="open"] .chapters__status {
+  color: var(--m-w);
+  background: #000;
+}
+
+.chapters__hint {
+  margin: 0;
+  padding: 2px 8px 6px;
+  font-family: var(--m-cap);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.chapters__body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0 8px 8px;
+  border-top: 2px dotted var(--m-w);
+}
+
+.chapters__body .record__label {
+  margin: 8px -6px 2px;
+  padding: 2px 6px;
+}
+
+.chapters__body .chapters__hint {
+  padding: 0;
+}
+
+.chapters__acts {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.chapters__acts .inkbtn {
+  flex: 1;
+  margin: 2px;
+  padding: 0 6px;
+}
+
+/* 글이 긴 주 단추: 작은 글자로 */
+.story .deskfoot__submit[data-long="true"] {
+  font-size: 16px;
+}
+
+.record__more {
+  align-self: flex-start;
+  min-height: 44px;
+  padding: 0 10px;
+  font-family: var(--m-font);
+  font-size: 16px;
+  color: var(--m-w);
+  background: #000;
+  border: 0;
+  box-shadow: inset 0 0 0 2px var(--m-w);
+}
+
+.record__more[aria-expanded="true"] {
+  color: #000;
+  background: var(--m-w);
+}
+
+.record__steps {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0 0 0 24px;
+  list-style: decimal;
+}
+
+/* ───────── 끝 장면의 그림 ───────── */
+
+.endart__mon {
+  position: relative;
+  display: block;
+  width: 328px;
+  height: 92px;
+  margin-top: 6px;
+  overflow: hidden;
+  background: #000;
+  box-shadow: var(--m-frame);
+}
+
+.endart__mon .stream {
+  top: -44px;
+}
+
+.endart__tag {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  z-index: 1;
+  padding: 0 4px;
+  font-family: var(--m-cap);
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--m-w);
+  background: #000;
+}
+
+.endart__mon .crt__title {
+  left: 8px;
+  bottom: 8px;
+}
+
+.endart__mon .crt__title[data-swapped="true"] {
+  color: #000;
+  background: var(--m-w);
+  box-shadow: 0 0 0 2px #000;
+  animation: m-blink 200ms steps(1) 2;
+}
+
+.endart[data-art="sheets"] {
+  flex: none;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  padding: 0 16px;
+}
+
+.endart__sheet {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  min-height: 136px;
+  padding: 8px;
+  background: #000;
+  box-shadow: var(--m-frame);
+}
+
+.endart__sheet b {
+  font-weight: 400;
+}
+
+.endart__sheet i {
+  display: block;
+  width: 100%;
+  height: 2px;
+  background: repeating-linear-gradient(to right, var(--m-w) 0 2px, #000 2px 4px);
+}
+
+.endart__sheet i:nth-of-type(3) {
+  width: 60%;
+}
+
+.endart__sheet em {
+  align-self: flex-end;
+  margin-top: auto;
+  padding: 0 4px;
+  font-family: var(--m-cap);
+  font-size: 12px;
+  font-style: normal;
+  line-height: 16px;
+}
+
+.endart[data-after="true"] .endart__sheet em {
+  color: #000;
+  background: var(--m-w);
+  animation: m-blink 200ms steps(1) 2;
+}
+
+/* 사건이 끝나는 장: 끝 글의 마지막 줄과 결과에 찍히는 사건 해결 */
+.ending__line[data-closing="true"] {
+  align-self: flex-start;
+  margin-top: 8px;
+  padding: 2px 8px;
+  color: #000;
+  background: var(--m-w);
+}
+
+.ending__solved {
+  align-self: stretch;
+  margin: 6px 0 0;
+  padding: 6px 8px;
+  text-align: center;
+  color: #000;
+  background: var(--m-w);
+}
+
+.ending__again {
+  flex: none;
+  min-height: 44px;
+  margin-top: 4px;
+  padding: 0 12px;
+  font-family: var(--m-font);
+  font-size: 16px;
+  color: var(--m-w);
+  background: #000;
+  border: 0;
+  outline: 2px dotted var(--m-w);
+  outline-offset: -2px;
+}
+
+.ending__again:active {
+  color: #000;
+  background: var(--m-w);
+}
+
+@media (min-height: 780px) {
+  .cmp {
+    --cmp-h: 160px;
+    --cmp-top: -24px;
+    gap: 8px;
+  }
+}
+
+@media (max-height: 700px) {
+  .witness__tab {
+    min-height: 56px;
+    padding: 2px 6px;
+  }
+
+  .recs__item {
+    min-height: 52px;
+  }
+
+  .day__row {
+    min-height: 44px;
+    padding-top: 2px;
+    padding-bottom: 2px;
+  }
+
+  .day__picks {
+    padding: 4px 12px;
+  }
+
+  .day__pick {
+    min-height: 54px;
+  }
+
+  .verdict[data-choices="5"] .verdict__choice {
+    min-height: 44px;
+  }
+
+  .verdict[data-choices="5"] .verdict__choices {
+    gap: 6px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .olog__list[data-shake="true"],
+  .endart__mon .crt__title[data-swapped="true"],
+  .endart[data-after="true"] .endart__sheet em {
+    animation: none;
+  }
+
+  .olog[data-dragging="true"] .olog__card:not([data-dragging="true"]) {
+    transition: none;
+  }
+}

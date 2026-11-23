@@ -44,8 +44,10 @@ import { NOW, c, ch1, ch2, ch3, ch4, clearChapter, clocksIn, correctDeductions, 
  * 장마다의 추론 검증은 d001.test.ts(제1장) · d001-ch2~4.test.ts 가 따로 본다.
  */
 
-/** 화면이 모두 붙었을 때의 사건 (지금은 released 가 1 이라 홈과 사건 화면이 1장만 연다) */
+/** 화면이 모두 붙은 사건 (released 문이 없다). 지금의 D001 이 이것이다 */
 const open: StoryCase = { ...D001, released: undefined };
+/** 화면이 1장까지만 붙어 있던 때의 사건 (문이 하는 일을 본다) */
+const gated: StoryCase = { ...D001, released: 1 };
 const LATER = new Date("2026-11-25T03:00:00Z");
 const roundTrip = (state: GameState): GameState => hydrate(JSON.parse(JSON.stringify(state)));
 const solvedAll = (): GameState => clearChapter(upTo(ch4), ch4);
@@ -277,17 +279,26 @@ describe("장은 차례로 열린다", () => {
     expect(caseStatus(mid, open)).toBe("open");
   });
 
-  it("화면이 붙기 전의 문: 지금은 홈과 사건 화면이 1장만 열고, 사건 해결은 네 장을 모두 풀어야 한다", () => {
-    expect(c.released).toBe(1);
-    expect(playableChapters(c)).toEqual([ch1]);
-    expect(playableChapters(open)).toEqual(c.chapters);
+  it("네 장의 화면이 모두 붙었다: 홈과 사건 화면이 네 장을 모두 열고, 1장만 풀어서는 사건이 끝나지 않는다", () => {
+    expect(c.released).toBeUndefined();
+    expect(playableChapters(c)).toEqual(c.chapters);
     const one = upTo(ch2);
-    expect(caseStatus(one, c)).toBe("cleared"); // 지금의 홈: "1장 해결"
-    expect(nextChapter(one, c)).toBeNull();
-    expect(chapterToOpen(one, c)?.id).toBe("ch1");
-    expect(chapterToOpen(one, c, "ch2")?.id).toBe("ch1"); // 화면이 없는 장은 골라도 열리지 않는다
+    expect(caseStatus(one, c)).toBe("open"); // 홈: "수사 중 · 1/4장"
+    expect(nextChapter(one, c)?.id).toBe("ch2");
+    expect(chapterToOpen(one, c)?.id).toBe("ch2");
+    expect(chapterToOpen(one, c, "ch3")?.id).toBe("ch2"); // 잠긴 장은 골라도 풀 차례의 장이 열린다
     expect(caseSolved(one, c.id)).toBe(false);
-    expect(caseStatus(one, open)).toBe("open");
+    expect(caseStatus(solvedAll(), c)).toBe("cleared");
+  });
+
+  it("화면이 붙기 전의 문(released): 문 안쪽의 장만 열고, 사건 해결은 그래도 네 장을 모두 풀어야 한다", () => {
+    expect(playableChapters(gated)).toEqual([ch1]);
+    const one = upTo(ch2);
+    expect(caseStatus(one, gated)).toBe("cleared");
+    expect(nextChapter(one, gated)).toBeNull();
+    expect(chapterToOpen(one, gated)?.id).toBe("ch1");
+    expect(chapterToOpen(one, gated, "ch2")?.id).toBe("ch1"); // 화면이 없는 장은 골라도 열리지 않는다
+    expect(caseSolved(one, gated.id)).toBe(false);
   });
 
   it("없는 사건과 없는 장은 조용히 거절된다", () => {
