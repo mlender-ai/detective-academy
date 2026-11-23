@@ -1,6 +1,7 @@
 import { defineConfig } from "@playwright/test";
 
-const PORT = 4183;
+// 여러 작업 폴더에서 동시에 돌릴 때는 E2E_PORT 로 포트를 나눈다(같은 포트면 남의 빌드를 재사용한다).
+const PORT = Number(process.env.E2E_PORT ?? 4183);
 
 /** 실제 빌드 결과물(vite preview)을 모바일 화면으로 띄워 주요 플레이 흐름을 검증한다. */
 export default defineConfig({
