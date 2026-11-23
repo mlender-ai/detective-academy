@@ -2458,11 +2458,13 @@
   text-align: right;
 }
 
+/* 넣은 사람. 긴 이름표("아무도 아니다")는 낱말에서 꺾여 두 줄이 된다 */
 .day__who {
   grid-area: who;
   align-self: start;
+  min-width: 0;
   text-align: right;
-  white-space: nowrap;
+  word-break: keep-all;
 }
 
 .day__text {

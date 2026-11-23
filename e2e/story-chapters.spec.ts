@@ -853,6 +853,12 @@ for (const size of [
           if (scene.kind === "link") await touch(".doc__item", 40);
           if (scene.kind === "assign") {
             await touch(".day__row, .day__pick");
+            // 가장 긴 이름표를 넣어도 일의 글과 겹치지 않는다
+            const longest = [...scene.options].sort((x, y) => y.name.length - x.name.length)[0];
+            await page.getByTestId(`pick-${longest.id}`).click();
+            const who = (await page.getByTestId(`row-${scene.rows[0].id}`).locator(".day__who").boundingBox())!;
+            const text = (await page.getByTestId(`row-${scene.rows[0].id}`).locator(".day__text").boundingBox())!;
+            expect(who.x + who.width, "넣은 이름이 일의 글과 겹친다").toBeLessThanOrEqual(text.x);
             await noClip(".day__who");
             // 이름표 줄은 아래 단추 줄 위에, 화면 안에 있다
             const picks = (await page.locator(".day__picks").boundingBox())!;
