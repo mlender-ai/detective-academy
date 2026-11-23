@@ -483,6 +483,8 @@ describe("암호 해독 세 문제", () => {
     const ascending = all.filter((code) => code[0] < code[1] && code[1] < code[2]);
     // 새겨진 두 줄 = 뒤로 갈수록 커진다
     expect(solveWith(p, { clues: [] }).sort()).toEqual(ascending.map(text).sort());
+    // 789 는 맞은 숫자가 모두 적힌 자리 그대로다(맞은 수 = 위치까지 맞은 수): 7 이 있다면 첫째 자리다
+    expect(p.rules.clues[1]).toEqual({ guess: [7, 8, 9], match: 2, inPlace: 2 });
     // 7 이 첫째 자리인 오름차순 암호는 789 뿐이고, 그것은 789 와 셋이 다 맞는다
     const sevenFirst = ascending.filter((code) => code[0] === 7);
     expect(sevenFirst.map(text)).toEqual(["789"]);
