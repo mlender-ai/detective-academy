@@ -17,7 +17,7 @@ import { VIEW_ISO } from "./variant";
 function Screen({ route }: { route: Route }) {
   switch (route.name) {
     case "home":
-      // 홈은 플레이 가능한 복도다 (V3 GATE 02 에서 고른 B안). ?view=iso 면 쿼터뷰 학원 홀(사용자가 고르기 전의 비교안)
+      // 홈은 쿼터뷰 학원 홀이다 (2026-11-23, 사용자: "쿼터뷰로"). ?view=side 면 옆에서 본 복도(V3 GATE 02 의 B안)
       return VIEW_ISO ? <HomeIso /> : <HomePlayable />;
     case "daily":
       return <DailyChallenge />;

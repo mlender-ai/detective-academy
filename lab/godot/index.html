@@ -186,7 +186,8 @@ tools/godot.sh --path da-godot --script "$PWD/tools/check_puzzle.gd"   # 정답�
 </main>
 <script>
   // 제품은 게임 날짜를 달력의 첫날로 고정한다(그날의 오늘의 추리가 '자료실 금고의 암호'다)
-  const PRODUCT = "../../?demo=1&date=2026-11-22&save=godot-lab&preset=daily-unsolved&apply=1&cine=0";
+  // Godot 로 만든 것은 옆에서 본 복도다: 제품 쪽도 그 홈으로 연다(기본 홈은 쿼터뷰 학원 홀)
+  const PRODUCT = "../../?demo=1&date=2026-11-22&save=godot-lab&preset=daily-unsolved&apply=1&cine=0&view=side";
   const GODOT = "http://localhost:5190/index.html";
   const pick = { size: "390x844", scene: "hall", closeup: "1" };
   const show = () => {

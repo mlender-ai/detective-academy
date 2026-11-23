@@ -212,7 +212,8 @@ const after = document.getElementById("after") as HTMLIFrameElement;
 const DATE = "2026-11-22";
 const url = (fx: boolean) => {
   const save = `fx-${scene.id}-${fx ? "on" : "off"}`;
-  const p = new URLSearchParams({ demo: "1", save, cine: "0", date: DATE });
+  // 복도의 효과는 옆에서 본 홈에 놓인다(기본 홈은 쿼터뷰 학원 홀이다)
+  const p = new URLSearchParams({ demo: "1", save, cine: "0", date: DATE, view: "side" });
   if ("solve" in scene && scene.solve) {
     // 보상은 문제를 푸는 순간에만 나온다: 답을 미리 넣어 둔 상태를 만들어, 금고 앞에서 제출만 누르면 되게 한다
     const state = buildDemoState("daily-unsolved", new Date(`${DATE}T12:00:00+09:00`));

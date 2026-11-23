@@ -8,7 +8,7 @@
 
 > 이 브랜치(`feat/v3-indie-experience`)는 V3 작업 중이다. 홈이 걸어 다니는 복도로, 암호 해독이 자료실 장면(책상의 기록 ↔ 금고의 자물쇠)으로 바뀌었고, 새 퍼즐 두 가지(증거 조합, 인장 대조)가 더해졌다. GATE 05 에서 오늘의 추리가 날짜별로 배정되고, 연습실이 등급별 서랍이 되고, 승급 시험이 F→S 다섯 단계(제한 시간 · 제출 횟수 · 하루 응시 횟수)가 됐다(`/lab/gate05/` 에서 장면을 골라 플레이). 위 주소의 배포본(main)은 아직 예전 홈과 예전 풀이 화면이고 문제는 셋이다. 진행 상황은 `lab/README.md`.
 >
-> `feat/v3-studio-rnd` 에서는 여기에 사건 수사(CASE D-001 제1장)와 실험 셋이 더해졌다: 움직이는 효과(주소에 `?fx=ascii` 를 붙였을 때만. 비 내리는 창 · 촛불 · 회전하는 크레딧 · 모래시계), 배경 음악 네 곡(기본은 꺼짐. 신분증 화면에서 켠다), Godot 4 로 같은 장면을 만들어 본 비교(결과는 보류). 그리고 **쿼터뷰 홈**: 홈을 비스듬히 내려다본 방(학원 홀)으로 다시 만든 비교안으로, 주소에 `?view=iso` 를 붙이면 열린다(바닥을 눌러 걷고, 문과 물건을 눌러 살펴본다). 나란히 보는 곳은 `/lab/iso/` · `/lab/ascii/` · `/lab/audio/` · `/lab/godot/`. 작업 방식(역할과 검수 절차)은 `docs/studio/README.md`.
+> `feat/v3-studio-rnd` 에서는 여기에 사건 수사(CASE D-001 제1장)와 실험 셋이 더해졌다: 움직이는 효과(주소에 `?fx=ascii` 를 붙였을 때만. 비 내리는 창 · 촛불 · 회전하는 크레딧 · 모래시계), 배경 음악 네 곡(기본은 꺼짐. 신분증 화면에서 켠다), Godot 4 로 같은 장면을 만들어 본 비교(결과는 보류). 그리고 **쿼터뷰 홈**: 홈을 비스듬히 내려다본 방(학원 홀)으로 다시 만들었고, 2026-11-23 에 이 브랜치의 기본 홈이 되었다(바닥을 눌러 걷고, 문과 물건을 눌러 살펴본다). 예전 홈(옆에서 본 복도)은 주소에 `?view=side` 를 붙이면 열린다. 나란히 보는 곳은 `/lab/iso/` · `/lab/ascii/` · `/lab/audio/` · `/lab/godot/`. 작업 방식(역할과 검수 절차)은 `docs/studio/README.md`.
 
 `main` 에 올리면 깃허브 액션이 단위 테스트와 빌드를 거쳐 자동으로 배포합니다(`.github/workflows/pages.yml`).
 
@@ -93,11 +93,11 @@ src/
   assets/art/ 배경 — mono/(복도 세 장·시험실·책상)
   assets/audio/ 배경 음악 네 곡 (AAC, 합쳐 3.5MB. 음악을 켰을 때 그 화면의 곡만 내려받는다)
   audio/      배경 음악 — tracks(곡과 루프 구간) · music(Web Audio 재생: 겹쳐 넘기기, 첫 조작에서 깨우기, 가려지면 멈춤) · director(화면 → 곡)
-  iso/        쿼터뷰 홈(비교안, ?view=iso) — iso(투영 · 점 층 · 깊이 정렬 · 밝기 일곱 단계) · path(길 찾기) · hallArt(학원 홀의 그림과 갈 곳) · hallScene(걷기와 장면) · IsoCanvas
+  iso/        쿼터뷰 홈(기본 홈) — iso(투영 · 점 층 · 깊이 정렬 · 밝기 일곱 단계) · path(길 찾기) · hallArt(학원 홀의 그림과 갈 곳) · hallScene(걷기와 장면) · IsoCanvas
   fx/         움직이는 효과(실험, ?fx=ascii) — dots(밝기 + 먹 격자를 점묘로) · ascii/(ASCII Magic 의 조각 넷을 점 격자용으로 고쳐 옮긴 것) · corridorFx(복도) · FxCanvas(동전 · 모래시계)
   games/      퍼즐별 조작 화면 — CodeBreaker, TruthDeduction, SchedulePuzzle, EvidenceBoard(증거 조합), SealMatch(인장 대조)
   scene/      살아 있는 장면 — 점 찍는 도구, 탐정(관절 모형), 밝기 층을 점묘로 바꾸는 stage, 홈의 옆에서 본 복도(sideArt·sideScene), 암호 해독의 자료실(vaultArt·vaultScene)
-  screens/    입학(복도), 홈(HomePlayable: 걸어 다니는 복도 · HomeIso: 쿼터뷰 학원 홀, ?view=iso 로만), 연습실(PracticeRoom: 등급별 서랍)·풀이(DeskPlay)·채점 결과(DeskResult)·신분증(책상),
+  screens/    입학(복도), 홈(HomeIso: 쿼터뷰 학원 홀 · HomePlayable: 옆에서 본 복도, ?view=side 로만), 연습실(PracticeRoom: 등급별 서랍)·풀이(DeskPlay)·채점 결과(DeskResult)·신분증(책상),
               승급 시험(PromotionExam: 봉투 → 문제 → 다음 시험지 → 승급 또는 시험 종료)
               cases/  증거 조합(EvidencePlay)·인장 대조(SealPlay)의 풀이
               codeux/ 암호 해독의 풀이 — ScenePlay(자료실 장면, 기본) · NotebookPlay(수사 수첩, ?play=c 로만. 다른 문제용 후보)
@@ -154,7 +154,7 @@ docs/v1/           V1 캡처와 빌드본
 | 곡 파일과 루프 구간, 곡 사이를 넘기는 시간, 음량 단계 | `src/audio/tracks.ts` 의 `TRACKS`, `src/audio/music.ts` 의 `FADE`·`LEVEL` |
 | 소리의 기본값(꺼짐, 음량 단계) | `src/engine/progressEngine.ts` 의 `defaultSettings` |
 | 움직이는 효과를 켤지 | `src/app/variant.ts` 의 `FX_ASCII` (지금은 주소에 `?fx=ascii` 가 있을 때만) |
-| 홈을 쿼터뷰로 열지 | `src/app/variant.ts` 의 `VIEW_ISO` (지금은 주소에 `?view=iso` 가 있을 때만) |
+| 홈의 보는 방식 | `src/app/variant.ts` 의 `VIEW_ISO` (기본은 쿼터뷰. 주소에 `?view=side` 면 옆에서 본 복도) |
 | 쿼터뷰 홀의 물건 자리, 갈 곳의 설 자리 · 누를 영역 · 이름표 자리, 전등과 창의 빛 | `src/iso/hallArt.ts` 의 `CABINET`·`TV`·`BENCH`·`STAND`, `spots`·`decor`, `LAMPS`·`WINDOWS` |
 | 쿼터뷰 홈의 서술 문장, 이름표, 살펴보는 것의 문장 | `src/screens/HomeIso.tsx` |
 | 복도의 효과가 놓이는 자리 | `src/fx/corridorFx.ts` 의 `GLASS`·`LIGHT`·`CANDLE_AT` |

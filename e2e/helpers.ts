@@ -22,7 +22,29 @@ export function gameNowMs(): number {
  */
 export const CINE_ON = {
   cookies: [],
-  origins: [{ origin: "http://127.0.0.1:4183", localStorage: [{ name: "detective-academy:date", value: TEST_DATE }] }],
+  origins: [
+    {
+      origin: "http://127.0.0.1:4183",
+      localStorage: [
+        { name: "detective-academy:date", value: TEST_DATE },
+        { name: "detective-academy:view", value: "side" },
+      ],
+    },
+  ],
+};
+
+/** 기본 홈(쿼터뷰 학원 홀)으로 돌릴 때의 저장소: 홈을 옆에서 본 복도로 돌리는 값만 뺀다 */
+export const HOME_DEFAULT = {
+  cookies: [],
+  origins: [
+    {
+      origin: "http://127.0.0.1:4183",
+      localStorage: [
+        { name: "detective-academy:cine", value: "off" },
+        { name: "detective-academy:date", value: TEST_DATE },
+      ],
+    },
+  ],
 };
 export const SHOTS = "docs/screenshots";
 

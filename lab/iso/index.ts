@@ -1,4 +1,4 @@
-// 지금의 홈과 쿼터뷰 홈을 같은 저장 상태 · 같은 크기로 나란히 놓는다. 둘 다 제품 화면 그대로다(주소의 ?view=iso 만 다르다).
+// 예전 홈(옆에서 본 복도)과 쿼터뷰 홈을 같은 저장 상태 · 같은 크기로 나란히 놓는다. 둘 다 제품 화면 그대로다(주소의 view 값만 다르다).
 const SCENES = [
   { id: "first", label: "F급 · 오늘의 추리 전", preset: "daily-unsolved" },
   { id: "solved", label: "F급 · 오늘의 추리 뒤", preset: "daily-solved" },
@@ -20,7 +20,7 @@ const DATE = "2026-11-22";
 
 const url = (iso: boolean) => {
   const p = new URLSearchParams({ demo: "1", save: `iso-${scene.id}-${iso ? "b" : "a"}`, preset: scene.preset, apply: "1", cine: "0", date: DATE });
-  if (iso) p.set("view", "iso");
+  p.set("view", iso ? "iso" : "side");
   return `../../index.html?${p}`;
 };
 
@@ -38,8 +38,8 @@ function render() {
     frame.src = url(iso);
     const cap = document.createElement("figcaption");
     cap.innerHTML = iso
-      ? `<b>쿼터뷰 학원 홀</b>방을 눌러 걷는다 · 문과 물건을 눌러 살펴본다<br><a href="${url(true)}" target="_blank" rel="noopener">이 화면만 새 창으로</a>`
-      : `<b>지금의 홈</b>옆에서 본 복도 + 명령 창(갈 곳의 목록)<br><a href="${url(false)}" target="_blank" rel="noopener">이 화면만 새 창으로</a>`;
+      ? `<b>쿼터뷰 학원 홀 (지금의 기본 홈)</b>방을 눌러 걷는다 · 문과 물건을 눌러 살펴본다<br><a href="${url(true)}" target="_blank" rel="noopener">이 화면만 새 창으로</a>`
+      : `<b>예전 홈 (?view=side)</b>옆에서 본 복도 + 명령 창(갈 곳의 목록)<br><a href="${url(false)}" target="_blank" rel="noopener">이 화면만 새 창으로</a>`;
     fig.append(frame, cap);
     phones.append(fig);
   }

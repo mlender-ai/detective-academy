@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { getDailyPuzzle } from "../src/data/puzzles";
-import { TEST_DATE, expectLayoutOk, offToneRatio, preset } from "./helpers";
+import { HOME_DEFAULT, TEST_DATE, expectLayoutOk, offToneRatio, preset } from "./helpers";
 import { solve } from "./solve";
 
 /**
@@ -23,10 +23,27 @@ async function tapWorld(page: Page, x: number, y: number) {
   await page.touchscreen.tap(box.x + (x / 196) * box.width, box.y + (y / 300) * box.height);
 }
 
-test("주소에 view=iso 가 없으면 지금의 홈 그대로다", async ({ page }) => {
+test.describe("기본 홈", () => {
+  // 다른 테스트들은 저장소의 값으로 홈을 옆에서 본 복도로 돌린다. 여기서는 그 값 없이 연다.
+  test.use({ storageState: HOME_DEFAULT });
+
+  test("아무 값 없이 열면 쿼터뷰 학원 홀이고, view=side 를 붙이면 옆에서 본 복도다", async ({ page }) => {
+    await preset(page, "daily-unsolved");
+    await expect(home(page)).toHaveAttribute("data-home", "iso");
+    await arrived(page, "board");
+    await page.getByTestId("daily-file-cta").click();
+    await expect(page).toHaveURL(/#\/daily/);
+    await preset(page, "daily-unsolved", "&view=side");
+    await expect(home(page)).toHaveAttribute("data-home", "b");
+    await expect(page.getByTestId("iso-stage")).toHaveCount(0);
+  });
+});
+
+test("저장소에 view=side 가 있어도 주소의 view=iso 가 먼저다", async ({ page }) => {
   await preset(page, "daily-unsolved");
   await expect(home(page)).toHaveAttribute("data-home", "b");
-  await expect(page.getByTestId("iso-stage")).toHaveCount(0);
+  await preset(page, "daily-unsolved", ISO);
+  await expect(home(page)).toHaveAttribute("data-home", "iso");
 });
 
 test("들어서면 탐정이 오늘 할 일 앞에 서고, 큰 단추 한 번으로 들어간다", async ({ page }) => {

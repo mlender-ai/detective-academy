@@ -25,10 +25,24 @@ const fx = typeof window !== "undefined" ? new URLSearchParams(window.location.s
 export const FX_ASCII: boolean = fx === "ascii";
 
 /**
- * 홈의 보는 방식 (2026-11-23. 사용자: "아예 ux가 달라졌으면하는데 … 뭔가 쿼터뷰로 본다던가.. 지금 ux가 차별화가되어야하는데").
- * - (없음)    : 옆에서 본 복도 + 명령 창 (V3 GATE 02 에서 고른 B안. 사용자가 새 안을 고르기 전의 기본값)
- * - ?view=iso : 쿼터뷰 학원 홀. 화면의 대부분이 방이고, 갈 곳의 목록 대신 방 안의 문과 물건을 누른다. 나란히 보는 곳은 lab/iso/
+ * 홈의 보는 방식.
+ * 사용자가 쿼터뷰를 골랐다(2026-11-23. "아예 ux가 달라졌으면하는데 … 뭔가 쿼터뷰로 본다던가.. 지금 ux가 차별화가되어야하는데"라고 해서
+ * 지금의 홈과 나란히 놓고 보여 주자 "쿼터뷰로"). 이 브랜치의 기본 홈은 쿼터뷰 학원 홀이다.
+ * - (없음)     : 쿼터뷰 학원 홀. 화면의 대부분이 방이고, 갈 곳의 목록 대신 방 안의 문과 물건을 누른다
+ * - ?view=side : 옆에서 본 복도 + 명령 창 (V3 GATE 02 에서 고른 B안. 걷어내지 않고 남겨 두었다. 나란히 보는 곳은 lab/iso/)
+ * 저장소의 detective-academy:view 에 side 를 두어도 옆에서 본 복도가 열린다(예전 홈으로 짠 자동 테스트가 쓴다). 주소의 값이 먼저다.
  */
-const view = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("view") : null;
+export const VIEW_KEY = "detective-academy:view";
 
-export const VIEW_ISO: boolean = view === "iso";
+function homeView(): "iso" | "side" {
+  if (typeof window === "undefined") return "iso";
+  const asked = new URLSearchParams(window.location.search).get("view");
+  if (asked === "iso" || asked === "side") return asked;
+  try {
+    return window.localStorage.getItem(VIEW_KEY) === "side" ? "side" : "iso";
+  } catch {
+    return "iso";
+  }
+}
+
+export const VIEW_ISO: boolean = homeView() === "iso";
