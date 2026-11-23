@@ -1,12 +1,13 @@
 /**
- * 문제 등록부. 처음의 세 문제는 이 파일에, 일일 문제 일곱은 dailySet.ts 에, 연습실·승급 시험의 문제는 sets/ 에 있다.
+ * 문제 등록부. 처음의 세 문제는 이 파일에, 일일 문제는 dailySet.ts(첫 주)와 sets/dailyWeek2.ts(둘째 주)에,
+ * 연습실·승급 시험의 문제는 sets/ 에 있다.
  *
  * solution 은 개발·검증용이다. 화면에는 플레이어가 해결한 뒤에만 노출한다.
  * solution 이 맞는지는 src/tests 가 전수 탐색으로 확인한다.
  */
 import type { CodePuzzle, Puzzle, RankId, SchedulePuzzle, TruthPuzzle } from "../engine/types";
 import { daysBetween, isDateKey } from "../engine/time";
-import { DAILY_SET } from "./dailySet";
+import { DAILY_SET, DAILY_WEEK_1_COUNT } from "./dailySet";
 import { daon, doyun, hana, harin, junho, minjae, sea, sera } from "./people";
 import { RANKS } from "./ranks";
 import { GROWTH_SET } from "./sets";
@@ -228,7 +229,9 @@ export const CONTENT_VERSION = 2;
 
 /* ───────── 오늘의 추리: 날짜별 배정 ─────────
  * 모든 사용자가 같은 날 같은 문제를 받는다(Asia/Seoul 날짜 기준). 서버가 없으므로 정해 둔 순서를 날짜로 센다.
- * 지금은 여덟 문제가 차례로 돈다. 아흐레째부터는 풀었던 문제가 다시 붙는다(해결로 표시된다).
+ * 지금은 열네 문제가 차례로 붙는다(첫날의 '자료실 금고의 암호' + 일일 문제 열셋).
+ * 새 문제는 order 의 맨 뒤에만 덧붙인다: 앞의 순서와 이름표가 바뀌면 지나간 날짜의 배정과 기록이 뒤바뀐다.
+ * 열닷새째부터의 처리(지금은 처음으로 돌아가 풀었던 문제가 다시 붙는다)는 dailyIndex 가 정한다.
  */
 export const DAILY_CALENDAR = {
   /** 이 날 첫 문제가 붙는다 */
@@ -244,15 +247,16 @@ export function dailyIndex(dateKey: string): number {
 }
 
 /**
- * 검수용 일차 전환. 주소가 ?demo=1&day=3 이면 오늘의 추리 자리에 일일 문제 3일차가 놓인다(1~7 은 dailySet 의 순서).
- * 일반 사용자 주소에는 영향을 주지 않는다. 날짜 자체를 바꿔 보려면 ?demo=1&date=2026-11-25 를 쓴다(app/clock.ts).
+ * 검수용 일차 전환. 주소가 ?demo=1&day=3 이면 오늘의 추리 자리에 일일 문제 3일차가 놓인다(1~7 은 dailySet 의 첫 주 순서).
+ * 둘째 주의 문제는 ?day= 로 열지 않는다: 날짜를 옮겨 본다(?demo=1&date=2026-11-30 부터 12-05 까지. app/clock.ts).
+ * 일반 사용자 주소에는 영향을 주지 않는다.
  */
 function previewDay(): number | null {
   if (typeof window === "undefined") return null;
   const params = new URLSearchParams(window.location.search);
   if (params.get("demo") !== "1") return null;
   const day = Number(params.get("day"));
-  return Number.isInteger(day) && day >= 1 && day <= DAILY_SET.length ? day : null;
+  return Number.isInteger(day) && day >= 1 && day <= DAILY_WEEK_1_COUNT ? day : null;
 }
 
 const PREVIEW_DAY = previewDay();

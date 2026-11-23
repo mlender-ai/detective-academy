@@ -20,6 +20,12 @@ export const CREDIT_POLICY = {
   /** 연습 문제 최초 해결: 그 문제의 권장 등급에 따라 */
   practice: { F: 30, D: 35, C: 40, B: 45, A: 50, S: 50 } as Record<RankId, number>,
   /**
+   * 특수 도전(special 로 표시한 연습 과제) 최초 해결. 놓인 서랍의 등급과 무관하게 이 값이다.
+   * 가장 높은 연습 보상(50)보다 크고 가장 낮은 합격 보상(80)보다 작게, 오늘의 추리와 같은 60 으로 두었다:
+   * 힌트 두 단계의 값(60)을 넘지 않아 "힌트를 끝까지 열면 남는 것이 없다"는 뼈대가 그대로 선다.
+   */
+  special: 60,
+  /**
    * 연습실에서 하루에 받을 수 있는 신규 보상의 횟수. null 이면 제한이 없다.
    * 검토 결과: 연습 문제가 15개로 한정된 지금은 받을 수 있는 총액(600)이 정해져 있어 두지 않는다.
    * 문제가 계속 늘어나는 구조가 되면 숫자를 넣는다.
@@ -27,10 +33,10 @@ export const CREDIT_POLICY = {
   practiceRewardsPerDay: null as number | null,
 } as const;
 
-/** 문제 하나의 최초 해결 보상. 시험 문제는 0 이다(합격 보상은 시험 규칙이 준다). */
-export function policyReward(category: PuzzleCategory, rank: RankId | undefined): number {
+/** 문제 하나의 최초 해결 보상. 시험 문제는 0 이다(합격 보상은 시험 규칙이 준다). 특수 도전은 등급과 무관하게 special 값이다. */
+export function policyReward(category: PuzzleCategory, rank: RankId | undefined, special = false): number {
   if (category === "daily") return CREDIT_POLICY.daily;
-  if (category === "practice") return CREDIT_POLICY.practice[rank ?? "F"];
+  if (category === "practice") return special ? CREDIT_POLICY.special : CREDIT_POLICY.practice[rank ?? "F"];
   return 0;
 }
 
