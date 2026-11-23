@@ -1,35 +1,51 @@
-import { useEffect, useState } from "react";
-import { motionMs, useSequence } from "../app/motion";
+import { findCase } from "../story/cases";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { gameNow } from "../app/clock";
+import { motionMs, prefersReducedMotion, useSequence } from "../app/motion";
 import { goBack, navigate } from "../app/router";
 import { playSound } from "../app/sound";
 import { gameStore, useGame } from "../app/store";
 import { EXAMROOM } from "../app/backdrop";
 import { PenMark, Sprite } from "../art/pixel";
 import { RankMedal } from "../art/objects";
-import { ExamEnvelope } from "../components/ExamEnvelope";
+import { cineDuration } from "../components/CineCard";
 import { IdCard } from "../components/IdCard";
 import { Stamp } from "../components/Stamp";
 import { PUZZLE_BY_ID } from "../data/puzzles";
-import { PROMOTION_RULES, RANK_BY_ID, rankLabel, type PromotionRule } from "../data/ranks";
-import { examStatus, getProgress, type SubmitOutcome } from "../engine/progressEngine";
-import type { GameState, Puzzle, RankId } from "../engine/types";
+import { PROMOTION_RULES, RANK_BY_ID, rankLabel, type ExamRules, type PromotionRule } from "../data/ranks";
+import { examRemainingMs, examRuleOf, examStatus, getProgress, type ExamStatus, type SubmitOutcome } from "../engine/progressEngine";
+import { formatCountdown } from "../engine/time";
+import type { ExamSession, Puzzle, RankId } from "../engine/types";
+import { TYPE_NAME, TYPE_WORD } from "../games/logic";
+import { IsoCanvas, type IsoHandle } from "../iso/IsoCanvas";
+import { makeExamRoom, type ExamPhase } from "../iso/examRoom";
+import { EvidencePlay } from "./cases/EvidencePlay";
+import { SealPlay } from "./cases/SealPlay";
+import { ScenePlay } from "./codeux/ScenePlay";
 import { DeskPlay } from "./DeskPlay";
 import { GradedExplain, GradedFacts, Reward } from "./DeskResult";
 
 const ENVELOPE_OPEN_MS = 900;
 
-/** 지금 치를 시험, 없으면 가장 최근에 통과한 시험 */
-function currentRule(game: GameState): PromotionRule | null {
-  return (
-    PROMOTION_RULES.find((r) => r.from === game.rank) ??
-    PROMOTION_RULES.find((r) => r.to === game.rank) ??
-    null
-  );
-}
+const goHome = () => navigate({ name: "home" }, { replace: true });
 
 /* ───────── 시험실 ───────── */
 
-/** 응시자 자리에서 올려다본 시험실. 아래쪽은 책상에 가려진다. */
+/**
+ * 쿼터뷰 시험실(2026-11-23, 사용자: "나머지도 방으로"): 등불 아래 책상에 봉투가 놓여 있고 탐정이 그 앞으로 걸어가 선다.
+ * 응시 전 · 문제 사이 · 조건 미달 · 시험 종료에 쓴다. 누르는 장면이 아니라 보여 주는 장면이다(할 일은 아래의 단추다).
+ */
+function ExamRoomIso({ phase }: { phase: ExamPhase }) {
+  const scene = useMemo(() => makeExamRoom(), []);
+  const ref = useRef<IsoHandle<"desk">>(null);
+  useEffect(() => {
+    const id = window.setTimeout(() => ref.current?.go("desk"), prefersReducedMotion() ? 0 : 300);
+    return () => window.clearTimeout(id);
+  }, []);
+  return <IsoCanvas ref={ref} scene={scene} state={{ phase }} still className="examscene" />;
+}
+
+/** 응시자 자리에서 올려다본 시험실(띠 배경). 아래쪽은 책상에 가려진다. 승급 증서(식)와 합격 기록 화면이 쓴다. */
 function RoomScene() {
   return (
     <>
@@ -49,9 +65,71 @@ function RoomBar({ title, note }: { title: string; note?: string }) {
       </button>
       <div className="deskbar__tag leaf">
         <h1 className="deskbar__type">{title}</h1>
-        {note && <span className="deskbar__timer">{note}</span>}
+        {note && (
+          <span className="deskbar__timer" data-testid="room-note">
+            {note}
+          </span>
+        )}
       </div>
     </header>
+  );
+}
+
+/** 시험에 걸린 제한을 표의 줄로: 시간 · 제출 · 수사 지원. 시작 전에 모두 보여 준다. */
+function ruleRows(rules: ExamRules): { label: string; text: string }[] {
+  // 유형에 따라 더 줄인 제출 횟수가 있으면 함께 적는다: "문제마다 3번 · 진술은 2번"
+  const fewer = (Object.entries(rules.submitsByType ?? {}) as [Puzzle["type"], number][])
+    .filter(([, count]) => rules.submitsPerPuzzle !== null && count < rules.submitsPerPuzzle)
+    .map(([type, count]) => `${TYPE_WORD[type]}은 ${count}번`);
+  return [
+    { label: "시간", text: rules.timeLimitSec === null ? "제한 없음" : `${Math.round(rules.timeLimitSec / 60)}분 안에 모두 풀기` },
+    { label: "제출", text: rules.submitsPerPuzzle === null ? "제한 없음" : [`문제마다 ${rules.submitsPerPuzzle}번`, ...fewer].join(" · ") },
+    { label: "수사 지원", text: rules.hints ? "쓸 수 있음" : "쓸 수 없음" },
+  ];
+}
+
+function puzzlesOf(rule: PromotionRule): Puzzle[] {
+  return rule.examPuzzleIds.map((id) => PUZZLE_BY_ID[id]).filter(Boolean);
+}
+
+function RuleRows({ rules }: { rules: ExamRules }) {
+  return (
+    <>
+      {ruleRows(rules).map((row) => (
+        <div key={row.label} data-rule={row.label}>
+          <dt>{row.label}</dt>
+          <dd className="num">{row.text}</dd>
+        </div>
+      ))}
+    </>
+  );
+}
+
+/** 응시 안내: 무엇이 나오고, 어떤 제한이 걸리고, 붙으면 무엇을 받는가 */
+function ExamFacts({ rule, status }: { rule: PromotionRule; status: ExamStatus }) {
+  const puzzles = puzzlesOf(rule);
+  return (
+    <dl className="roomnote__facts" data-testid="exam-facts">
+      <div>
+        <dt>출제</dt>
+        <dd>
+          <span className="num">{puzzles.length}문제</span> · {puzzles.map((p) => TYPE_WORD[p.type]).join(", ")}
+        </dd>
+      </div>
+      <RuleRows rules={rule.exam} />
+      {rule.exam.attemptsPerDay !== null && (
+        <div>
+          <dt>응시</dt>
+          <dd className="num" data-testid="attempts-left">
+            하루 {rule.exam.attemptsPerDay}번 · 오늘 {status.attemptsLeft ?? 0}번 남음
+          </dd>
+        </div>
+      )}
+      <div>
+        <dt>합격 보상</dt>
+        <dd className="num">수사 크레딧 +{rule.reward}</dd>
+      </div>
+    </dl>
   );
 }
 
@@ -157,219 +235,380 @@ function PromotionCeremony({ from, to, reward, onDone, onViewCard }: CeremonyPro
           신분증 보기
         </button>
         <button type="button" className="inkbtn inkbtn--wine deskfoot__submit" onClick={onDone} data-testid="ceremony-done">
-          학원 복도로
+          학원 홀로
         </button>
       </footer>
     </div>
   );
 }
 
-/* ───────── 시험실 입구: 봉투 ───────── */
+/* ───────── 봉투: 시험을 시작하기 전, 그리고 문제와 문제 사이 ───────── */
 
-function ExamGate({
-  rule,
-  puzzle,
-  state,
-  onOpen,
-}: {
+interface GateProps {
   rule: PromotionRule;
-  puzzle: Puzzle;
+  status: ExamStatus;
+  /** 치르고 있는 응시. 없으면 아직 시작 전이다. */
+  session: ExamSession | null;
   state: "sealed" | "opening";
   onOpen: () => void;
-}) {
+}
+
+function ExamGate({ rule, status, session, state, onOpen }: GateProps) {
+  const puzzles = puzzlesOf(rule);
+  const between = !!session;
+  const index = session?.index ?? 0;
+  const next = puzzles[index];
+  const remaining = session ? examRemainingMs(session, gameNow()) : null;
+  const blocked = !between && !status.canStart;
+  const timed = rule.exam.timeLimitSec !== null;
+
   return (
-    <div className="screen room inkworld" data-state={state} data-testid="exam-gate">
-      <RoomScene />
-      <RoomBar title={`${rule.to}급 승급 시험`} />
+    <div className="screen room room--iso inkworld" data-state={state} data-between={between} data-testid={between ? "exam-between" : "exam-gate"}>
+      <RoomBar title={`${rule.to}급 승급 시험`} note={between ? `${index}/${puzzles.length} 통과` : undefined} />
+      <ExamRoomIso phase={blocked ? "empty" : state === "opening" ? "opening" : "sealed"} />
 
       <div className="screen__scroll room__scroll">
-        <div className="room__envelope">
-          <ExamEnvelope state={state} letterTitle={`${rule.from}급 → ${rule.to}급`} />
-        </div>
+        {between ? (
+          <section className="roomnote leaf" aria-label="다음 시험지">
+            <p className="roomnote__lead" data-testid="between-lead">
+              {index}번 문제를 통과했습니다. 다음 시험지를 펼치면 시험이 이어집니다.
+            </p>
+            <dl className="roomnote__facts">
+              <div>
+                <dt>다음 문제</dt>
+                <dd>
+                  <span className="num">
+                    {index + 1}/{puzzles.length}
+                  </span>{" "}
+                  · {next ? TYPE_NAME[next.type] : ""}
+                </dd>
+              </div>
+              {remaining !== null && (
+                <div>
+                  <dt>남은 시간</dt>
+                  <dd className="num" data-testid="between-time">
+                    {formatCountdown(remaining)} (멈춰 있음)
+                  </dd>
+                </div>
+              )}
+              <RuleRows rules={rule.exam} />
+            </dl>
+          </section>
+        ) : (
+          <section className="roomnote leaf" aria-label="응시 안내">
+            <p className="roomnote__lead">
+              {blocked
+                ? "오늘의 응시 횟수를 모두 썼습니다. 자정이 지나면 다시 응시할 수 있습니다."
+                : timed
+                  ? "봉투를 열면 시험이 시작됩니다. 화면을 떠나도 시간은 흐릅니다."
+                  : "학원 인장으로 봉한 시험 봉투입니다. 봉투를 열면 시험이 시작됩니다."}
+            </p>
+            <ExamFacts rule={rule} status={status} />
+          </section>
+        )}
+      </div>
 
-        <section className="roomnote leaf" aria-label="응시 안내">
-          <p className="roomnote__lead">학원 인장으로 봉한 시험 봉투입니다. 봉투를 열면 시험이 시작됩니다.</p>
-          <dl className="roomnote__facts">
-            <div>
-              <dt>승급</dt>
-              <dd>
-                {rankLabel(rule.from)} → {rankLabel(rule.to)}
-              </dd>
+      <footer className="deskfoot">
+        {blocked ? (
+          <button type="button" className="inkbtn inkbtn--wine deskfoot__submit" onClick={goHome} data-testid="exam-blocked">
+            학원 홀로
+          </button>
+        ) : (
+          <button type="button" className="inkbtn inkbtn--wine deskfoot__submit" onClick={onOpen} data-testid={between ? "open-sheet" : "open-envelope"}>
+            {state === "opening" ? "시험지 꺼내는 중" : between ? "다음 시험지 펼치기" : "봉투 열고 시험 시작"}
+          </button>
+        )}
+      </footer>
+    </div>
+  );
+}
+
+/** 응시 조건의 눈금: 채운 만큼 찬 네모 */
+function TaskMeter({ solved, required }: { solved: number; required: number }) {
+  return (
+    <p className="meter" role="img" aria-label={`해결한 과제 ${solved}개, 필요한 과제 ${required}개`}>
+      {Array.from({ length: required }, (_, i) => (
+        <i key={i} data-on={i < solved} />
+      ))}
+    </p>
+  );
+}
+
+function ExamLocked({ rule, status }: { rule: PromotionRule; status: ExamStatus }) {
+  const left = Math.max(0, status.required - status.solved);
+  // 사건 해결이 응시 조건인 시험(D→C): 과제 수와 사건을 따로 보여 준다
+  const needCase = status.caseRequired ? findCase(status.caseRequired) : null;
+  const caseBlocks = !!needCase && !status.caseDone;
+  const lead = !status.tasksDone
+    ? caseBlocks
+      ? `아직 응시할 수 없습니다. 과제를 ${left}개 더 해결하고, 아래의 사건을 끝까지 해결하면 봉투가 열립니다.`
+      : `아직 응시할 수 없습니다. 오늘의 추리와 연습실의 과제를 ${left}개 더 해결하면 봉투가 열립니다.`
+    : `아직 응시할 수 없습니다. ${needCase?.code ?? "사건"} 「${needCase?.title ?? ""}」을 끝까지 해결하면 봉투가 열립니다.`;
+  return (
+    <div className="screen room room--iso inkworld" data-state="locked" data-testid="exam-locked">
+      <RoomBar title={`${rule.to}급 승급 시험`} note="응시 전" />
+      <ExamRoomIso phase="empty" />
+
+      <div className="screen__scroll room__scroll">
+        <section className="roomnote leaf" aria-label="응시 조건">
+          <p className="roomnote__lead">{lead}</p>
+          <div className="roomnote__need">
+            <span>해결한 과제</span>
+            <b className="num" data-testid="exam-need">
+              {status.solved}/{status.required}
+            </b>
+            <TaskMeter solved={status.solved} required={status.required} />
+          </div>
+          {needCase && (
+            <div className="roomnote__need" data-testid="exam-need-case" data-done={status.caseDone}>
+              <span>사건 수사 · {needCase.code}</span>
+              <b>{status.caseDone ? "해결" : "미해결"}</b>
             </div>
-            <div>
-              <dt>출제</dt>
-              <dd className="num">
-                {rule.examPuzzleIds.length}문제 · {puzzle.typeLabel}
-              </dd>
-            </div>
-            <div>
-              <dt>합격 기준</dt>
-              <dd>정답을 제출하면 합격. 힌트를 써도 됩니다.</dd>
-            </div>
-            <div>
-              <dt>합격 보상</dt>
-              <dd className="num">수사 크레딧 +{puzzle.reward}</dd>
-            </div>
-          </dl>
+          )}
+          <ExamFacts rule={rule} status={status} />
         </section>
       </div>
 
       <footer className="deskfoot">
-        <button type="button" className="inkbtn inkbtn--wine deskfoot__submit" onClick={onOpen} data-testid="open-envelope">
-          {state === "opening" ? "시험지 꺼내는 중" : "봉투 열고 시험 시작"}
+        <button type="button" className="inkbtn deskfoot__hint" onClick={goHome}>
+          학원 홀
         </button>
+        {status.tasksDone && caseBlocks ? (
+          <button type="button" className="inkbtn inkbtn--wine deskfoot__submit" onClick={() => navigate({ name: "story", id: needCase.id }, { replace: true })} data-testid="exam-to-case">
+            사건 수사로 이동
+          </button>
+        ) : (
+          <button type="button" className="inkbtn inkbtn--wine deskfoot__submit" onClick={() => navigate({ name: "practice" }, { replace: true })} data-testid="exam-to-practice">
+            연습실로 이동
+          </button>
+        )}
       </footer>
     </div>
   );
 }
 
-function ExamLocked({ rule }: { rule: PromotionRule }) {
-  const game = useGame();
-  const status = examStatus(game);
+/* ───────── 떨어졌을 때 ───────── */
+
+function ExamFailed({ rule, session, status }: { rule: PromotionRule; session: ExamSession; status: ExamStatus }) {
+  const total = rule.examPuzzleIds.length;
+  const byTime = session.failedBy === "time";
+  // 닫고 나면 다시 응시할 수 있는가 (오늘 횟수가 남았는가)
+  const canRetry = status.attemptsLeft === null || status.attemptsLeft > 0;
+
+  useEffect(() => {
+    playSound("wrong");
+  }, []);
+
   return (
-    <div className="screen room inkworld" data-state="locked" data-testid="exam-locked">
-      <RoomScene />
-      <RoomBar title={`${rule.to}급 승급 시험`} note="응시 전" />
+    <div className="screen room room--iso inkworld" data-state="failed" data-testid="exam-failed">
+      <RoomBar title={`${rule.to}급 승급 시험`} note="시험 종료" />
+      <ExamRoomIso phase="ended" />
 
       <div className="screen__scroll room__scroll">
-        <div className="room__envelope">
-          <ExamEnvelope state="locked" letterTitle={`${rule.from}급 → ${rule.to}급`} />
-        </div>
-
-        <section className="roomnote leaf" aria-label="응시 조건">
-          <p className="roomnote__lead">아직 응시할 수 없습니다. 아래 조건을 모두 채우면 봉투가 열립니다.</p>
-          <ul className="promoslip__reqs roomnote__reqs">
-            {status.requirements.map((req) => (
-              <li key={req.label} data-done={req.done}>
-                <span className="tickbox">{req.done && <PenMark kind="check" />}</span>
-                {req.label}
-                <span className="sr-only">{req.done ? " 완료" : " 미완료"}</span>
-              </li>
-            ))}
-          </ul>
+        <section className="roomnote roomnote--failed leaf" aria-label="시험 결과">
+          <h2 className="roomnote__title" data-testid="failed-title">
+            {byTime ? "시간이 끝났습니다" : "제출을 다 썼습니다"}
+          </h2>
+          <p className="roomnote__lead" data-testid="failed-lead">
+            {byTime
+              ? `제한 시간 ${Math.round((rule.exam.timeLimitSec ?? 0) / 60)}분이 모두 흘렀습니다.`
+              : `${session.index + 1}번 문제에서 주어진 제출을 모두 썼습니다.`}{" "}
+            이번 응시는 여기까지입니다. 등급은 {rankLabel(rule.from)} 그대로입니다.
+          </p>
+          <dl className="roomnote__facts">
+            <div>
+              <dt>통과</dt>
+              <dd className="num" data-testid="failed-progress">
+                {session.index}/{total}문제
+              </dd>
+            </div>
+            {rule.exam.attemptsPerDay !== null && (
+              <div>
+                <dt>응시</dt>
+                <dd className="num" data-testid="attempts-left">
+                  오늘 {status.attemptsLeft ?? 0}번 남음
+                </dd>
+              </div>
+            )}
+          </dl>
+          {!canRetry && <p className="roomnote__lead">오늘의 응시 횟수를 모두 썼습니다. 자정이 지나면 다시 응시할 수 있습니다.</p>}
         </section>
       </div>
 
       <footer className="deskfoot">
         <button
           type="button"
-          className="inkbtn inkbtn--wine deskfoot__submit"
-          onClick={() => navigate({ name: "home" }, { replace: true })}
+          className={`inkbtn ${canRetry ? "deskfoot__hint" : "inkbtn--wine deskfoot__submit"}`}
+          onClick={() => {
+            gameStore.dismissExam();
+            goHome();
+          }}
+          data-testid="failed-home"
         >
-          학원 복도로
+          {canRetry ? "학원 홀" : "학원 홀로"}
         </button>
+        {canRetry && (
+          <button type="button" className="inkbtn inkbtn--wine deskfoot__submit" onClick={() => gameStore.dismissExam()} data-testid="failed-retry">
+            다시 응시
+          </button>
+        )}
       </footer>
     </div>
   );
 }
 
-function ExamPassed({ rule, puzzle }: { rule: PromotionRule; puzzle: Puzzle }) {
+/* ───────── 합격 기록 (최고 등급에 오른 뒤) ───────── */
+
+function ExamPassed({ rule }: { rule: PromotionRule }) {
   const game = useGame();
-  const progress = getProgress(game, puzzle.id);
+  const puzzles = puzzlesOf(rule);
   return (
     <div className="screen room room--passed inkworld" data-testid="exam-passed">
       <RoomScene />
       <RoomBar title={`${rule.to}급 승급 시험`} note="합격 기록" />
 
       <div className="screen__scroll room__scroll">
-        <Diploma
-          from={rule.from}
-          to={rule.to}
-          lead={[`${puzzle.title} 문제를 풀어`, `${RANK_BY_ID[rule.from].title}에서 승급했습니다.`]}
-        />
-        <section className="roomnote roomnote--record leaf" aria-label="시험 기록">
-          <Stamp className="roomnote__stamp" label="합격" size={84} />
-          <h2 className="roomnote__title">시험 기록</h2>
-          <GradedFacts progress={progress} />
-          <GradedExplain puzzle={puzzle} />
-        </section>
+        <Diploma from={rule.from} to={rule.to} lead={[`${puzzles.length}문제를 모두 풀어`, `${RANK_BY_ID[rule.from].title}에서 승급했습니다.`]} />
+        {puzzles.map((puzzle, i) => (
+          <section className="roomnote roomnote--record leaf" aria-label={`${i + 1}번 문제의 기록`} key={puzzle.id}>
+            {i === 0 && <Stamp className="roomnote__stamp" label="합격" size={84} />}
+            <h2 className="roomnote__title">{puzzles.length > 1 ? `${i + 1}. ${puzzle.title}` : "시험 기록"}</h2>
+            <GradedFacts progress={getProgress(game, puzzle.id)} />
+            <GradedExplain puzzle={puzzle} />
+          </section>
+        ))}
       </div>
 
       <footer className="deskfoot">
         <button type="button" className="inkbtn deskfoot__hint" onClick={() => navigate({ name: "profile" })}>
           신분증 보기
         </button>
-        <button
-          type="button"
-          className="inkbtn inkbtn--wine deskfoot__submit"
-          onClick={() => navigate({ name: "home" }, { replace: true })}
-        >
-          학원 복도로
+        <button type="button" className="inkbtn inkbtn--wine deskfoot__submit" onClick={goHome}>
+          학원 홀로
         </button>
       </footer>
     </div>
   );
 }
 
+/* ───────── 시험 문제 한 장 ───────── */
+
+function ExamPlay({ puzzle, onSolved }: { puzzle: Puzzle; onSolved: (outcome: SubmitOutcome) => void }) {
+  const exit = () => goBack({ name: "home" });
+  // 유형마다 그 유형의 화면에서 치른다: 암호는 자료실, 증거·인장은 책상 위의 게시판과 도장, 나머지는 시험지
+  if (puzzle.type === "code") return <ScenePlay puzzle={puzzle} variant="exam" onExit={exit} onSolved={onSolved} />;
+  if (puzzle.type === "evidence") return <EvidencePlay puzzle={puzzle} variant="exam" onExit={exit} onSolved={onSolved} />;
+  if (puzzle.type === "spatial") return <SealPlay puzzle={puzzle} variant="exam" onExit={exit} onSolved={onSolved} />;
+  return <DeskPlay puzzle={puzzle} variant="exam" onExit={exit} onSolved={onSolved} />;
+}
+
+/** 시험지를 펼칠 때 도입 장면만큼 시계를 늦게 돌린다 (암호는 자막 화면 없이 자료실에 들어선다) */
+function graceFor(puzzle: Puzzle | undefined): number {
+  if (!puzzle || puzzle.type === "code") return 0;
+  return cineDuration(puzzle.title, puzzle.intro);
+}
+
 /* ───────── 승급 시험 ───────── */
 
+/**
+ * 시험 한 번의 흐름: 봉투 → 문제 → (다음 시험지 → 문제 …) → 승급 연출. 중간에 시간이 끝나거나 제출을 다 쓰면 그 응시는 끝난다.
+ * 어디까지 왔는지는 저장된 응시 기록(game.exam)이 정한다: 새로고침하거나 나갔다 와도 같은 자리에서 잇는다.
+ */
 export function PromotionExam() {
   const game = useGame();
-  const rule = currentRule(game);
-  const puzzle = rule ? PUZZLE_BY_ID[rule.examPuzzleIds[0]] : null;
-  const progress = puzzle ? getProgress(game, puzzle.id) : null;
+  const status = examStatus(game, gameNow());
+  const { rule, session } = status;
+  const currentId = rule && session?.status === "active" ? rule.examPuzzleIds[session.index] : null;
 
   const [opening, setOpening] = useState(false);
   const [passed, setPassed] = useState<{ outcome: SubmitOutcome; from: RankId } | null>(null);
-  // 들어올 때 이미 합격해 있던 경우에만 '합격 기록'을 보여 준다.
-  // 방금 합격한 경우에는 정답 연출 → 승급 연출 순서로 이어진다.
-  const [solvedOnArrival] = useState(progress?.status === "solved");
+  /**
+   * 화면에 펼쳐 둔 문제. 정답을 맞히면 엔진은 곧바로 다음 문제로 넘어가지만,
+   * 정답 연출이 끝날 때까지는 풀던 문제의 화면을 그대로 둔다.
+   */
+  const [playing, setPlaying] = useState<string | null>(session?.status === "active" && session.stage === "playing" ? currentId : null);
+
+  // 들어설 때, 떠나 있는 사이에 시간이 끝났는지 본다
+  useEffect(() => {
+    gameStore.tickExam();
+  }, []);
+
+  /** 봉투(또는 다음 시험지)를 연다 */
+  const begin = () => {
+    setOpening(false);
+    if (!rule) return;
+    if (session?.status === "active") {
+      gameStore.openExamSheet(graceFor(PUZZLE_BY_ID[rule.examPuzzleIds[session.index]]));
+      setPlaying(rule.examPuzzleIds[session.index]);
+    } else {
+      gameStore.startExam(graceFor(PUZZLE_BY_ID[rule.examPuzzleIds[0]]));
+      setPlaying(rule.examPuzzleIds[0]);
+    }
+  };
 
   // 봉투를 뜯는 연출이 끝나면 시험지를 펼친다. 다시 누르면 바로 넘어간다.
   useEffect(() => {
-    if (!opening || !puzzle) return;
-    const id = window.setTimeout(() => gameStore.markOpened(puzzle.id), motionMs(ENVELOPE_OPEN_MS));
+    if (!opening) return;
+    const id = window.setTimeout(begin, motionMs(ENVELOPE_OPEN_MS));
     return () => window.clearTimeout(id);
-  }, [opening, puzzle]);
+    // begin 은 그때의 응시 상태를 읽는다
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [opening]);
+
+  const lastRule = PROMOTION_RULES.find((r) => r.to === game.rank) ?? null;
 
   useEffect(() => {
-    if (!rule || !puzzle) navigate({ name: "home" }, { replace: true });
-  }, [rule, puzzle]);
-
-  if (!rule || !puzzle || !progress) return null;
+    if (!rule && !lastRule && !passed) goHome();
+  }, [rule, lastRule, passed]);
 
   if (passed) {
     return (
       <PromotionCeremony
         from={passed.from}
-        to={passed.outcome.promotedTo ?? rule.to}
+        to={passed.outcome.promotedTo ?? game.rank}
         reward={passed.outcome.reward}
-        onDone={() => navigate({ name: "home" }, { replace: true })}
+        onDone={goHome}
         onViewCard={() => navigate({ name: "profile" }, { replace: true })}
       />
     );
   }
 
-  if (solvedOnArrival) return <ExamPassed rule={rule} puzzle={puzzle} />;
-
-  const inSession = progress.status === "solved";
-
-  if (!inSession && !examStatus(game).unlocked) return <ExamLocked rule={rule} />;
-
-  if (!inSession && !progress.opened) {
+  // 풀던 문제는 정답 연출이 끝날 때까지 그대로 둔다(마지막 문제를 맞히면 엔진의 등급은 이미 올라가 있다)
+  const held = playing ? PUZZLE_BY_ID[playing] : null;
+  const failed = session?.status === "failed";
+  if (held && !failed && (session || getProgress(game, held.id).status === "solved")) {
     return (
-      <ExamGate
-        rule={rule}
-        puzzle={puzzle}
-        state={opening ? "opening" : "sealed"}
-        onOpen={() => {
-          if (opening) {
-            gameStore.markOpened(puzzle.id);
-          } else {
-            setOpening(true);
-            playSound("place");
-          }
+      <ExamPlay
+        key={held.id}
+        puzzle={held}
+        onSolved={(outcome) => {
+          setPlaying(null);
+          if (outcome.promotedTo) setPassed({ outcome, from: examRuleOf(held.id)?.from ?? game.rank });
         }}
       />
     );
   }
 
+  // 최고 등급: 더 치를 시험이 없다. 마지막 시험의 합격 기록을 보여 준다.
+  if (!rule) return lastRule ? <ExamPassed rule={lastRule} /> : null;
+
+  if (session?.status === "failed") return <ExamFailed rule={rule} session={session} status={status} />;
+
+  if (!session && !status.unlocked) return <ExamLocked rule={rule} status={status} />;
+
   return (
-    <DeskPlay
-      puzzle={puzzle}
-      variant="exam"
-      onExit={() => goBack({ name: "home" })}
-      onSolved={(outcome) => setPassed({ outcome, from: rule.from })}
+    <ExamGate
+      rule={rule}
+      status={status}
+      session={session}
+      state={opening ? "opening" : "sealed"}
+      onOpen={() => {
+        if (opening) begin();
+        else {
+          setOpening(true);
+          playSound("place");
+        }
+      }}
     />
   );
 }

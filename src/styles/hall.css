@@ -1,6 +1,6 @@
 @layer layout {
-  /* 학원 복도 (메인 홈)
-     위: 복도 그림 · 가운데: 벽의 시험 게시판 · 아래: 선반 위의 물건 */
+  /* 학원 복도: 홈과 입학 화면이 같이 쓰는 뼈대(복도 그림 자리, 학원 이름과 등급).
+     홈(쿼터뷰 학원 홀)의 방과 아래 창은 iso.css 에 있다. */
 
   .hall {
     position: relative;
@@ -74,54 +74,7 @@
     transform-origin: 50% -30px;
   }
 
-  /* ── 시험 게시판 ── */
-
-  .bulletin {
-    position: relative;
-    z-index: 1;
-    flex: 1 0 auto;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-  }
-
-  /* 오늘의 시험 공고 */
-  .posting {
-    position: relative;
-    z-index: 1;
-    display: block;
-    width: 100%;
-    text-align: left;
-  }
-
-  .posting__leaf {
-    display: block;
-  }
-
-  .posting__pin {
-    position: absolute;
-    z-index: 2;
-  }
-
-  .posting__head {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 10px;
-  }
-
-  /* 날짜 도장 */
-  .posting__date {
-    flex: none;
-    border-radius: 2px;
-  }
-
-  .posting__subject {
-    display: flex;
-    align-items: baseline;
-    flex-wrap: wrap;
-    gap: 0 10px;
-  }
+  /* ── 공고의 조각들: 연습실의 시험지가 쓴다 ── */
 
   .posting__meta {
     display: grid;
@@ -154,36 +107,7 @@
     pointer-events: none;
   }
 
-  .posting__cta {
-    min-height: 48px;
-  }
-
-  /* 승급 시험 봉투와 꼬리표 */
-  .promoslip {
-    position: relative;
-    z-index: 1;
-    display: grid;
-    align-items: center;
-  }
-
-  .promoslip__env {
-    position: relative;
-    display: block;
-  }
-
-  .promoslip__pin {
-    position: absolute;
-    left: 50%;
-    margin-left: -9px;
-  }
-
-  .promoslip__tag {
-    display: grid;
-  }
-
-  .promoslip__title {
-    letter-spacing: -0.02em;
-  }
+  /* 승급 조건 목록 */
 
   .promoslip__reqs {
     display: grid;
@@ -200,75 +124,5 @@
     position: relative;
     flex: none;
     border-radius: 2px;
-  }
-
-  /* ── 선반 위의 물건 ── */
-
-  .ledge {
-    position: relative;
-    z-index: 1;
-    flex: none;
-    display: grid;
-  }
-
-  .ledge__item {
-    position: relative;
-    display: grid;
-    justify-items: center;
-    align-content: start;
-    min-width: 0;
-    text-align: center;
-  }
-
-  .ledge__item:nth-of-type(2) {
-    animation-delay: 60ms;
-  }
-
-  .ledge__item:nth-of-type(3),
-  .ledge__item--coins {
-    animation-delay: 120ms;
-  }
-
-  .ledge__art {
-    position: relative;
-    display: grid;
-  }
-
-  .ledge__name {
-    letter-spacing: -0.02em;
-  }
-
-  .ledge__sub {
-    white-space: nowrap;
-  }
-
-  /* ── 낮은 화면 (주소창이 보이는 모바일 브라우저 등) ──
-     게시판과 선반을 조금씩 조여 복도 그림이 보일 자리를 남긴다. */
-  @media (max-height: 740px) {
-  
-
-  
-
-  
-
-  
-
-  
-
-  
-
-    .posting__cta {
-      min-height: 46px;
-    }
-
-  
-
-  
-
-  
-
-  
-
-  
   }
 }

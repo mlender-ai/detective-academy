@@ -1,9 +1,9 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState, type PointerEvent, type ReactNode } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type PointerEvent, type ReactNode } from "react";
 import { haptic, playSound } from "../../app/sound";
 import { PenMark } from "../../art/pixel";
 import { Portrait } from "../../art/portraits";
 import type { ScheduleInput, SchedulePuzzle } from "../../engine/types";
-import type { GameProps } from "../logic";
+import { headCount, type GameProps } from "../logic";
 
 interface Box {
   x: number;
@@ -218,7 +218,7 @@ export function SchedulePuzzleGame({ puzzle, input, onChange, locked, verdict, w
   const selectedName = people.find((p) => p.id === selected)?.name;
 
   return (
-    <div className="schedule">
+    <div className="schedule" data-cols={slots.length} style={{ "--cols": slots.length } as CSSProperties}>
       <article className="exampaper leaf" style={{ viewTransitionName: "exam-sheet" }}>
         {brief}
         <section className="conditions" aria-labelledby="conditions-title">
@@ -236,7 +236,7 @@ export function SchedulePuzzleGame({ puzzle, input, onChange, locked, verdict, w
         </section>
       </article>
 
-      <section className="board" ref={boardRef} data-shaking={shaking} data-verdict={verdict} aria-label="발표 시간표">
+      <section className="board" ref={boardRef} data-shaking={shaking} data-verdict={verdict} aria-label={puzzle.rules.title ?? "발표 시간표"}>
         <div className="board__slots">
           {slots.map((slot, i) => {
             const occupant = people.find((p) => p.id === placement[i]);
@@ -279,10 +279,10 @@ export function SchedulePuzzleGame({ puzzle, input, onChange, locked, verdict, w
         >
           <p className="board__tray-label">
             {selectedName
-              ? `${selectedName} 선택됨 — 놓을 시간을 누르세요`
+              ? `${selectedName} 선택됨 — 놓을 자리를 누르세요`
               : placedCount === slots.length
-                ? "네 명을 모두 배치했습니다"
-                : "카드를 끌거나, 누른 뒤 시간을 눌러 배치하세요"}
+                ? `${headCount(people.length)}을 모두 배치했습니다`
+                : "카드를 끌거나, 누른 뒤 자리를 눌러 배치하세요"}
           </p>
           <div className="board__seats">
             {people.map((person, i) => (

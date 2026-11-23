@@ -1,0 +1,39 @@
+/* 살아 있는 장면(옆에서 본 것: 수사 수첩의 도입에 쓰는 자료실 장면)의 틀과, 홈 머리말의 등급·크레딧 자리.
+   색은 검정과 흰색(--m-w) 두 가지, 점 하나는 2px, 글자는 16·32px 이라는 mono.css 의 약속을 그대로 따른다.
+   홈(쿼터뷰 학원 홀)과 방들의 스타일은 iso.css 에 있다. 예전 홈(옆에서 본 복도 + 명령 창)의 규칙은 걷어냈다. */
+
+.livescene {
+  position: relative;
+  overflow: hidden;
+  background: #000;
+}
+
+.livescene canvas {
+  position: absolute;
+  display: block;
+  image-rendering: pixelated;
+}
+
+.hall__purse {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: 6px;
+  font-family: var(--m-font);
+  font-size: 16px;
+  line-height: 20px;
+  color: var(--m-w);
+}
+
+.hall__purse i {
+  font-family: var(--m-cap);
+  font-size: 12px;
+  font-style: normal;
+  line-height: 16px;
+}
+
+.hall__side {
+  display: grid;
+  justify-items: end;
+}

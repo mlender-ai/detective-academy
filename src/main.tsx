@@ -13,15 +13,23 @@ import "./styles/rooms.css";
 import "./styles/mono-pixel.css";
 import "./styles/mono.css";
 import "./styles/mono-rooms.css";
+import "./styles/live.css";
+import "./styles/codeux.css";
+import "./styles/cases.css";
+import "./styles/growth.css";
+import "./styles/story.css";
+import "./styles/fx.css";
+import "./styles/sound.css";
+import "./styles/iso.css";
 
 import { App } from "./app/App";
-import { PUZZLES } from "./data/puzzles";
+import { ALL_PUZZLES } from "./data/puzzles";
 import { verifyGuidance, verifyPuzzle } from "./engine/puzzleValidator";
 
 // 개발 중에는 문제 데이터를 고칠 때마다 정답 유일성과 힌트·해설 일관성을 바로 확인한다.
 // (같은 검사를 npm test 가 자동으로 수행한다.)
 if (import.meta.env.DEV) {
-  for (const puzzle of PUZZLES) {
+  for (const puzzle of ALL_PUZZLES) {
     const solved = verifyPuzzle(puzzle);
     const guidance = verifyGuidance(puzzle);
     if (!solved.ok) console.error(`[문제 검증 실패] ${puzzle.id}: 정답 ${solved.solutions.length}개`, solved);

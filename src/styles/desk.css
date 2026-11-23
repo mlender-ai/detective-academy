@@ -76,11 +76,6 @@
     display: none;
   }
 
-  .code {
-    display: grid;
-    justify-items: center;
-  }
-
   .exampaper {
     width: 100%;
   }

@@ -26,13 +26,23 @@ interface Props {
   title: string;
   /** 제목 아래 한 줄 (예: 유형) */
   sub?: string;
+  /** 사건을 여는 한두 문장. 제목이 다 찍힌 뒤에 나오고, 읽을 만큼 더 머문다. */
+  text?: string;
 }
 
 const TYPE_MS = 55;
 const HOLD_MS = 800;
+/** 여는 글 한 자를 읽는 데 주는 시간 */
+const READ_MS = 42;
 const OUT_MS = 300;
 
-export function CineCard({ kicker, title, sub }: Props) {
+/** 자막 화면이 떠 있는 시간(ms). 뜨지 않는 설정이면 0. 시험의 시계를 그만큼 늦게 돌리는 데 쓴다. */
+export function cineDuration(title: string, text?: string): number {
+  if (!cineEnabled()) return 0;
+  return title.length * TYPE_MS + HOLD_MS + (text ? text.length * READ_MS : 0) + OUT_MS;
+}
+
+export function CineCard({ kicker, title, sub, text }: Props) {
   const [enabled] = useState(cineEnabled);
   const [count, setCount] = useState(0);
   const [stage, setStage] = useState<"type" | "out" | "gone">("type");
@@ -43,10 +53,10 @@ export function CineCard({ kicker, title, sub }: Props) {
     if (count < title.length) {
       timer.current = window.setTimeout(() => setCount((n) => n + 1), TYPE_MS);
     } else {
-      timer.current = window.setTimeout(() => setStage("out"), HOLD_MS);
+      timer.current = window.setTimeout(() => setStage("out"), HOLD_MS + (text ? text.length * READ_MS : 0));
     }
     return () => window.clearTimeout(timer.current);
-  }, [enabled, stage, count, title.length]);
+  }, [enabled, stage, count, title.length, text]);
 
   useEffect(() => {
     if (stage !== "out") return;
@@ -66,6 +76,11 @@ export function CineCard({ kicker, title, sub }: Props) {
       <p className="cine__sub" data-shown={count >= title.length}>
         {sub ?? ""}
       </p>
+      {text && (
+        <p className="cine__text" data-shown={count >= title.length}>
+          {text}
+        </p>
+      )}
     </div>
   );
 }

@@ -1,29 +1,16 @@
 /**
- * 프로토타입 문제 3종.
+ * 문제 등록부. 처음의 세 문제는 이 파일에, 일일 문제는 dailySet.ts(첫 주)와 sets/dailyWeek2.ts(둘째 주)에,
+ * 연습실·승급 시험의 문제는 sets/ 에 있다.
  *
  * solution 은 개발·검증용이다. 화면에는 플레이어가 해결한 뒤에만 노출한다.
- * solution 이 맞는지는 src/tests/puzzleValidator.test.ts 가 전수 탐색으로 확인한다.
+ * solution 이 맞는지는 src/tests 가 전수 탐색으로 확인한다.
  */
-import type { CodePuzzle, Person, Puzzle, SchedulePuzzle, TruthPuzzle } from "../engine/types";
-
-/*
- * 인물 색은 학원 팔레트의 네 가지 재질색만 쓴다: 황동, 봉랍, 녹청, 강철.
- * 사람 구분은 색에만 기대지 않고 고유 실루엣과 이름 첫 글자가 함께 맡는다.
- */
-const BRASS = "#87692F";
-const WAX = "#8A3F4B";
-const VERDIGRIS = "#3A715E";
-const STEEL = "#4F6486";
-
-const hana: Person = { id: "hana", name: "하나", color: VERDIGRIS, mark: "circle" };
-const junho: Person = { id: "junho", name: "준호", color: BRASS, mark: "shield" };
-const sera: Person = { id: "sera", name: "세라", color: WAX, mark: "hex" };
-const daon: Person = { id: "daon", name: "다온", color: STEEL, mark: "diamond" };
-
-const doyun: Person = { id: "doyun", name: "도윤", color: BRASS, mark: "shield" };
-const minjae: Person = { id: "minjae", name: "민재", color: STEEL, mark: "diamond" };
-const sea: Person = { id: "sea", name: "세아", color: WAX, mark: "circle" };
-const harin: Person = { id: "harin", name: "하린", color: VERDIGRIS, mark: "hex" };
+import type { CodePuzzle, Puzzle, RankId, SchedulePuzzle, TruthPuzzle } from "../engine/types";
+import { addDays, daysBetween, isDateKey } from "../engine/time";
+import { DAILY_SET, DAILY_WEEK_1_COUNT } from "./dailySet";
+import { daon, doyun, hana, harin, junho, minjae, sea, sera } from "./people";
+import { RANKS } from "./ranks";
+import { GROWTH_SET } from "./sets";
 
 export const DAILY_CODE: CodePuzzle = {
   id: "daily-code-001",
@@ -94,7 +81,9 @@ export const DAILY_CODE: CodePuzzle = {
     },
   ],
   solution: [4, 2, 6],
-  reward: 100,
+  reward: 60,
+  rank: "F",
+  minutes: 4,
 };
 
 export const PRACTICE_TRUTH: TruthPuzzle = {
@@ -153,7 +142,9 @@ export const PRACTICE_TRUTH: TruthPuzzle = {
     },
   ],
   solution: "sera",
-  reward: 60,
+  reward: 30,
+  rank: "F",
+  minutes: 3,
 };
 
 export const EXAM_SCHEDULE: SchedulePuzzle = {
@@ -217,21 +208,123 @@ export const EXAM_SCHEDULE: SchedulePuzzle = {
     },
   ],
   solution: ["doyun", "minjae", "sea", "harin"],
-  reward: 150,
+  // 합격 보상은 시험 규칙(data/ranks.ts)이 준다
+  reward: 0,
+  rank: "F",
+  minutes: 4,
 };
 
+/** 처음부터 있던 세 문제 (오늘의 추리 · 연습실 · F→D 승급 시험에 하나씩) */
 export const PUZZLES: Puzzle[] = [DAILY_CODE, PRACTICE_TRUTH, EXAM_SCHEDULE];
 
+/** 모든 문제. 저장된 진행은 이 안의 문제에 대해서만 읽고 쓴다. */
+export const ALL_PUZZLES: Puzzle[] = [...PUZZLES, ...DAILY_SET, ...GROWTH_SET];
+
 export const PUZZLE_BY_ID: Record<string, Puzzle> = Object.fromEntries(
-  PUZZLES.map((p) => [p.id, p]),
+  ALL_PUZZLES.map((p) => [p.id, p]),
 );
 
-/**
- * 오늘의 추리. 프로토타입은 예시 문제 1개를 고정으로 내보낸다.
- * 실제 서비스에서는 dateKey(Asia/Seoul) → 문제 배정 표로 바꾸면 된다.
+/** 문제 데이터의 판. 문제의 규칙·정답이 바뀌면 올린다(저장된 풀이 중 입력값을 버릴지 판단하는 기준이 된다). */
+export const CONTENT_VERSION = 2;
+
+/* ───────── 오늘의 추리: 날짜별 배정 ─────────
+ * 모든 사용자가 같은 날 같은 문제를 받는다(Asia/Seoul 날짜 기준). 서버가 없으므로 정해 둔 순서를 날짜로 센다.
+ * 지금은 열네 문제가 차례로 붙는다(첫날의 '자료실 금고의 암호' + 일일 문제 열셋).
+ * 새 문제는 order 의 맨 뒤에만 덧붙인다: 앞의 순서와 이름표가 바뀌면 지나간 날짜의 배정과 기록이 뒤바뀐다
+ * (날짜 ↔ 이름표의 표는 src/tests/daily-calendar.test.ts 가 못박아 둔다).
+ * 달력은 돌지 않는다: 마지막 문제의 다음 날부터는 오늘의 추리가 없다(getDailyPuzzle 이 null).
+ * 풀었던 문제를 새 문제처럼 다시 붙이지 않고, 지난 사건(pastDailies)을 다시 보게 한다.
  */
-export function getDailyPuzzle(_dateKey: string): Puzzle {
-  return DAILY_CODE;
+export const DAILY_CALENDAR = {
+  /** 이 날 첫 문제가 붙는다 */
+  start: "2026-11-22",
+  order: [DAILY_CODE, ...DAILY_SET].map((p) => p.id),
+} as const;
+
+/** 그 날짜에 붙는 문제의 순번 (0부터). 달력 밖의 날짜(시작일 이전, 마지막 문제의 다음 날부터)와 날짜가 아닌 값은 null */
+export function dailyIndex(dateKey: string): number | null {
+  if (!isDateKey(dateKey)) return null;
+  const days = daysBetween(DAILY_CALENDAR.start, dateKey);
+  return days >= 0 && days < DAILY_CALENDAR.order.length ? days : null;
 }
 
-export const PRACTICE_PUZZLES: Puzzle[] = PUZZLES.filter((p) => p.category === "practice");
+/** 달력의 마지막 문제가 붙는 날 */
+export function dailyLastDate(): string {
+  return addDays(DAILY_CALENDAR.start, DAILY_CALENDAR.order.length - 1);
+}
+
+/** 그 문제가 달력에서 붙는 날짜. 달력에 없는 문제면 null */
+export function dailyDateOf(puzzleId: string): string | null {
+  const index = DAILY_CALENDAR.order.indexOf(puzzleId);
+  return index < 0 ? null : addDays(DAILY_CALENDAR.start, index);
+}
+
+/**
+ * 검수용 일차 전환. 주소가 ?demo=1&day=3 이면 오늘의 추리 자리에 일일 문제 3일차가 놓인다(1~7 은 dailySet 의 첫 주 순서).
+ * 둘째 주의 문제는 ?day= 로 열지 않는다: 날짜를 옮겨 본다(?demo=1&date=2026-11-30 부터 12-05 까지. app/clock.ts).
+ * 일반 사용자 주소에는 영향을 주지 않는다.
+ */
+function previewDay(): number | null {
+  if (typeof window === "undefined") return null;
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("demo") !== "1") return null;
+  const day = Number(params.get("day"));
+  return Number.isInteger(day) && day >= 1 && day <= DAILY_WEEK_1_COUNT ? day : null;
+}
+
+const PREVIEW_DAY = previewDay();
+
+/** 그 날짜(Asia/Seoul, YYYY-MM-DD)의 오늘의 추리. 달력이 끝난 날(과 시작 전)에는 없다(null). */
+export function getDailyPuzzle(dateKey: string): Puzzle | null {
+  if (PREVIEW_DAY) return DAILY_SET[PREVIEW_DAY - 1];
+  const index = dailyIndex(dateKey);
+  return index === null ? null : PUZZLE_BY_ID[DAILY_CALENDAR.order[index]];
+}
+
+/** 지난 사건 한 줄: 그 날짜에 붙었던 오늘의 추리 */
+export interface DailyEntry {
+  /** 붙은 날짜 (Asia/Seoul, YYYY-MM-DD) */
+  date: string;
+  /** 달력의 몇째 날인가 (1부터) */
+  day: number;
+  puzzle: Puzzle;
+}
+
+/**
+ * 지난 사건: 달력의 첫날부터 그 날짜까지 붙었던 문제(그 날짜의 것 포함), 날짜 순서대로.
+ * 아직 오지 않은 날의 문제는 들어 있지 않다. 날짜가 아닌 값이면 빈 목록이다.
+ */
+export function pastDailies(dateKey: string): DailyEntry[] {
+  if (!isDateKey(dateKey)) return [];
+  const days = Math.min(daysBetween(DAILY_CALENDAR.start, dateKey), DAILY_CALENDAR.order.length - 1);
+  const out: DailyEntry[] = [];
+  for (let i = 0; i <= days; i++) out.push({ date: addDays(DAILY_CALENDAR.start, i), day: i + 1, puzzle: PUZZLE_BY_ID[DAILY_CALENDAR.order[i]] });
+  return out;
+}
+
+/**
+ * 그 문제를 그 날짜에 열 수 있는가: 달력에서 그 날짜까지 붙은 문제만 열린다(오지 않은 날의 문제와 달력에 없는 문제는 열리지 않는다).
+ * 검수용 일차 전환(?demo=1&day=)으로 오늘 자리에 놓인 문제는 날짜와 상관없이 열린다.
+ */
+export function dailyOpenOn(puzzleId: string, dateKey: string): boolean {
+  if (PREVIEW_DAY && DAILY_SET[PREVIEW_DAY - 1].id === puzzleId) return true;
+  const date = dailyDateOf(puzzleId);
+  return date !== null && isDateKey(dateKey) && daysBetween(date, dateKey) >= 0;
+}
+
+/* ───────── 연습실 · 승급 시험 ───────── */
+
+const rankOrder = (rank: RankId | undefined) => RANKS.findIndex((r) => r.id === (rank ?? "F"));
+
+/** 연습실의 문제: 등급 순서대로 */
+export const PRACTICE_PUZZLES: Puzzle[] = ALL_PUZZLES.filter((p) => p.category === "practice")
+  .map((p, i) => ({ p, i }))
+  .sort((a, b) => rankOrder(a.p.rank) - rankOrder(b.p.rank) || a.i - b.i)
+  .map(({ p }) => p);
+
+/** 그 등급의 서랍에 든 연습 문제 */
+export function practiceOfRank(rank: RankId): Puzzle[] {
+  return PRACTICE_PUZZLES.filter((p) => (p.rank ?? "F") === rank);
+}
+
+export const EXAM_PUZZLES: Puzzle[] = ALL_PUZZLES.filter((p) => p.category === "exam");

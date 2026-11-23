@@ -1,26 +1,43 @@
-import { useEffect, useState } from "react";
-import { NEXT_STEP_ACTION, nextStep } from "../app/flow";
+import { useEffect, useState, type CSSProperties } from "react";
+import { nextAction } from "../app/flow";
 import { prefersReducedMotion } from "../app/motion";
 import { navigate } from "../app/router";
 import { playSound } from "../app/sound";
 import { useGame } from "../app/store";
+import { FX_ASCII } from "../app/variant";
 import { CoinsArt } from "../art/objects";
 import { PenMark, Sprite } from "../art/pixel";
 import { Portrait } from "../art/portraits";
 import { DeskWood } from "../components/DeskWood";
 import { useCountUp } from "../components/CreditReward";
+import { FxCoin } from "../fx/FxCanvas";
 import { Stamp } from "../components/Stamp";
 import { getProgress, type SubmitOutcome } from "../engine/progressEngine";
+import { allCards, derivationPath } from "../engine/evidence";
 import { truthValues } from "../engine/puzzleValidator";
+import { pressSeal, sealFace } from "../engine/seal";
 import { formatDuration, seoulDateLabel } from "../engine/time";
 import type { Puzzle, PuzzleProgress } from "../engine/types";
 import { LockOpen } from "../games/CodeBreaker/CodeBreaker";
+import { josa } from "../games/logic";
+import { DotGrid, gridWords } from "../games/SealMatch/SealMatch";
+
+/** 결과 화면에서 돌아갈 곳: 단추의 글자(둘이 나란할 때의 짧은 것, 혼자일 때의 것)와 가는 길 */
+export interface ResultBack {
+  short: string;
+  label: string;
+  go: () => void;
+}
+
+const HOME_BACK: ResultBack = { short: "학원 홀", label: "학원 홀로", go: () => navigate({ name: "home" }, { replace: true }) };
 
 interface Props {
   puzzle: Puzzle;
   /** 방금 제출한 결과. null 이면 예전에 해결한 기록을 보는 중이다. */
   outcome: SubmitOutcome | null;
   onReplay?: () => void;
+  /** 돌아갈 곳. 없으면 학원 홀 */
+  back?: ResultBack;
 }
 
 /** 인장이 찍힌 뒤에 크레딧이 올라간다 */
@@ -55,10 +72,11 @@ export function Reward({ amount, balance, delayMs = REWARD_DELAY_MS }: { amount:
   const shown = useCountUp(amount, 0, 720, delayMs);
   const total = useCountUp(balance, balance - amount, 720, delayMs);
   return (
-    <div className="graded__reward" data-testid="reward">
+    <div className="graded__reward" data-testid="reward" data-fx={FX_ASCII ? "coin" : undefined}>
       <Sprite name="sparkle" className="pxsparkle" />
       <Sprite name="sparkle" className="pxsparkle" />
-      <CoinsArt className="graded__coins" />
+      {/* 보상 애니메이션 실험(?fx=ascii): 동전 더미 대신 크레딧 한 닢이 숫자가 오르기 시작할 때 한 바퀴 돌고 멈춘다 */}
+      {FX_ASCII ? <FxCoin className="graded__coins" delayMs={delayMs} /> : <CoinsArt className="graded__coins" />}
       <p className="graded__amount num">
         <span className="sr-only">획득한 수사 크레딧 </span>+{shown}
       </p>
@@ -128,7 +146,10 @@ function Solution({ puzzle }: { puzzle: Puzzle }) {
     const values = truthValues(puzzle.rules, puzzle.solution);
     return (
       <section className="solution leaf" data-testid="solution">
-        <h2 className="solution__label hand">답안지를 숨긴 사람</h2>
+        <h2 className="solution__label hand">
+          {puzzle.rules.item ?? "답안지"}
+          {josa(puzzle.rules.item ?? "답안지", "을", "를")} 숨긴 사람
+        </h2>
         <p className="solution__person">
           <span className="solution__photo">
             <Portrait person={culprit} />
@@ -154,10 +175,74 @@ function Solution({ puzzle }: { puzzle: Puzzle }) {
     );
   }
 
+  if (puzzle.type === "evidence") {
+    const cards = allCards(puzzle.rules);
+    const label = (id: string) => cards.find((card) => card.id === id)?.label ?? id;
+    const statement = cards.find((card) => card.id === puzzle.solution.statement)!;
+    const against = cards.find((card) => card.id === puzzle.solution.against)!;
+    const speaker = puzzle.rules.people.find((p) => p.id === statement.speaker)!;
+    const path = derivationPath(puzzle.rules, against.id);
+    return (
+      <section className="solution leaf solution--evidence" data-testid="solution">
+        <h2 className="solution__label hand">기록과 맞지 않는 진술</h2>
+        <p className="solution__person">
+          <span className="solution__photo">
+            <Portrait person={speaker} />
+            <PenMark kind="cross" />
+          </span>
+          {speaker.name}
+        </p>
+        <p className="solution__lie">“{statement.text}”</p>
+        <h2 className="solution__label hand">이 진술을 깬 증거</h2>
+        {path.length === 0 ? (
+          <p className="solution__fact">{against.text}</p>
+        ) : (
+          <ol className="solution__chain">
+            {path.map((step) => (
+              <li key={step.card.id}>
+                <span className="solution__from">
+                  {label(step.from[0])} + {label(step.from[1])}
+                </span>
+                <span className="solution__fact">{step.card.text}</span>
+              </li>
+            ))}
+          </ol>
+        )}
+      </section>
+    );
+  }
+
+  if (puzzle.type === "spatial") {
+    const stamp = puzzle.rules.stamps.find((s) => s.id === puzzle.solution.stamp)!;
+    const { turn } = puzzle.solution;
+    const cell = puzzle.rules.size >= 6 ? 10 : 12;
+    return (
+      <section className="solution leaf solution--seal" data-testid="solution">
+        <h2 className="solution__label hand">자국을 낸 도장</h2>
+        <p className="solution__stamp">
+          {stamp.name} · {["돌리지 않고", "한 번 돌려", "두 번 돌려", "세 번 돌려"][turn]} 찍음
+        </p>
+        <div className="solution__seals">
+          <figure>
+            <DotGrid grid={sealFace(stamp.face, turn)} cell={cell} label={`도장 면. ${gridWords(sealFace(stamp.face, turn))}`} />
+            <figcaption>도장 면</figcaption>
+          </figure>
+          <span className="solution__arrow" aria-hidden="true">
+            찍으면
+          </span>
+          <figure>
+            <DotGrid grid={pressSeal(stamp.face, turn)} cell={cell} label={`찍힌 자국. ${gridWords(pressSeal(stamp.face, turn))}`} />
+            <figcaption>찍힌 자국</figcaption>
+          </figure>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="solution leaf" data-testid="solution">
-      <h2 className="solution__label hand">발표 순서</h2>
-      <ol className="solution__order">
+      <h2 className="solution__label hand">{puzzle.rules.title ?? "발표 순서"}</h2>
+      <ol className="solution__order" style={{ "--cols": puzzle.solution.length } as CSSProperties}>
         {puzzle.solution.map((id, i) => {
           const person = puzzle.rules.people.find((p) => p.id === id)!;
           return (
@@ -177,13 +262,12 @@ function Solution({ puzzle }: { puzzle: Puzzle }) {
  * 채점된 시험지. 책상은 그대로이고, 풀던 시험지에 인장이 찍힌다.
  * 풀린 자물쇠는 풀이 때와 같은 자리에서 암호를 보여 준다.
  */
-export function DeskResult({ puzzle, outcome, onReplay }: Props) {
+export function DeskResult({ puzzle, outcome, onReplay, back = HOME_BACK }: Props) {
   const game = useGame();
   const progress = getProgress(game, puzzle.id);
   const fresh = outcome !== null;
   const rewarded = fresh && outcome.reward > 0;
-  const step = nextStep(game);
-  const next = step === "none" ? null : NEXT_STEP_ACTION[step];
+  const next = nextAction(game);
 
   useEffect(() => {
     if (!fresh) return;
@@ -191,7 +275,7 @@ export function DeskResult({ puzzle, outcome, onReplay }: Props) {
     return () => window.clearTimeout(id);
   }, [fresh]);
 
-  const goHome = () => navigate({ name: "home" }, { replace: true });
+  const goHome = back.go;
 
   const lead = !fresh
     ? `${progress.solvedAt ? seoulDateLabel(new Date(progress.solvedAt)) : ""}에 해결한 수사 과제입니다.`
@@ -217,6 +301,12 @@ export function DeskResult({ puzzle, outcome, onReplay }: Props) {
           <p className="graded__lead" data-testid="result-lead">
             {fresh ? <Typed text={lead} startMs={STAMP_DELAY_MS + 200} /> : lead}
           </p>
+
+          {puzzle.outro && (
+            <p className="graded__outro" data-testid="result-outro">
+              {fresh ? <Typed text={puzzle.outro} startMs={STAMP_DELAY_MS + 200 + lead.length * 26 + 300} /> : puzzle.outro}
+            </p>
+          )}
 
           <GradedFacts progress={progress} />
 
@@ -252,12 +342,13 @@ export function DeskResult({ puzzle, outcome, onReplay }: Props) {
         {next ? (
           <>
             <button type="button" className="inkbtn deskfoot__hint" onClick={goHome} data-testid="result-home">
-              학원 복도
+              {back.short}
             </button>
             <button
               type="button"
               className="inkbtn inkbtn--wine deskfoot__submit"
-              onClick={() => navigate(next.route, { replace: true })}
+              // fresh: 오늘의 추리를 풀다 자정을 넘겼으면 다음 할 일이 같은 주소(#/daily)의 새 문제다
+              onClick={() => navigate(next.route, { replace: true, fresh: true })}
               data-testid="result-next"
             >
               {next.label}
@@ -265,7 +356,7 @@ export function DeskResult({ puzzle, outcome, onReplay }: Props) {
           </>
         ) : (
           <button type="button" className="inkbtn inkbtn--wine deskfoot__submit" onClick={goHome} data-testid="result-home">
-            학원 복도로
+            {back.label}
           </button>
         )}
       </footer>

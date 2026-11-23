@@ -1,0 +1,2944 @@
+/* 사건 수사(스토리) 화면. CASE D-001 「BJ 토끼의 마지막 방송」 제1장부터 쓴다.
+   색은 검정과 흰색(--m-w) 두 가지, 점 하나는 2px, 글자는 16·32px(작은 꼬리말만 갈무리11 12px)이라는
+   mono.css 의 약속을 그대로 따른다. 회색·투명도·흐림·비스듬한 선을 쓰지 않는다.
+   방송 화면의 캔버스는 2px 격자에 맞춰 놓는다(반 화소에 걸리면 회색이 생긴다). */
+
+.story {
+  position: relative;
+  overflow: hidden;
+  font-family: var(--m-font);
+  font-size: 16px;
+  line-height: 22px;
+  color: var(--m-w);
+  background: #000;
+}
+
+.story__scroll {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px 12px 12px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.story__scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.story .narr {
+  min-height: 80px;
+  border-top: 2px solid var(--m-w);
+}
+
+/* 글줄 자리에 뜨는 알림 (틀린 기록을 골랐을 때) */
+.story__alert {
+  position: relative;
+  z-index: 2;
+  flex: none;
+  min-height: 80px;
+  margin: 0;
+  padding: 10px 12px 8px;
+  color: #000;
+  background: var(--m-w);
+  border-top: 2px solid var(--m-w);
+}
+
+.story__alert::before {
+  content: "! ";
+}
+
+/* ───────── 위 막대의 수사 노트 단추, 장면 이동 줄 ───────── */
+
+.notebtn {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  margin-left: 8px;
+  padding: 0 8px;
+  font-family: var(--m-font);
+  font-size: 16px;
+  color: var(--m-w);
+  background: #000;
+  border: 0;
+  box-shadow: var(--m-frame);
+}
+
+.notebtn:active {
+  color: #000;
+  background: var(--m-w);
+}
+
+.notebtn__count {
+  min-width: 20px;
+  height: 20px;
+  line-height: 20px;
+  text-align: center;
+  color: #000;
+  background: var(--m-w);
+}
+
+.notebtn:active .notebtn__count {
+  color: var(--m-w);
+  background: #000;
+}
+
+.steps {
+  position: relative;
+  z-index: 2;
+  flex: none;
+  display: flex;
+  background: #000;
+  border-bottom: 2px solid var(--m-w);
+}
+
+.steps__chip {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 0 2px;
+  font-family: var(--m-font);
+  font-size: 16px;
+  white-space: nowrap;
+  color: var(--m-w);
+  background: #000;
+  border: 0;
+  border-left: 2px solid var(--m-w);
+}
+
+.steps__chip:first-child {
+  border-left: 0;
+}
+
+.steps__chip[aria-current="step"] {
+  color: #000;
+  background: var(--m-w);
+}
+
+/* 아직 열리지 않은 장면: 작은 글자로 낮추고 칸의 줄을 점선으로 바꾼다 */
+.steps__chip:disabled {
+  font-family: var(--m-cap);
+  font-size: 12px;
+  border-left-style: dotted;
+}
+
+/* ───────── 아래 단추 줄 ───────── */
+
+.story__tally {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  margin: 0;
+  padding: 0 8px;
+  font-family: var(--m-cap);
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--m-w);
+  background: #000;
+}
+
+.story__tally b {
+  font-family: var(--m-font);
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 20px;
+}
+
+.story__tally[data-done="true"] {
+  color: #000;
+  background: var(--m-w);
+}
+
+/* 누를 수 없는 주 단추: 글자는 읽히게 두고 줄만 점선으로 */
+.story .deskfoot__submit:disabled {
+  font-size: 16px;
+  box-shadow: none;
+  outline: 2px dotted var(--m-w);
+  outline-offset: -2px;
+  -webkit-mask: none;
+  mask: none;
+}
+
+/* 아직 고르지 않은 주 단추: 뒤집지 않고 점선으로 둔다(누르면 무엇이 모자란지 알려 준다) */
+.story .deskfoot__submit[data-ready="false"] {
+  color: var(--m-w);
+  background: #000;
+  box-shadow: none;
+  outline: 2px dotted var(--m-w);
+  outline-offset: -2px;
+}
+
+.story .deskfoot__submit[data-ready="false"]::before {
+  content: none;
+}
+
+/* ───────── 방송 화면 (오래된 모니터) ───────── */
+
+.crt {
+  position: relative;
+  z-index: 1;
+  flex: 1 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 0 0 0 calc((100% - 328px) / 2);
+  padding-left: round(down, calc((100% - 328px) / 2), 2px);
+  background: #000;
+}
+
+.crt__bar {
+  display: flex;
+  justify-content: space-between;
+  width: 328px;
+  margin: 0;
+  padding: 6px 0 4px;
+  font-family: var(--m-cap);
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--m-w);
+}
+
+.crt__screen {
+  position: relative;
+  display: block;
+  width: 328px;
+  height: 184px;
+  overflow: hidden;
+  background: #000;
+  box-shadow: var(--m-frame);
+}
+
+.stream {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: block;
+  width: 328px;
+  height: 184px;
+  image-rendering: pixelated;
+}
+
+.crt__live,
+.crt__clock,
+.crt__title {
+  position: absolute;
+  z-index: 1;
+  height: 20px;
+  padding: 0 6px;
+  font-family: var(--m-font);
+  font-size: 16px;
+  line-height: 20px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.crt__live {
+  top: 16px;
+  left: 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #000;
+  background: var(--m-w);
+  box-shadow: 0 0 0 2px #000;
+}
+
+.crt__live i {
+  width: 8px;
+  height: 8px;
+  background: #000;
+  animation: m-blink 1000ms steps(1) infinite;
+}
+
+.crt__clock {
+  top: 16px;
+  right: 16px;
+  color: var(--m-w);
+  background: #000;
+  box-shadow: var(--m-frame);
+}
+
+.crt__title {
+  left: 16px;
+  bottom: 14px;
+  color: var(--m-w);
+  background: #000;
+  box-shadow: var(--m-frame);
+}
+
+.crt__end {
+  position: absolute;
+  z-index: 1;
+  top: 62px;
+  left: 64px;
+  width: 200px;
+  height: 60px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  color: var(--m-w);
+  background: #000;
+  box-shadow: var(--m-frame), 0 0 0 4px #000;
+  pointer-events: none;
+}
+
+.crt__end b {
+  font-weight: 400;
+}
+
+/* 조사할 수 있는 곳: 네 귀에 꺾쇠. 조사한 곳은 왼쪽 위에 흰 점 하나만 남는다. */
+.hot {
+  position: absolute;
+  z-index: 2;
+  padding: 0;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.hot i {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  border: 0 solid var(--m-w);
+  pointer-events: none;
+}
+
+.hot i:nth-child(1) {
+  top: 0;
+  left: 0;
+  border-top-width: 2px;
+  border-left-width: 2px;
+  box-shadow: -2px -2px 0 0 #000, inset 2px 2px 0 0 #000;
+}
+
+.hot i:nth-child(2) {
+  top: 0;
+  right: 0;
+  border-top-width: 2px;
+  border-right-width: 2px;
+  box-shadow: 2px -2px 0 0 #000, inset -2px 2px 0 0 #000;
+}
+
+.hot i:nth-child(3) {
+  bottom: 0;
+  left: 0;
+  border-bottom-width: 2px;
+  border-left-width: 2px;
+  box-shadow: -2px 2px 0 0 #000, inset 2px -2px 0 0 #000;
+}
+
+.hot i:nth-child(4) {
+  right: 0;
+  bottom: 0;
+  border-right-width: 2px;
+  border-bottom-width: 2px;
+  box-shadow: 2px 2px 0 0 #000, inset -2px -2px 0 0 #000;
+}
+
+.hot[data-noted="false"] i {
+  animation: m-blink 1200ms steps(1) infinite;
+}
+
+.hot[data-noted="true"] i {
+  display: none;
+}
+
+.hot[data-noted="true"] i:nth-child(1) {
+  display: block;
+  width: 6px;
+  height: 6px;
+  border: 0;
+  background: var(--m-w);
+  box-shadow: 0 0 0 2px #000;
+}
+
+.hot:active i,
+.hot:focus-visible i {
+  animation: none;
+}
+
+/* 채팅창: 세 줄이 차례로 올라온다. 통째로 누르면 조사한다. */
+.crt__chat {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  width: 328px;
+  height: 64px;
+  margin: 6px 0 0;
+  padding: 2px 8px;
+  font-family: var(--m-font);
+  font-size: 16px;
+  line-height: 20px;
+  text-align: left;
+  color: var(--m-w);
+  background: #000;
+  border: 0;
+  outline: 2px dotted var(--m-w);
+  outline-offset: -2px;
+  overflow: hidden;
+}
+
+.crt__chat[data-noted="true"] {
+  outline-style: solid;
+}
+
+.crt__chatline {
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: clip;
+  animation: story-pop 1ms steps(1) both;
+}
+
+.crt__chatline b {
+  margin-right: 8px;
+  padding: 0 4px;
+  font-weight: 400;
+  color: #000;
+  background: var(--m-w);
+}
+
+@keyframes story-pop {
+  from {
+    visibility: hidden;
+  }
+  to {
+    visibility: visible;
+  }
+}
+
+/* ───────── 타임라인 ───────── */
+
+.tline {
+  display: grid;
+  grid-template-columns: 44px 1fr 44px;
+  align-items: center;
+  column-gap: 8px;
+  width: 328px;
+  margin: 6px 0 4px;
+}
+
+.tline__step {
+  width: 44px;
+  height: 44px;
+  font-family: var(--m-font);
+  font-size: 16px;
+  color: var(--m-w);
+  background: #000;
+  border: 0;
+  box-shadow: inset 0 0 0 2px var(--m-w);
+}
+
+.tline__step:active:not(:disabled) {
+  color: #000;
+  background: var(--m-w);
+}
+
+.tline__step:disabled {
+  box-shadow: none;
+  outline: 2px dotted var(--m-w);
+  outline-offset: -2px;
+}
+
+.tline__track {
+  position: relative;
+  height: 44px;
+  margin: 0 20px;
+  cursor: pointer;
+  touch-action: none;
+}
+
+.tline__rail,
+.tline__fill {
+  position: absolute;
+  top: 12px;
+  left: 0;
+  height: 4px;
+}
+
+.tline__rail {
+  right: 0;
+  background: var(--m-d50);
+}
+
+.tline__fill {
+  background: var(--m-w);
+}
+
+/* 눈금: 누르는 자리는 넓게(56×44px), 보이는 것은 작은 네모와 그 아래의 시각 */
+.tline__tick {
+  position: absolute;
+  top: 0;
+  width: 56px;
+  height: 44px;
+  margin-left: -28px;
+  padding: 26px 0 0;
+  font-family: var(--m-cap);
+  font-size: 12px;
+  line-height: 16px;
+  text-align: center;
+  color: var(--m-w);
+  background: none;
+  border: 0;
+}
+
+.tline__tick::before {
+  content: "";
+  position: absolute;
+  top: 8px;
+  left: 22px;
+  width: 12px;
+  height: 12px;
+  background: #000;
+  box-shadow: inset 0 0 0 2px var(--m-w);
+}
+
+.tline__tick[aria-pressed="true"]::before {
+  top: 4px;
+  height: 20px;
+  background: var(--m-w);
+  box-shadow: 0 0 0 2px #000;
+}
+
+.tline__tick[aria-pressed="true"] span {
+  padding: 0 4px;
+  color: #000;
+  background: var(--m-w);
+}
+
+.tline__time {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.tline__clock {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 16px;
+  line-height: 24px;
+}
+
+.tline__length {
+  min-height: 28px;
+  padding: 0 8px;
+  font-family: var(--m-font);
+  font-size: 16px;
+  color: var(--m-w);
+  background: #000;
+  border: 0;
+  outline: 2px dotted var(--m-w);
+  outline-offset: -2px;
+}
+
+.tline__length[data-noted="true"] {
+  color: #000;
+  background: var(--m-w);
+  outline: 0;
+}
+
+/* ───────── 서버 단말기 (전송 기록) ───────── */
+
+.term {
+  flex: none;
+  padding: 0 10px 10px;
+  background: #000;
+  box-shadow: var(--m-frame);
+}
+
+.term__bar {
+  display: flex;
+  justify-content: space-between;
+  margin: 0 -10px 8px;
+  padding: 2px 10px;
+  font-family: var(--m-cap);
+  font-size: 12px;
+  line-height: 16px;
+  color: #000;
+  background: var(--m-w);
+}
+
+.term__mine {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 8px;
+}
+
+.term__mine b {
+  flex: none;
+  padding: 0 6px;
+  font-weight: 400;
+  color: #000;
+  background: var(--m-w);
+}
+
+.term__rules {
+  margin: 0 0 8px;
+  padding: 6px 0 6px 20px;
+  list-style: decimal;
+  border-top: 2px dotted var(--m-w);
+  border-bottom: 2px dotted var(--m-w);
+}
+
+.term__rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.term__row {
+  display: grid;
+  grid-template-columns: 28px 1fr auto;
+  grid-template-areas: "id time status" "id mode mode";
+  align-items: center;
+  column-gap: 8px;
+  min-height: 48px;
+  padding: 2px 8px 2px 0;
+  font-family: var(--m-font);
+  font-size: 16px;
+  line-height: 22px;
+  text-align: left;
+  color: var(--m-w);
+  background: #000;
+  border: 0;
+  box-shadow: inset 0 0 0 2px var(--m-w);
+}
+
+.term__row b {
+  grid-area: id;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: -2px 0;
+  font-weight: 400;
+  border-right: 2px solid var(--m-w);
+}
+
+.term__row > span:nth-of-type(1) {
+  grid-area: time;
+}
+
+.term__row > span:nth-of-type(2) {
+  grid-area: mode;
+}
+
+.term__status {
+  grid-area: status !important;
+}
+
+.term__status[data-failed="true"]::before {
+  content: "× ";
+}
+
+.term__row[aria-checked="true"],
+.term__row[data-picked="true"] {
+  color: #000;
+  background: var(--m-w);
+  box-shadow: inset 0 0 0 2px var(--m-w), 0 0 0 2px #000, 0 0 0 4px var(--m-w);
+}
+
+.term__row[aria-checked="true"] b,
+.term__row[data-picked="true"] b {
+  border-right-color: #000;
+}
+
+/* 고른 뒤에 남은 줄: 줄을 점선으로 */
+.term__row[data-off="true"] {
+  box-shadow: none;
+  outline: 2px dotted var(--m-w);
+  outline-offset: -2px;
+}
+
+.term__row[data-off="true"] b {
+  border-right-style: dotted;
+}
+
+.term__file {
+  margin: 12px 0 0;
+  padding: 8px 0 0;
+  border-top: 2px dotted var(--m-w);
+  animation: story-open 240ms steps(3) both;
+}
+
+.term__file dt {
+  margin-bottom: 4px;
+}
+
+.term__file dt::before {
+  content: "└ ";
+}
+
+.term__file dd {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0;
+  padding-left: 16px;
+}
+
+.term__file dd b {
+  font-weight: 400;
+  text-align: right;
+}
+
+@keyframes story-open {
+  from {
+    clip-path: inset(0 0 100% 0);
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+/* ───────── 증거 분석: 두 기록을 나란히 ───────── */
+
+.docs {
+  flex: none;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.doc {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  padding: 0 6px 8px;
+  color: var(--m-w);
+  background: #000;
+  border: 0;
+  box-shadow: var(--m-frame);
+}
+
+.doc__title {
+  margin: 0 -6px 2px;
+  padding: 2px 6px;
+  font-family: var(--m-cap);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 16px;
+  color: #000;
+  background: var(--m-w);
+}
+
+.doc__item {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 44px;
+  padding: 2px 6px;
+  font-family: var(--m-font);
+  text-align: left;
+  color: var(--m-w);
+  background: #000;
+  border: 0;
+  outline: 2px dotted var(--m-w);
+  outline-offset: -2px;
+}
+
+.doc__label {
+  font-family: var(--m-cap);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.doc__value {
+  font-size: 16px;
+  line-height: 20px;
+}
+
+.doc__item[aria-pressed="true"] {
+  color: #000;
+  background: var(--m-w);
+  outline: 0;
+  box-shadow: 0 0 0 2px #000, 0 0 0 4px var(--m-w);
+}
+
+/* 이미 사실을 낸 항목: 줄을 실선으로 */
+.doc__item[data-used="true"] {
+  outline-style: solid;
+}
+
+.docs__note {
+  flex: none;
+  min-height: 48px;
+  margin: 0;
+  padding: 2px 8px;
+  background: #000;
+  box-shadow: 0 0 0 2px #000;
+}
+
+.docs__note::before {
+  content: "> ";
+}
+
+.docs__note[data-kind="fact"] {
+  padding: 2px 8px;
+  color: #000;
+  background: var(--m-w);
+}
+
+.docs__note[data-kind="fact"]::before {
+  content: "";
+}
+
+.facts {
+  flex: none;
+  padding: 0 10px 8px;
+  background: #000;
+  box-shadow: var(--m-frame);
+}
+
+.facts__title {
+  display: flex;
+  justify-content: space-between;
+  margin: 0 -10px 6px;
+  padding: 2px 10px;
+  font-family: var(--m-cap);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 16px;
+  color: #000;
+  background: var(--m-w);
+}
+
+.facts__title b {
+  font-weight: 400;
+}
+
+.facts__list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.facts__list li {
+  display: grid;
+  grid-template-columns: 64px 1fr;
+  column-gap: 8px;
+}
+
+.facts__list b {
+  font-weight: 400;
+}
+
+.facts__list li[data-have="false"] span {
+  font-family: var(--m-cap);
+  font-size: 12px;
+}
+
+.facts__list li[data-fresh="true"] {
+  animation: m-blink 240ms steps(1) 2;
+}
+
+/* ───────── 최종 추론 ───────── */
+
+.verdict {
+  position: relative;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 10px 10px;
+  background: #000;
+  box-shadow: var(--m-frame);
+}
+
+.verdict__q {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 22px;
+}
+
+.verdict__q::before {
+  content: "Q. ";
+}
+
+.verdict__choices {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.verdict__choice {
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  align-items: center;
+  column-gap: 8px;
+  min-height: 48px;
+  padding: 4px 8px 4px 0;
+  font-family: var(--m-font);
+  font-size: 16px;
+  line-height: 20px;
+  text-align: left;
+  color: var(--m-w);
+  background: #000;
+  border: 0;
+  box-shadow: inset 0 0 0 2px var(--m-w);
+}
+
+.verdict__choice b {
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: -4px 0;
+  font-weight: 400;
+  border-right: 2px solid var(--m-w);
+}
+
+.verdict__choice[aria-checked="true"],
+.verdict__card[aria-checked="true"] {
+  color: #000;
+  background: var(--m-w);
+}
+
+.verdict__choice[aria-checked="true"] b {
+  border-right-color: #000;
+}
+
+.verdict__choice:disabled:not([aria-checked="true"]),
+.verdict__card:disabled:not([aria-checked="true"]) {
+  box-shadow: none;
+  outline: 2px dotted var(--m-w);
+  outline-offset: -2px;
+}
+
+.verdict__choice:disabled:not([aria-checked="true"]) b {
+  border-right-style: dotted;
+}
+
+.verdict__label {
+  margin: 4px 0 0;
+  font-family: var(--m-cap);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 16px;
+}
+
+.verdict__label::before {
+  content: "▼ ";
+}
+
+.verdict__basis {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.verdict__card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  min-height: 72px;
+  padding: 4px 6px;
+  font-family: var(--m-font);
+  font-size: 16px;
+  line-height: 20px;
+  text-align: left;
+  color: var(--m-w);
+  background: #000;
+  border: 0;
+  box-shadow: inset 0 0 0 2px var(--m-w);
+}
+
+.verdict__card b {
+  font-family: var(--m-cap);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 16px;
+}
+
+.verdict__notice {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px;
+  color: #000;
+  background: var(--m-w);
+}
+
+.verdict__notice p {
+  margin: 0;
+}
+
+.verdict__notice b {
+  display: block;
+  font-weight: 400;
+}
+
+.verdict__notice b::before {
+  content: "! ";
+}
+
+.verdict__notice .inkbtn {
+  margin: 0;
+  box-shadow: none;
+}
+
+/* 해결한 뒤에는 근거 아래에 작은 인장으로 남는다 */
+.verdict__seal {
+  display: flex;
+  justify-content: flex-end;
+  padding: 6px 6px 4px;
+}
+
+.verdict__seal .pxstamp {
+  font-size: 16px;
+  line-height: 20px;
+}
+
+/* 맞힌 순간: 판 한가운데에 큰 인장이 찍힌다 */
+.verdict__seal[data-now="true"] {
+  position: absolute;
+  top: calc(50% - 48px);
+  left: calc(50% - 56px);
+  z-index: 2;
+  padding: 0;
+  background: #000;
+  box-shadow: 0 0 0 8px #000;
+}
+
+.verdict__seal[data-now="true"] .pxstamp {
+  font-size: 32px;
+  line-height: 32px;
+}
+
+/* ───────── 증거 한 장 ───────── */
+
+.evcard {
+  padding: 0 10px 8px;
+  text-align: left;
+  color: var(--m-w);
+  background: #000;
+  box-shadow: var(--m-frame);
+}
+
+.evcard__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 -10px 6px;
+  padding: 0 10px 0 0;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 24px;
+  border-bottom: 2px solid var(--m-w);
+}
+
+.evcard__no {
+  flex: none;
+  padding: 0 8px;
+  color: #000;
+  background: var(--m-w);
+}
+
+.evcard__lines {
+  margin: 0;
+}
+
+.evcard__lines > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.evcard__lines dt {
+  flex: none;
+  font-family: var(--m-cap);
+  font-size: 12px;
+  line-height: 22px;
+}
+
+.evcard__lines dd {
+  margin: 0;
+  text-align: right;
+}
+
+.evcard__note {
+  margin: 6px 0 0;
+  padding-top: 6px;
+  border-top: 2px dotted var(--m-w);
+}
+
+.evcard[data-fresh="true"] {
+  box-shadow: var(--m-frame2);
+  padding: 4px 14px 12px;
+}
+
+.evcard[data-fresh="true"] .evcard__head {
+  margin: 0 -10px 6px;
+}
+
+/* ───────── 증거 획득 ───────── */
+
+.gain {
+  position: absolute;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+}
+
+.gain__veil {
+  position: absolute;
+  inset: 0;
+  padding: 0;
+  border: 0;
+  background: repeating-conic-gradient(#000 0% 25%, transparent 0% 50%) 0 0 / 4px 4px;
+}
+
+.gain__box {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-width: 340px;
+  max-height: 100%;
+  padding: 12px;
+  overflow-y: auto;
+  background: #000;
+  box-shadow: var(--m-frame), 0 0 0 6px #000;
+  animation: story-open 240ms steps(4) both;
+}
+
+.gain__kicker {
+  margin: 0;
+  font-size: 32px;
+  line-height: 36px;
+  text-align: center;
+}
+
+.gain__kicker::before {
+  content: "▶ ";
+  font-size: 16px;
+  animation: m-blink 800ms steps(1) infinite;
+}
+
+.gain .inkbtn {
+  flex: none;
+  margin: 2px;
+}
+
+/* ───────── 수사 노트 · 수사 지원 서랍 ───────── */
+
+.storysheet .sheet__body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 2px 2px 4px;
+}
+
+.storysheet__sec {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.storysheet__label {
+  margin: 0;
+  font-family: var(--m-cap);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 16px;
+}
+
+.storysheet__label::before {
+  content: "■ ";
+}
+
+.storysheet__list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.storysheet__list li {
+  padding-left: 16px;
+  text-indent: -16px;
+}
+
+.storysheet__list li::before {
+  content: "· ";
+}
+
+.storysheet__list b {
+  margin-right: 8px;
+  font-weight: 400;
+}
+
+.storysheet__empty {
+  margin: 0;
+}
+
+/* ───────── 사건 접수 ───────── */
+
+.casefile {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 10px 12px;
+  color: var(--m-w);
+  background: #000;
+  border: 0;
+  box-shadow: var(--m-frame2);
+}
+
+.casefile__code {
+  display: flex;
+  justify-content: space-between;
+  margin: 0;
+  font-family: var(--m-cap);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.casefile__still {
+  position: relative;
+  align-self: flex-start;
+  width: 328px;
+  max-width: 100%;
+  height: 120px;
+  margin-left: calc((100% - 328px) / 2);
+  margin-left: round(down, calc((100% - 328px) / 2), 2px);
+  overflow: hidden;
+  box-shadow: var(--m-frame);
+}
+
+.casefile__still .stream {
+  top: -44px;
+}
+
+.casefile__tag {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  padding: 0 6px;
+  font-family: var(--m-cap);
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--m-w);
+  background: #000;
+}
+
+.casefile__title {
+  margin: 0;
+  font-size: 32px;
+  font-weight: 400;
+  line-height: 36px;
+}
+
+.casefile__brief {
+  margin: 0;
+}
+
+.casefile__meta {
+  margin: 0;
+  padding-top: 6px;
+  border-top: 2px dotted var(--m-w);
+}
+
+.casefile__meta > div {
+  display: grid;
+  grid-template-columns: 76px 1fr;
+}
+
+.casefile__meta dt {
+  font-family: var(--m-cap);
+  font-size: 12px;
+  line-height: 22px;
+}
+
+.casefile__meta dd {
+  margin: 0;
+}
+
+/* ───────── 도입 · 끝 장면 (검은 화면) ───────── */
+
+.storyintro,
+.ending {
+  background: #000;
+}
+
+.storyintro__skip {
+  position: absolute;
+  top: calc(8px + env(safe-area-inset-top));
+  right: 12px;
+  z-index: 3;
+  min-width: 88px;
+  min-height: 44px;
+  font-family: var(--m-font);
+  font-size: 16px;
+  color: var(--m-w);
+  background: #000;
+  border: 0;
+  outline: 2px dotted var(--m-w);
+  outline-offset: -2px;
+}
+
+.storyintro__skip:active {
+  color: #000;
+  background: var(--m-w);
+}
+
+.storyintro__stage,
+.ending__stage {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 72px 20px 12px;
+  font-family: var(--m-font);
+  font-size: 16px;
+  line-height: 24px;
+  text-align: left;
+  color: var(--m-w);
+  background: #000;
+  border: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.storyintro__stage {
+  justify-content: center;
+  padding-top: 60px;
+}
+
+.storyintro__kicker {
+  margin-bottom: 8px;
+  font-family: var(--m-cap);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.storyintro__line,
+.ending__line {
+  display: block;
+  min-height: 24px;
+}
+
+.storyintro__foot {
+  flex: none;
+  display: flex;
+  gap: 12px;
+  min-height: 72px;
+  padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+}
+
+.storyintro__foot .inkbtn {
+  flex: 1;
+  padding: 0 8px;
+}
+
+.storyintro__hint {
+  flex: 1;
+  align-self: center;
+  margin: 0;
+  font-family: var(--m-cap);
+  font-size: 12px;
+  line-height: 16px;
+  text-align: center;
+}
+
+.storyintro__hint::before {
+  content: "▼ ";
+  animation: m-blink 800ms steps(1) infinite;
+}
+
+.ending__stage {
+  padding: 60px 0 12px;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.ending__stage::-webkit-scrollbar {
+  display: none;
+}
+
+.ending__crt {
+  flex: none;
+  width: 100%;
+}
+
+/* LIVE 표시가 깜빡이다 꺼진다 */
+.crt__live--dying {
+  animation: m-blink 300ms steps(1) 900ms 2;
+}
+
+/* 그 자리에 찍히는 글자 */
+.crt__live--tape {
+  color: var(--m-w);
+  background: #000;
+  box-shadow: var(--m-frame);
+  animation: m-blink 200ms steps(1) 2;
+}
+
+.ending__lines {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 20px;
+}
+
+.ending__found {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 14px;
+  animation: story-open 320ms steps(4) both;
+}
+
+.ending__foundlabel {
+  font-family: var(--m-cap);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.ending__foundlabel::before {
+  content: "■ ";
+}
+
+.ending__result {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: calc(20px + env(safe-area-inset-top)) 16px 8px;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.ending__result::-webkit-scrollbar {
+  display: none;
+}
+
+.ending__case,
+.ending__kicker {
+  margin: 0;
+  font-family: var(--m-cap);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.ending__kicker {
+  padding: 2px 8px;
+  color: #000;
+  background: var(--m-w);
+}
+
+.ending__title {
+  margin: 2px 0 6px;
+  font-size: 48px;
+  font-weight: 400;
+  line-height: 52px;
+}
+
+.ending__rows {
+  align-self: stretch;
+  margin: 10px 0 0;
+  padding: 2px 10px;
+  list-style: none;
+  box-shadow: var(--m-frame);
+}
+
+.ending__rows li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px 0;
+  border-top: 2px dotted var(--m-w);
+}
+
+.ending__rows li:first-child {
+  border-top: 0;
+}
+
+.ending__rows b {
+  font-weight: 400;
+}
+
+.ending__closing {
+  align-self: stretch;
+  margin: 6px 0 0;
+  padding: 0 2px;
+  list-style: none;
+}
+
+.ending__closing li::before {
+  content: "> ";
+}
+
+.ending__next {
+  align-self: stretch;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  column-gap: 8px;
+  margin: 6px 0 0;
+  padding: 6px 8px;
+  outline: 2px dotted var(--m-w);
+  outline-offset: -2px;
+}
+
+.ending__next span {
+  font-family: var(--m-cap);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.ending__next b {
+  font-weight: 400;
+}
+
+.ending__foot .inkbtn {
+  font-size: 16px;
+}
+
+/* ───────── 사건 기록 ───────── */
+
+.record {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 10px 12px;
+  color: var(--m-w);
+  background: #000;
+  border: 0;
+  box-shadow: var(--m-frame);
+}
+
+.record__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 0 4px 8px 0;
+}
+
+.record__case {
+  margin: 0;
+  font-family: var(--m-cap);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.record__chapter {
+  margin: 4px 0 0;
+  font-size: 32px;
+  font-weight: 400;
+  line-height: 36px;
+}
+
+.record__head .pxstamp {
+  flex: none;
+  margin: 6px 4px 0 0;
+  font-size: 16px;
+  line-height: 20px;
+}
+
+.record__label {
+  margin: 8px -10px 2px;
+  padding: 2px 10px;
+  font-family: var(--m-cap);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 16px;
+  color: #000;
+  background: var(--m-w);
+}
+
+.record__conclusion {
+  margin: 0;
+}
+
+.record__conclusion::before {
+  content: "▶ ";
+}
+
+.record__facts,
+.record__open {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.record__facts li {
+  display: grid;
+  grid-template-columns: 64px 1fr;
+  column-gap: 8px;
+}
+
+.record__facts b {
+  font-weight: 400;
+}
+
+.record__open li::before {
+  content: "? ";
+}
+
+.record__evidence {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 4px 2px 2px;
+}
+
+.caserecord .deskfoot .inkbtn:not(.inkbtn--wine) {
+  flex: none;
+}
+
+/* ───────── 낮은 화면 ───────── */
+
+@media (max-height: 700px) {
+  .story .narr,
+  .story__alert {
+    min-height: 74px;
+    padding: 6px 12px 2px;
+  }
+
+  .docs__note {
+    min-height: 44px;
+  }
+
+  .story[data-scene="log"] .narr,
+  .story[data-scene="log"] .story__alert {
+    min-height: 54px;
+  }
+
+  .crt__bar {
+    padding: 4px 0 2px;
+  }
+
+  .crt__chat {
+    margin-top: 4px;
+  }
+
+  .tline {
+    margin: 2px 0 2px;
+  }
+
+  .tline__time {
+    line-height: 22px;
+  }
+
+  .storyintro__stage,
+  .ending__stage {
+    gap: 10px;
+  }
+
+  .ending__stage {
+    padding-top: 56px;
+  }
+}
+
+/* 주소창이 보이는 작은 휴대폰(예: 375×629): 두 기록의 항목을 조금 낮춰 사실 셋까지 한 화면에 넣는다 */
+@media (max-height: 640px) {
+  /* 새 기록이 나올 때는 모니터를 걷어 기록 한 장이 다 보이게 한다 */
+  .ending[data-stage="evidence"] .ending__crt {
+    display: none;
+  }
+
+  .story__scroll {
+    padding-top: 6px;
+    padding-bottom: 8px;
+  }
+
+  .doc {
+    gap: 4px;
+  }
+
+  .doc__item {
+    min-height: 40px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hot[data-noted="false"] i,
+  .crt__live i,
+  .crt__live--dying,
+  .crt__live--tape,
+  .gain__kicker::before,
+  .storyintro__hint::before,
+  .facts__list li[data-fresh="true"] {
+    animation: none;
+  }
+
+  .term__file,
+  .gain__box,
+  .ending__found {
+    animation: none;
+  }
+}
+
+/* ═════════ 제2~4장: 새 장면들 (비교 · 순서 · 진술 대조 · 기록 고르기 · 타임라인), 사건 기록, 끝 장면의 그림 ═════════ */
+
+/* 인물 실루엣: 16×16점을 32px 로 (점 하나 2px). 색은 글자색을 따른다 */
+.bust {
+  flex: none;
+  display: block;
+}
+
+.storyintro__chapter {
+  display: block;
+  margin: -10px 0 10px;
+  font-size: 32px;
+  line-height: 36px;
+}
+
+/* 증거가 여러 장일 때: 카드만 스크롤되고 단추는 늘 보인다 */
+.gain__box {
+  min-height: 0;
+}
+
+.gain__box[data-many="true"] {
+  overflow: hidden;
+}
+
+.gain__cards {
+  flex: 0 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+  padding: 2px;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.gain__cards::-webkit-scrollbar {
+  display: none;
+}
+
+.storysheet__fold {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.storysheet__foldbtn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 44px;
+  padding: 0 8px;
+  font-family: var(--m-font);
+  font-size: 16px;
+  color: var(--m-w);
+  background: #000;
+  border: 0;
+  box-shadow: inset 0 0 0 2px var(--m-w);
+}
+
+.storysheet__foldbtn[aria-expanded="true"] {
+  color: #000;
+  background: var(--m-w);
+}
+
+.storysheet__list b {
+  display: inline;
+}
+
+/* ───────── 비교: 두 영상을 위아래로 ───────── */
+
+.cmp {
+  --cmp-h: 120px;
+  --cmp-top: -44px;
+  position: relative;
+  z-index: 1;
+  flex: 1 0 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  padding: 2px 0 0 calc((100% - 328px) / 2);
+  padding-left: round(down, calc((100% - 328px) / 2), 2px);
+  background: #000;
+}
+
+.cmp__pane {
+  width: 328px;
+}
+
+.cmp__label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 20px;
+  margin: 0;
+  font-family: var(--m-cap);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.cmp__label b {
+  padding: 0 6px;
+  font-weight: 400;
+  color: #000;
+  background: var(--m-w);
+}
+
+.cmp__pane[data-side="b"] .cmp__label b {
+  color: var(--m-w);
+  background: #000;
+  box-shadow: inset 0 0 0 2px var(--m-w);
+}
+
+.cmp__screen,
+.cmp__sheet {
+  position: relative;
+  width: 328px;
+  height: var(--cmp-h);
+  overflow: hidden;
+  background: #000;
+  box-shadow: var(--m-frame);
+}
+
+.cmp__screen .stream {
+  top: var(--cmp-top);
+}
+
+.cmp em {
+  padding: 0 4px;
+  font-family: var(--m-cap);
+  font-size: 12px;
+  font-style: normal;
+  line-height: 16px;
+  color: #000;
+  background: var(--m-w);
+}
+
+/* 화면(그림)을 짚는 자리: 자막 위쪽 전부 */
+.cmp__pic {
+  top: 6px;
+  right: 6px;
+  bottom: 68px;
+  left: 6px;
+}
+
+.cmp__pic em {
+  position: absolute;
+  top: 0;
+  right: 0;
+  box-shadow: 0 0 0 2px #000;
+}
+
+/* 제목·자막: 화면 아래쪽의 글자 상자. 누를 자리는 44px 이상이다 */
+.cmp__cap {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  left: 6px;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-end;
+  min-height: 44px;
+  padding: 0;
+  font-family: var(--m-font);
+  text-align: left;
+  color: var(--m-w);
+  background: none;
+  border: 0;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.cmp__caplabel {
+  display: inline-flex;
+  gap: 6px;
+  padding: 0 4px;
+  font-family: var(--m-cap);
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--m-w);
+  background: #000;
+}
+
+.cmp__captext {
+  max-width: 100%;
+  padding: 2px 6px;
+  font-size: 16px;
+  line-height: 20px;
+  color: var(--m-w);
+  background: #000;
+  box-shadow: inset 0 0 0 2px var(--m-w);
+}
+
+.cmp__cap[data-state="found"] .cmp__captext {
+  color: #000;
+  background: var(--m-w);
+  box-shadow: 0 0 0 2px #000;
+}
+
+.cmp__cap[data-state="same"] .cmp__captext {
+  box-shadow: none;
+  outline: 2px dotted var(--m-w);
+  outline-offset: -2px;
+}
+
+/* 파일 정보: 칸마다 한 줄 */
+.cmp__sheet {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 10px;
+}
+
+.cmp__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 44px;
+  padding: 0 8px;
+  font-family: var(--m-font);
+  font-size: 16px;
+  color: var(--m-w);
+  background: #000;
+  border: 0;
+  box-shadow: inset 0 0 0 2px var(--m-w);
+}
+
+.cmp__row span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cmp__row b {
+  font-weight: 400;
+}
+
+.cmp__row[data-state="found"] {
+  color: #000;
+  background: var(--m-w);
+}
+
+.cmp__row[data-state="found"] em {
+  color: var(--m-w);
+  background: #000;
+}
+
+.cmp__row[data-state="same"] {
+  box-shadow: none;
+  outline: 2px dotted var(--m-w);
+  outline-offset: -2px;
+}
+
+.cmp__tabs {
+  margin: 4px 0 2px;
+}
+
+.cmp__tabs .tline__tick span {
+  white-space: nowrap;
+}
+
+.cmp__ask {
+  margin: 0;
+  font-family: var(--m-cap);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+/* ───────── 순서: 기록 카드를 한 줄로 ───────── */
+
+.olog,
+.day {
+  flex: none;
+  padding: 0 8px 8px;
+  background: #000;
+  box-shadow: var(--m-frame);
+}
+
+.olog__bar {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0 -8px 8px;
+  padding: 2px 8px;
+  font-family: var(--m-cap);
+  font-size: 12px;
+  line-height: 16px;
+  color: #000;
+  background: var(--m-w);
+}
+
+.olog__list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.olog__row {
+  display: grid;
+  grid-template-columns: 24px 1fr;
+  align-items: stretch;
+}
+
+.olog__no {
+  display: flex;
+  align-items: center;
+  font-size: 16px;
+}
+
+.olog__card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  height: 46px;
+  padding: 0 28px 0 8px;
+  font-family: var(--m-font);
+  font-size: 16px;
+  line-height: 20px;
+  text-align: left;
+  color: var(--m-w);
+  background: #000;
+  border: 0;
+  box-shadow: inset 0 0 0 2px var(--m-w);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* 손잡이: 끌 수 있다는 표시 */
+.olog__card::after {
+  content: "";
+  position: absolute;
+  top: 16px;
+  right: 10px;
+  width: 10px;
+  height: 14px;
+  background: repeating-linear-gradient(to bottom, currentColor 0 2px, transparent 2px 6px);
+}
+
+.olog__label {
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.olog__tags {
+  display: flex;
+  gap: 6px;
+}
+
+.olog__tags i {
+  padding: 0 4px;
+  font-family: var(--m-cap);
+  font-size: 12px;
+  font-style: normal;
+  line-height: 16px;
+  color: #000;
+  background: var(--m-w);
+}
+
+.olog__card[aria-pressed="true"],
+.olog__card[data-dragging="true"] {
+  z-index: 3;
+  color: #000;
+  background: var(--m-w);
+  box-shadow: 0 0 0 2px #000, 0 0 0 4px var(--m-w);
+}
+
+.olog__card[aria-pressed="true"] .olog__tags i,
+.olog__card[data-dragging="true"] .olog__tags i {
+  color: var(--m-w);
+  background: #000;
+}
+
+.olog[data-dragging="true"] .olog__card:not([data-dragging="true"]) {
+  transition: transform 120ms steps(3);
+}
+
+.olog__card:disabled::after {
+  content: none;
+}
+
+.olog__list[data-shake="true"] {
+  animation: story-shake 300ms steps(4);
+}
+
+@keyframes story-shake {
+  25% {
+    transform: translateX(-4px);
+  }
+  50% {
+    transform: translateX(4px);
+  }
+  75% {
+    transform: translateX(-2px);
+  }
+}
+
+.olog__how {
+  margin: 6px 0 0;
+  font-family: var(--m-cap);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.olog__how::before {
+  content: "↕ ";
+}
+
+.olog__rules {
+  margin: 6px 0 0;
+  padding: 6px 0 0;
+  list-style: none;
+  font-family: var(--m-cap);
+  font-size: 12px;
+  line-height: 16px;
+  border-top: 2px dotted var(--m-w);
+}
+
+.olog__rules li {
+  padding-left: 12px;
+  text-indent: -12px;
+}
+
+.olog__rules li::before {
+  content: "· ";
+}
+
+/* ───────── 진술 대조 ───────── */
+
+.witness {
+  flex: none;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.witness__tab {
+  display: grid;
+  grid-template-columns: 32px 1fr;
+  grid-template-rows: 18px 14px 16px;
+  grid-template-areas: "bust name" "bust marks" "role role";
+  column-gap: 6px;
+  align-items: center;
+  min-width: 0;
+  min-height: 60px;
+  padding: 4px 6px;
+  font-family: var(--m-font);
+  text-align: left;
+  color: var(--m-w);
+  background: #000;
+  border: 0;
+  box-shadow: inset 0 0 0 2px var(--m-w);
+}
+
+.witness__tab .bust {
+  grid-area: bust;
+}
+
+.witness__name {
+  grid-area: name;
+  font-size: 16px;
+  line-height: 18px;
+  white-space: nowrap;
+}
+
+.witness__role {
+  grid-area: role;
+  overflow: hidden;
+  font-family: var(--m-cap);
+  font-size: 12px;
+  line-height: 16px;
+  white-space: nowrap;
+}
+
+.witness__marks {
+  grid-area: marks;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* 진술마다 한 칸: 빈 칸(아직) · 반 칸(기록과 맞음) · 꽉 찬 칸(기록과 어긋남) */
+.witness__marks i {
+  width: 8px;
+  height: 8px;
+  box-shadow: inset 0 0 0 2px currentColor;
+}
+
+.witness__marks i[data-mark="backed"] {
+  background: linear-gradient(currentColor, currentColor) bottom / 100% 4px no-repeat;
+}
+
+.witness__marks i[data-mark="broken"] {
+  background: currentColor;
+}
+
+.witness__tab[aria-selected="true"] {
+  color: #000;
+  background: var(--m-w);
+}
+
+.talk,
+.recs {
+  flex: none;
+  padding: 0 8px 8px;
+  background: #000;
+  box-shadow: var(--m-frame);
+}
+
+.talk__pick {
+  display: flex;
+  align-items: center;
+  margin: 0 -8px 6px;
+  padding-left: 8px;
+  border-bottom: 2px solid var(--m-w);
+}
+
+.talk__who {
+  margin-right: 8px;
+  font-family: var(--m-cap);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.talk__chip {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  font-family: var(--m-font);
+  font-size: 16px;
+  color: var(--m-w);
+  background: #000;
+  border: 0;
+  border-left: 2px solid var(--m-w);
+}
+
+.talk__chip:last-of-type {
+  border-right: 2px solid var(--m-w);
+}
+
+.talk__chip[aria-checked="true"] {
+  color: #000;
+  background: var(--m-w);
+}
+
+.talk__chip[data-mark="broken"]::after,
+.talk__chip[data-mark="backed"]::after {
+  content: "";
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 8px;
+  height: 8px;
+  background: currentColor;
+}
+
+.talk__chip[data-mark="backed"]::after {
+  height: 4px;
+  top: 10px;
+}
+
+.talk__tag {
+  margin: 0 8px 0 auto;
+  padding: 0 6px;
+  font-family: var(--m-cap);
+  font-size: 12px;
+  font-style: normal;
+  line-height: 16px;
+  color: #000;
+  background: var(--m-w);
+}
+
+.talk__text {
+  min-height: 66px;
+  margin: 0;
+}
+
+.talk[data-mark="broken"] .talk__text {
+  min-height: 0;
+  text-decoration: line-through 2px;
+}
+
+.talk__retort {
+  margin: 6px 0 0;
+  padding: 4px 8px;
+  color: #000;
+  background: var(--m-w);
+}
+
+.recs {
+  padding: 0 6px 6px;
+}
+
+.recs__title {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0 -6px 6px;
+  padding: 2px 8px;
+  font-family: var(--m-cap);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 16px;
+  color: #000;
+  background: var(--m-w);
+}
+
+.recs__title b {
+  flex: none;
+  font-weight: 400;
+}
+
+.recs__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.recs__item {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+  min-height: 56px;
+  padding: 2px 6px;
+  font-family: var(--m-font);
+  text-align: left;
+  color: var(--m-w);
+  background: #000;
+  border: 0;
+  box-shadow: inset 0 0 0 2px var(--m-w);
+}
+
+.recs__item[aria-checked="true"] {
+  position: relative;
+  z-index: 1;
+  color: #000;
+  background: var(--m-w);
+  box-shadow: 0 0 0 2px #000, 0 0 0 4px var(--m-w);
+}
+
+.docs__note b {
+  font-weight: 400;
+}
+
+/* ───────── 기록 고르기 (자료에 적힌 기록) ───────── */
+
+.picker__ask {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0 0 8px;
+}
+
+.picker__ask p {
+  margin: 0;
+}
+
+.picker__ask .inkbtn {
+  flex: none;
+  margin: 2px;
+  padding: 0 10px;
+}
+
+.term__row.picker__row {
+  grid-template-columns: 72px 1fr;
+  grid-template-areas: "id lines";
+  min-height: 76px;
+  padding: 4px 8px 4px 0;
+}
+
+.term__row.picker__row b {
+  margin: -4px 0;
+}
+
+.term__row.picker__row > .picker__lines {
+  grid-area: lines;
+  display: flex;
+  flex-direction: column;
+}
+
+.picker__lines > span {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.picker__lines i {
+  font-family: var(--m-cap);
+  font-size: 12px;
+  font-style: normal;
+  line-height: 22px;
+}
+
+/* ───────── 타임라인: 줄마다 사람을 넣는다 ───────── */
+
+.day__rows {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.day__row {
+  position: relative;
+  display: grid;
+  grid-template-columns: 60px 1fr;
+  grid-template-areas: "time text" "who text";
+  column-gap: 26px;
+  align-items: center;
+  width: 100%;
+  min-height: 48px;
+  padding: 4px 6px 4px 2px;
+  font-family: var(--m-font);
+  font-size: 16px;
+  line-height: 20px;
+  text-align: left;
+  color: var(--m-w);
+  background: #000;
+  border: 0;
+}
+
+.day__time {
+  grid-area: time;
+  align-self: end;
+  font-family: var(--m-cap);
+  font-size: 12px;
+  line-height: 16px;
+  text-align: right;
+}
+
+/* 넣은 사람. 긴 이름표("아무도 아니다")는 낱말에서 꺾여 두 줄이 된다 */
+.day__who {
+  grid-area: who;
+  align-self: start;
+  min-width: 0;
+  text-align: right;
+  word-break: keep-all;
+}
+
+.day__text {
+  grid-area: text;
+}
+
+/* 세로줄과 눈금: 채운 줄은 줄이 이어지고 눈금이 찬다 */
+.day__row::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 74px;
+  width: 2px;
+  background: repeating-linear-gradient(to bottom, currentColor 0 2px, transparent 2px 6px);
+}
+
+.day__row::after {
+  content: "";
+  position: absolute;
+  top: calc(50% - 6px);
+  left: 69px;
+  width: 12px;
+  height: 12px;
+  background: #000;
+  box-shadow: inset 0 0 0 2px var(--m-w);
+}
+
+.day__row[data-filled="true"]::before {
+  background: currentColor;
+}
+
+.day__row[data-filled="true"]::after {
+  background: var(--m-w);
+  box-shadow: 0 0 0 2px #000;
+}
+
+.day__row[aria-pressed="true"] {
+  color: #000;
+  background: var(--m-w);
+}
+
+.day__row[aria-pressed="true"]::after {
+  background: var(--m-w);
+  box-shadow: inset 0 0 0 2px #000;
+}
+
+.day__row[aria-pressed="true"][data-filled="true"]::after {
+  background: #000;
+  box-shadow: 0 0 0 2px var(--m-w);
+}
+
+/* 기록과 어긋난 줄: 점선을 두르고 이름 앞에 느낌표 */
+.day__row[data-flagged="true"] {
+  outline: 2px dotted currentColor;
+  outline-offset: -2px;
+}
+
+.day__row[data-flagged="true"] .day__who::before {
+  content: "! ";
+}
+
+.day__picks {
+  position: relative;
+  z-index: 2;
+  flex: none;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 4px;
+  padding: 6px 12px;
+  background: #000;
+  border-top: 2px solid var(--m-w);
+}
+
+.day__pick {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-width: 0;
+  min-height: 58px;
+  padding: 2px;
+  font-family: var(--m-font);
+  font-size: 16px;
+  line-height: 18px;
+  text-align: center;
+  word-break: keep-all;
+  color: var(--m-w);
+  background: #000;
+  border: 0;
+  box-shadow: inset 0 0 0 2px var(--m-w);
+}
+
+.day__pick .bust[data-bust="none"] {
+  display: none;
+}
+
+.day__pick[aria-pressed="true"] {
+  color: #000;
+  background: var(--m-w);
+}
+
+.day__pick:disabled {
+  box-shadow: none;
+  outline: 2px dotted var(--m-w);
+  outline-offset: -2px;
+}
+
+/* ───────── 최종 추론: 근거가 넷일 때는 두 줄로 ───────── */
+
+.verdict__basis[data-cols="2"] {
+  grid-template-columns: 1fr 1fr;
+}
+
+.verdict__basis[data-cols="2"] .verdict__card {
+  min-height: 48px;
+}
+
+.verdict__card[role="checkbox"][aria-checked="true"] b::after {
+  content: " ✓";
+}
+
+/* ───────── 사건 기록: 장을 고르는 곳 ───────── */
+
+.record__progress {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 8px 0 0;
+  font-family: var(--m-cap);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.record__progress i {
+  width: 16px;
+  height: 8px;
+  box-shadow: inset 0 0 0 2px var(--m-w);
+}
+
+.record__progress i[data-on="true"] {
+  background: var(--m-w);
+}
+
+.record__progress span {
+  margin-left: 6px;
+}
+
+.chapters {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 2px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chapters__row {
+  box-shadow: inset 0 0 0 2px var(--m-w);
+}
+
+/* 잠긴 장: 누를 수 없다 */
+.chapters__row[data-status="locked"] {
+  box-shadow: none;
+  outline: 2px dotted var(--m-w);
+  outline-offset: -2px;
+}
+
+.chapters__head {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  align-items: center;
+  column-gap: 8px;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 8px;
+  font-family: var(--m-font);
+  font-size: 16px;
+  line-height: 20px;
+  text-align: left;
+  color: var(--m-w);
+  background: none;
+  border: 0;
+}
+
+.chapters__no {
+  font-family: var(--m-cap);
+  font-size: 12px;
+}
+
+.chapters__status {
+  padding: 0 6px;
+  font-family: var(--m-cap);
+  font-size: 12px;
+  line-height: 16px;
+  color: #000;
+  background: var(--m-w);
+}
+
+.chapters__row[data-status="locked"] .chapters__status {
+  color: var(--m-w);
+  background: none;
+}
+
+.chapters__head[aria-expanded]::after {
+  content: "▼";
+  font-family: var(--m-cap);
+  font-size: 12px;
+}
+
+.chapters__head[aria-expanded="true"]::after {
+  content: "▲";
+}
+
+/* 풀 차례의 장: 줄 전체를 뒤집어 눈에 띄게 한다 */
+button.chapters__head[data-status="new"],
+button.chapters__head[data-status="open"] {
+  color: #000;
+  background: var(--m-w);
+}
+
+button.chapters__head[data-status="new"] .chapters__status,
+button.chapters__head[data-status="open"] .chapters__status {
+  color: var(--m-w);
+  background: #000;
+}
+
+.chapters__hint {
+  margin: 0;
+  padding: 2px 8px 6px;
+  font-family: var(--m-cap);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.chapters__body {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 0 8px 8px;
+  border-top: 2px dotted var(--m-w);
+}
+
+.chapters__body .record__label {
+  margin: 8px -6px 2px;
+  padding: 2px 6px;
+}
+
+.chapters__body .chapters__hint {
+  padding: 0;
+}
+
+.chapters__acts {
+  display: flex;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.chapters__acts .inkbtn {
+  flex: 1;
+  margin: 2px;
+  padding: 0 6px;
+}
+
+/* 글이 긴 주 단추: 작은 글자로 */
+.story .deskfoot__submit[data-long="true"] {
+  font-size: 16px;
+}
+
+.record__more {
+  align-self: flex-start;
+  min-height: 44px;
+  padding: 0 10px;
+  font-family: var(--m-font);
+  font-size: 16px;
+  color: var(--m-w);
+  background: #000;
+  border: 0;
+  box-shadow: inset 0 0 0 2px var(--m-w);
+}
+
+.record__more[aria-expanded="true"] {
+  color: #000;
+  background: var(--m-w);
+}
+
+.record__steps {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0 0 0 24px;
+  list-style: decimal;
+}
+
+/* ───────── 끝 장면의 그림 ───────── */
+
+.endart__mon {
+  position: relative;
+  display: block;
+  width: 328px;
+  height: 92px;
+  margin-top: 6px;
+  overflow: hidden;
+  background: #000;
+  box-shadow: var(--m-frame);
+}
+
+.endart__mon .stream {
+  top: -44px;
+}
+
+.endart__tag {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  z-index: 1;
+  padding: 0 4px;
+  font-family: var(--m-cap);
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--m-w);
+  background: #000;
+}
+
+.endart__mon .crt__title {
+  left: 8px;
+  bottom: 8px;
+}
+
+.endart__mon .crt__title[data-swapped="true"] {
+  color: #000;
+  background: var(--m-w);
+  box-shadow: 0 0 0 2px #000;
+  animation: m-blink 200ms steps(1) 2;
+}
+
+.endart[data-art="sheets"] {
+  flex: none;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  padding: 0 16px;
+}
+
+.endart__sheet {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  min-height: 136px;
+  padding: 8px;
+  background: #000;
+  box-shadow: var(--m-frame);
+}
+
+.endart__sheet b {
+  font-weight: 400;
+}
+
+.endart__sheet i {
+  display: block;
+  width: 100%;
+  height: 2px;
+  background: repeating-linear-gradient(to right, var(--m-w) 0 2px, #000 2px 4px);
+}
+
+.endart__sheet i:nth-of-type(3) {
+  width: 60%;
+}
+
+.endart__sheet em {
+  align-self: flex-end;
+  margin-top: auto;
+  padding: 0 4px;
+  font-family: var(--m-cap);
+  font-size: 12px;
+  font-style: normal;
+  line-height: 16px;
+}
+
+.endart[data-after="true"] .endart__sheet em {
+  color: #000;
+  background: var(--m-w);
+  animation: m-blink 200ms steps(1) 2;
+}
+
+/* 사건이 끝나는 장: 끝 글의 마지막 줄과 결과에 찍히는 사건 해결 */
+.ending__line[data-closing="true"] {
+  align-self: flex-start;
+  margin-top: 8px;
+  padding: 2px 8px;
+  color: #000;
+  background: var(--m-w);
+}
+
+.ending__solved {
+  align-self: stretch;
+  margin: 6px 0 0;
+  padding: 6px 8px;
+  text-align: center;
+  color: #000;
+  background: var(--m-w);
+}
+
+.ending__again {
+  flex: none;
+  min-height: 44px;
+  margin-top: 4px;
+  padding: 0 12px;
+  font-family: var(--m-font);
+  font-size: 16px;
+  color: var(--m-w);
+  background: #000;
+  border: 0;
+  outline: 2px dotted var(--m-w);
+  outline-offset: -2px;
+}
+
+.ending__again:active {
+  color: #000;
+  background: var(--m-w);
+}
+
+@media (min-height: 780px) {
+  .cmp {
+    --cmp-h: 160px;
+    --cmp-top: -24px;
+    gap: 8px;
+  }
+}
+
+@media (max-height: 700px) {
+  .witness__tab {
+    min-height: 56px;
+    padding: 2px 6px;
+  }
+
+  .recs__item {
+    min-height: 52px;
+  }
+
+  .day__row {
+    min-height: 44px;
+    padding-top: 2px;
+    padding-bottom: 2px;
+  }
+
+  .day__picks {
+    padding: 4px 12px;
+  }
+
+  .day__pick {
+    min-height: 54px;
+  }
+
+  .verdict[data-choices="5"] .verdict__choice {
+    min-height: 44px;
+  }
+
+  .verdict[data-choices="5"] .verdict__choices {
+    gap: 6px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .olog__list[data-shake="true"],
+  .endart__mon .crt__title[data-swapped="true"],
+  .endart[data-after="true"] .endart__sheet em {
+    animation: none;
+  }
+
+  .olog[data-dragging="true"] .olog__card:not([data-dragging="true"]) {
+    transition: none;
+  }
+}

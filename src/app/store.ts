@@ -8,18 +8,51 @@ import {
   buildDemoState,
   DEMO_PRESETS,
   createInitialState,
+  dismissExam,
   enroll,
   hydrate,
   markOpened,
+  openExamSheet,
   recordInput,
   rename,
   requestHint,
+  startExam,
   submitAnswer,
+  tickExam,
   type DemoPreset,
   type HintOutcome,
   type SubmitOutcome,
 } from "../engine/progressEngine";
 import type { GameState, Puzzle, PuzzleInput } from "../engine/types";
+import {
+  arrangeOrder,
+  cancelReplay,
+  confront,
+  finishEnding,
+  goScene,
+  investigate,
+  linkItems,
+  markDifference,
+  pickRecord,
+  requestStoryHint,
+  restartChapter,
+  seeIntro,
+  setAssign,
+  submitAssign,
+  submitDeduction,
+  submitOrder,
+  type AssignOutcome,
+  type CompareOutcome,
+  type ConfrontOutcome,
+  type DeduceOutcome,
+  type InvestigateOutcome,
+  type LinkOutcome,
+  type OrderOutcome,
+  type PickOutcome,
+  type StoryHintOutcome,
+} from "../story/engine/storyEngine";
+import type { StoryCase, StoryChapter } from "../story/engine/storyTypes";
+import { gameNow } from "./clock";
 
 /**
  * 저장 위치. 주소에 ?save=이름 이 있으면 그 이름의 별도 저장 칸을 쓴다.
@@ -54,7 +87,7 @@ function start(): GameState {
   const wanted = params.get("preset");
   if (params.get("demo") !== "1" || !DEMO_PRESETS.some((preset) => preset.id === wanted)) return saved;
   if (saved.enrolled && params.get("apply") !== "1") return saved;
-  const seeded = buildDemoState(wanted as DemoPreset);
+  const seeded = buildDemoState(wanted as DemoPreset, gameNow());
   try {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(seeded));
   } catch {
@@ -93,7 +126,7 @@ export const gameStore = {
   },
 
   enroll(nickname: string) {
-    commit(enroll(state, nickname, newDetectiveNo(), new Date()));
+    commit(enroll(state, nickname, newDetectiveNo(), gameNow()));
   },
 
   rename(nickname: string) {
@@ -119,17 +152,149 @@ export const gameStore = {
   },
 
   submit(puzzle: Puzzle, answer: unknown): SubmitOutcome {
-    const result = submitAnswer(state, puzzle, answer, new Date());
+    const result = submitAnswer(state, puzzle, answer, gameNow());
     commit(result.state);
     return result.outcome;
+  },
+
+  /** 승급 시험을 시작한다(봉투를 연다). graceMs 만큼 시계를 늦게 돌린다(도입 장면). */
+  startExam(graceMs = 0) {
+    commit(startExam(state, gameNow(), graceMs));
+  },
+
+  /** 다음 시험지를 펼친다 */
+  openExamSheet(graceMs = 0) {
+    commit(openExamSheet(state, gameNow(), graceMs));
+  },
+
+  /** 제한 시간이 끝났는지 본다 */
+  tickExam() {
+    commit(tickExam(state, gameNow()));
+  },
+
+  /** 떨어진 시험의 결과를 닫는다 */
+  dismissExam() {
+    commit(dismissExam(state));
+  },
+
+  /* ── 사건 수사(스토리) ── */
+
+  storyIntroSeen(c: StoryCase, ch: StoryChapter) {
+    commit(seeIntro(state, c, ch));
+  },
+
+  storyGo(c: StoryCase, ch: StoryChapter, scene: string) {
+    commit(goScene(state, c, ch, scene));
+  },
+
+  storyInvestigate(c: StoryCase, ch: StoryChapter, scene: string, point: string): InvestigateOutcome {
+    const result = investigate(state, c, ch, scene, point);
+    commit(result.state);
+    return result.outcome;
+  },
+
+  storyPick(c: StoryCase, ch: StoryChapter, scene: string, record: string): PickOutcome {
+    const result = pickRecord(state, c, ch, scene, record);
+    commit(result.state);
+    return result.outcome;
+  },
+
+  storyLink(c: StoryCase, ch: StoryChapter, scene: string, a: string, b: string): LinkOutcome {
+    const result = linkItems(state, c, ch, scene, a, b);
+    commit(result.state);
+    return result.outcome;
+  },
+
+  /** 두 판의 한 곳을 "달라졌다"고 짚는다 */
+  storyMark(c: StoryCase, ch: StoryChapter, scene: string, frame: string, field: string): CompareOutcome {
+    const result = markDifference(state, c, ch, scene, frame, field);
+    commit(result.state);
+    return result.outcome;
+  },
+
+  /** 카드를 옮겨 놓은 순서를 적어 둔다(채점하지 않는다) */
+  storyArrange(c: StoryCase, ch: StoryChapter, scene: string, order: readonly string[]) {
+    commit(arrangeOrder(state, c, ch, scene, order));
+  },
+
+  storyOrder(c: StoryCase, ch: StoryChapter, scene: string, order: readonly string[]): OrderOutcome {
+    const result = submitOrder(state, c, ch, scene, order);
+    commit(result.state);
+    return result.outcome;
+  },
+
+  /** 진술 하나와 기록 한 줄을 맞대어 본다 */
+  storyConfront(c: StoryCase, ch: StoryChapter, scene: string, statement: string, record: string): ConfrontOutcome {
+    const result = confront(state, c, ch, scene, statement, record);
+    commit(result.state);
+    return result.outcome;
+  },
+
+  /** 타임라인의 한 줄에 사람을 넣는다(null 이면 비운다) */
+  storyAssign(c: StoryCase, ch: StoryChapter, scene: string, row: string, option: string | null) {
+    commit(setAssign(state, c, ch, scene, row, option));
+  },
+
+  storySubmitAssign(c: StoryCase, ch: StoryChapter, scene: string): AssignOutcome {
+    const result = submitAssign(state, c, ch, scene);
+    commit(result.state);
+    return result.outcome;
+  },
+
+  /** 해결한 장을 처음 장면부터 다시 푼다(보상 없음) */
+  storyRestart(c: StoryCase, ch: StoryChapter) {
+    commit(restartChapter(state, c, ch));
+  },
+
+  /** 다시 풀던 것을 그만두고 처음의 기록으로 돌아간다 */
+  storyCancelReplay(c: StoryCase, ch: StoryChapter) {
+    commit(cancelReplay(state, c, ch));
+  },
+
+  storyDeduce(c: StoryCase, ch: StoryChapter, scene: string, choice: string | null, basis: string | readonly string[] | null): DeduceOutcome {
+    const result = submitDeduction(state, c, ch, scene, choice, basis, gameNow());
+    commit(result.state);
+    return result.outcome;
+  },
+
+  storyFinish(c: StoryCase, ch: StoryChapter) {
+    commit(finishEnding(state, c, ch));
+  },
+
+  /** 수사 지원을 연다. 장면에 따로 있으면 그 장면의 것을, 없으면 장 전체의 것을 */
+  storyHint(c: StoryCase, ch: StoryChapter, scene?: string): StoryHintOutcome {
+    const result = requestStoryHint(state, c, ch, scene);
+    commit(result.state);
+    return result.outcome;
+  },
+
+  /** 검수용: 오늘의 응시 횟수를 되돌린다 */
+  resetExamDays() {
+    commit({ ...state, examDays: {} });
+  },
+
+  /** 검수용: 날짜를 옮긴 뒤 화면을 다시 그리게 한다 */
+  refresh() {
+    state = { ...state };
+    listeners.forEach((listener) => listener());
   },
 
   setSound(on: boolean) {
     commit({ ...state, settings: { ...state.settings, sound: on } });
   },
 
+  setMusic(on: boolean) {
+    commit({ ...state, settings: { ...state.settings, music: on } });
+  },
+
+  /** 음량 단계(1~4)를 정한다 */
+  setVolume(kind: "sound" | "music", level: number) {
+    const value = Math.max(1, Math.min(4, Math.round(level)));
+    commit({ ...state, settings: { ...state.settings, [kind === "sound" ? "soundVolume" : "musicVolume"]: value } });
+  },
+
   applyPreset(preset: DemoPreset) {
-    commit(buildDemoState(preset));
+    commit(buildDemoState(preset, gameNow()));
   },
 };
 

@@ -7,8 +7,11 @@ import { gameStore } from "./store";
 type SoundName = "tick" | "place" | "wrong" | "success" | "stamp" | "promote" | "unlock";
 
 let context: AudioContext | null = null;
+/** 효과음 전체의 음량(설정의 단계를 따른다) */
+let master: GainNode | null = null;
 
-function ensureContext(): AudioContext | null {
+/** 효과음과 음악이 함께 쓰는 오디오 컨텍스트. 사용자의 조작 안에서 불러야 사파리에서 소리가 난다. */
+export function ensureContext(): AudioContext | null {
   if (typeof window === "undefined") return null;
   const Ctor =
     window.AudioContext ??
@@ -17,6 +20,16 @@ function ensureContext(): AudioContext | null {
   if (!context) context = new Ctor();
   if (context.state === "suspended") void context.resume();
   return context;
+}
+
+function sfxOut(ctx: AudioContext): AudioNode {
+  if (!master || master.context !== ctx) {
+    master = ctx.createGain();
+    master.connect(ctx.destination);
+  }
+  // 4단계가 예전과 같은 크기다
+  master.gain.value = gameStore.getState().settings.soundVolume / 4;
+  return master;
 }
 
 function tone(
@@ -37,7 +50,7 @@ function tone(
   amp.gain.setValueAtTime(0.0001, t0);
   amp.gain.exponentialRampToValueAtTime(gain, t0 + 0.012);
   amp.gain.exponentialRampToValueAtTime(0.0001, t0 + duration);
-  osc.connect(amp).connect(ctx.destination);
+  osc.connect(amp).connect(sfxOut(ctx));
   osc.start(t0);
   osc.stop(t0 + duration + 0.02);
 }

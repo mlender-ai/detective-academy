@@ -1,34 +1,48 @@
 import { useEffect, useState } from "react";
-import { AcademyHome } from "../screens/AcademyHome";
+import { trackFor } from "../audio/director";
+import { music } from "../audio/music";
 import { AdmissionScreen } from "../screens/AdmissionScreen";
+import { DailyArchive, PastDailyPlay } from "../screens/DailyArchive";
 import { DailyChallenge } from "../screens/DailyChallenge";
 import { DetectiveProfile } from "../screens/DetectiveProfile";
-import { PracticePlay, PracticeRoom } from "../screens/PracticeRoom";
+import { HomeIso } from "../screens/HomeIso";
+import { PracticeIso } from "../screens/PracticeIso";
+import { PracticePlay } from "../screens/PracticeRoom";
 import { PromotionExam } from "../screens/PromotionExam";
+import { StoryCaseScreen } from "../story/scenes/StoryCaseScreen";
 import { DemoPanel, isDemoMode } from "./DemoPanel";
-import { navigate, toHash, useRoute, type Route } from "./router";
+import { navigate, toHash, useRoute, useVisit, type Route } from "./router";
 import { useGame } from "./store";
 
 function Screen({ route }: { route: Route }) {
   switch (route.name) {
     case "home":
-      return <AcademyHome />;
+      // 홈은 쿼터뷰 학원 홀이다 (2026-11-23, 사용자: "쿼터뷰로")
+      return <HomeIso />;
     case "daily":
       return <DailyChallenge />;
+    case "daily-past":
+      return <DailyArchive />;
+    case "daily-past-play":
+      return <PastDailyPlay id={route.id} />;
     case "practice":
-      return <PracticeRoom />;
+      return <PracticeIso />;
     case "practice-play":
       return <PracticePlay id={route.id} />;
     case "exam":
       return <PromotionExam />;
     case "profile":
       return <DetectiveProfile />;
+    case "story":
+      // 사건이나 장이 바뀌면 화면을 새로 연다(들어선 순간에 열 곳을 정해 두므로)
+      return <StoryCaseScreen key={`${route.id}/${route.chapter ?? ""}`} id={route.id} chapter={route.chapter} />;
   }
 }
 
 export function App() {
   const game = useGame();
   const route = useRoute();
+  const visit = useVisit();
   const [demo] = useState(isDemoMode);
   // 입학 버튼을 누른 직후에는 발급 연출을 끝까지 보여 주기 위해, 사용자가 들어갈 때까지 입학 화면에 머문다.
   const [welcoming, setWelcoming] = useState(false);
@@ -38,6 +52,15 @@ export function App() {
   }, [game.enrolled]);
 
   const admitting = !game.enrolled || welcoming;
+
+  // 배경 음악: 설정(기본 꺼짐)을 따르고, 화면에 맞는 곡으로 겹쳐 넘긴다
+  const track = trackFor(route, game, admitting);
+  useEffect(() => {
+    music.configure(game.settings.music, game.settings.musicVolume);
+  }, [game.settings.music, game.settings.musicVolume]);
+  useEffect(() => {
+    music.play(track);
+  }, [track]);
 
   return (
     <div className="app">
@@ -50,7 +73,7 @@ export function App() {
           }}
         />
       ) : (
-        <Screen key={toHash(route)} route={route} />
+        <Screen key={`${toHash(route)}@${visit}`} route={route} />
       )}
       {demo && <DemoPanel />}
     </div>

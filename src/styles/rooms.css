@@ -25,12 +25,6 @@
     transform: translateY(1.5px);
   }
 
-  /* 책상에 놓인 안내 쪽지 */
-  .desknote {
-    border-radius: 2px;
-    text-wrap: pretty;
-  }
-
   /* 아래 단추 줄: 글자가 길어도 화면 밖으로 밀려나지 않는다 */
   .deskfoot__submit {
     min-width: 0;
@@ -221,11 +215,6 @@
 
   /* ───────── 연습실: 책상 위의 연습 과제지 ───────── */
 
-  .practice__scroll {
-    display: flex;
-    flex-direction: column;
-  }
-
   .worksheet {
     position: relative;
     cursor: pointer;
@@ -279,7 +268,7 @@
 
   .suspects__rail {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(var(--cols, 4), minmax(0, 1fr));
   }
 
   .suspect {
@@ -424,7 +413,7 @@
   /* 시간표 */
   .board__slots {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(var(--cols, 4), minmax(0, 1fr));
     border-radius: 2px;
   }
 
@@ -471,7 +460,7 @@
 
   .board__seats {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(var(--cols, 4), minmax(0, 1fr));
   }
 
   .seat {
@@ -548,7 +537,7 @@
 
   .solution__order {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(var(--cols, 4), minmax(0, 1fr));
   }
 
   .solution__order li {
@@ -615,69 +604,6 @@
     inset: 0 0 auto 0;
     opacity: 0;
     pointer-events: none;
-  }
-
-  /* ── 시험 봉투 ── */
-
-  .room__envelope {
-    position: relative;
-    flex: none;
-    padding-top: 4px;
-  }
-
-  .envelope {
-    position: relative;
-    width: 220px;
-    height: 152px;
-  }
-
-  /* 봉투 그림자. 봉투 전체에 filter 를 걸면 사파리 엔진에서 위로 올라오는 시험지가 잘리므로 따로 깐다. */
-  .envelope::before {
-    content: "";
-    position: absolute;
-    z-index: -1;
-  }
-
-  /* 겹침 순서를 명시한다 (사파리 엔진에서 움직이는 층이 시험지 위로 올라오던 문제) */
-  .envelope .envelope__lid {
-    z-index: 0;
-  }
-
-  .envelope .envelope__back {
-    z-index: 1;
-  }
-
-  .envelope .envelope__letter {
-    z-index: 2;
-  }
-
-  .envelope .envelope__front {
-    z-index: 3;
-  }
-
-  .envelope .envelope__flap {
-    z-index: 4;
-  }
-
-  .envelope__lid {
-    transform-origin: 50% 100%;
-  }
-
-  .envelope__flap {
-    transform-origin: 50% 0;
-  }
-
-  .envelope__letter {
-    position: absolute;
-    display: grid;
-    align-content: start;
-    justify-items: center;
-    border-radius: 1px;
-  }
-
-  .envelope__letter i {
-    display: block;
-    width: 72%;
   }
 
   /* ── 응시 안내 쪽지 ── */

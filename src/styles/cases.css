@@ -1,0 +1,855 @@
+/* 새 퍼즐 두 가지의 화면 (V3 GATE 04): 증거 조합(.evi)과 인장 대조(.seal).
+   둘 다 추리 책상 위에 놓인다. 색은 검정과 흰색(--m-w) 두 가지, 점 하나는 2px,
+   글자는 16·32px(작은 꼬리말만 갈무리11 12px)이라는 mono.css 의 약속을 그대로 따른다.
+   비스듬한 선·회전·투명도는 회색을 만들므로 쓰지 않는다: 실은 점으로 찍고, 도장은 돌린 모양을 바로 그린다. */
+
+.caseplay .desk__scroll {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.casebrief {
+  flex: none;
+}
+
+/* 늘 적어 두는 짧은 글(증거 조합의 "네 사람 · 세 곳"): 머리글의 윗테에 얹는 이름표라 자리를 차지하지 않는다 */
+.casebrief {
+  position: relative;
+}
+
+.casebrief__top {
+  display: block;
+}
+
+.casebrief__aside {
+  position: absolute;
+  top: -10px;
+  right: 12px;
+  margin: 0;
+  padding: 0 6px;
+  font-family: var(--m-cap);
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--m-w);
+  background: #000;
+  white-space: nowrap;
+}
+
+/* 두 번 뒤집히는 깜빡임: 새 사실을 얻었을 때, 시험 종이에 찍었을 때 */
+@keyframes case-blink {
+  0%,
+  24%,
+  50%,
+  74% {
+    filter: invert(1);
+  }
+  25%,
+  49%,
+  75%,
+  100% {
+    filter: none;
+  }
+}
+
+@keyframes case-shake {
+  0%,
+  100% {
+    transform: none;
+  }
+  25% {
+    transform: translateX(-4px);
+  }
+  75% {
+    transform: translateX(4px);
+  }
+}
+
+/* ───────── 점 격자 ───────── */
+
+.dotgrid {
+  display: inline-grid;
+  flex: none;
+  background: #000;
+}
+
+/* 빈칸에도 가운데에 점 하나를 찍어 모눈이 보이게 한다: 칸을 세고 줄을 맞춰 보기 쉽다 */
+.dotgrid i {
+  display: block;
+  background: linear-gradient(var(--m-w), var(--m-w)) center / 2px 2px no-repeat #000;
+  box-shadow: inset 0 0 0 1px #000;
+}
+
+.dotgrid i[data-c="on"] {
+  background: var(--m-w);
+  box-shadow: inset 0 0 0 1px #000;
+}
+
+/* 작게 놓은 격자: 모눈 없이 모양만 */
+.dotgrid[data-plain="true"] i {
+  background: #000;
+  box-shadow: none;
+}
+
+.dotgrid[data-plain="true"] i[data-c="on"] {
+  background: var(--m-w);
+}
+
+/* 번진 칸: 흰 점과 검은 점이 반씩 섞인다 */
+.dotgrid i[data-c="blur"] {
+  background: var(--m-d50);
+}
+
+/* ───────── 증거 조합 ─────────
+   위: 증거 게시판(핀으로 꽂힌 카드, 집은 두 장 사이에 실이 걸린다) → 아래: 집은 두 장을 나란히 읽는 자리와 한 줄 서술 */
+
+.evi {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-family: var(--m-font);
+  color: var(--m-w);
+}
+
+.evi__board {
+  position: relative;
+  display: grid;
+  gap: 8px;
+  margin: 0 2px;
+  padding: 12px 8px 8px;
+  background: var(--m-d06), #000;
+  box-shadow: var(--m-frame);
+}
+
+.evi__people,
+.evi__facts {
+  display: grid;
+  gap: 8px 6px;
+}
+
+.evi__facts {
+  grid-template-columns: 1fr 1fr;
+}
+
+.evi[data-shaking="true"] .evi__bench {
+  animation: case-shake 220ms steps(2) 2;
+}
+
+.evichip {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  min-height: 48px;
+  margin: 2px;
+  padding: 2px 6px 2px 2px;
+  font-family: var(--m-font);
+  font-size: 16px;
+  line-height: 18px;
+  text-align: left;
+  color: var(--m-w);
+  background: #000;
+  border: 0;
+  border-radius: 0;
+  box-shadow: var(--m-frame);
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* 핀: 카드 위쪽 가운데에 박힌 점 */
+.evichip__pin {
+  position: absolute;
+  left: calc(50% - 2px);
+  top: -6px;
+  width: 4px;
+  height: 4px;
+  background: var(--m-w);
+  box-shadow: 0 0 0 2px #000;
+}
+
+/* 종류: 기록·시각·물건·사실은 세로 두 글자, 진술은 말한 사람의 얼굴 */
+.evichip__tag {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 40px;
+  font-family: var(--m-cap);
+  font-size: 12px;
+  line-height: 14px;
+  text-align: center;
+  word-break: break-all;
+  color: #000;
+  background: var(--m-w);
+}
+
+/* 진술은 말한 사람의 얼굴과 이름으로 놓인다 */
+.evichip[data-kind="statement"] {
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 6px;
+  row-gap: 0;
+  align-content: center;
+  padding: 2px 4px 2px 2px;
+}
+
+.evichip__face {
+  position: relative;
+  grid-row: 1 / 3;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 44px;
+  background: var(--m-w);
+}
+
+.evichip__face .portrait {
+  display: block;
+}
+
+.evichip__said {
+  font-family: var(--m-cap);
+  font-size: 12px;
+  line-height: 14px;
+}
+
+.evichip[data-kind="statement"] .evichip__label {
+  align-self: end;
+}
+
+.evichip__face .pxmark {
+  position: absolute;
+  inset: 0;
+}
+
+.evichip__label {
+  min-width: 0;
+  word-break: keep-all;
+}
+
+.evichip:active:not(:disabled),
+.evichip[data-picked="true"] {
+  color: #000;
+  background: var(--m-w);
+}
+
+.evichip[data-picked="true"] .evichip__tag {
+  color: var(--m-w);
+  background: #000;
+}
+
+.evichip[data-picked="true"] .evichip__pin {
+  background: #000;
+  box-shadow: 0 0 0 2px var(--m-w);
+}
+
+/* 이어서 얻은 사실은 겹줄을 두른다 */
+.evichip[data-kind="derived"] {
+  box-shadow: var(--m-frame2);
+  padding-left: 6px;
+}
+
+.evichip[data-fresh="true"] {
+  animation: case-blink 480ms steps(1) both;
+}
+
+/* 실: 2px 격자에 찍은 점들. 검은 테를 둘러 흰 카드 위에서도 보인다. */
+.evi__thread {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.evi__thread i {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  margin: -1px 0 0 -1px;
+  background: var(--m-w);
+  box-shadow: 0 0 0 2px #000;
+}
+
+.evi__bench {
+  position: relative;
+  display: grid;
+  gap: 6px;
+  margin: 0 2px;
+  padding: 8px;
+  background: #000;
+  box-shadow: var(--m-frame);
+}
+
+.evislot {
+  min-height: 80px;
+  padding: 4px 8px 6px;
+  border: 2px dotted var(--m-w);
+}
+
+.evislot[data-filled="true"] {
+  border-style: solid;
+}
+
+.evislot__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0 0 2px;
+  font-size: 16px;
+  line-height: 20px;
+}
+
+.evislot__head b {
+  padding: 0 4px;
+  font-weight: 400;
+  color: #000;
+  background: var(--m-w);
+}
+
+.evislot__head span {
+  flex: none;
+  font-family: var(--m-cap);
+  font-size: 12px;
+}
+
+.evislot__text {
+  margin: 0;
+  font-size: 16px;
+  line-height: 18px;
+  word-break: keep-all;
+}
+
+.evislot__empty {
+  display: grid;
+  place-items: center;
+  min-height: 64px;
+  margin: 0;
+  font-family: var(--m-cap);
+  font-size: 12px;
+}
+
+/* 아무것도 집지 않았을 때: 할 일을 적어 둔다 */
+.evi__how {
+  margin: 0;
+  padding: 2px 2px 6px;
+  font-size: 16px;
+  line-height: 20px;
+  word-break: keep-all;
+  border-bottom: 2px dotted var(--m-w);
+}
+
+/* 정답: 두 장이 뒤집히고 그 사이에 '모순'이 찍힌다 */
+.evi[data-verdict="correct"] .evislot {
+  color: #000;
+  background: var(--m-w);
+}
+
+.evi[data-verdict="correct"] .evislot__head b {
+  color: var(--m-w);
+  background: #000;
+}
+
+.evi__bench[data-solved="true"]::after {
+  content: "모순";
+  position: absolute;
+  right: 14px;
+  top: 76px;
+  padding: 2px 8px;
+  font-size: 32px;
+  line-height: 36px;
+  color: var(--m-w);
+  background: #000;
+  box-shadow: var(--m-frame2);
+  animation: case-blink 480ms steps(1) both;
+}
+
+/* 오답 쪽지는 게시판을 가리지 않게 아래(읽는 자리 위)에 뜬다: 다시 집을 카드가 위에 있기 때문이다.
+   카드를 하나 집으면 쪽지는 걷힌다. */
+.desk[data-type="evidence"] .desk__notice {
+  top: auto;
+  bottom: calc(86px + env(safe-area-inset-bottom));
+}
+
+.evi__status,
+.seal__status {
+  min-height: 36px;
+  margin: 0;
+  padding: 0 2px;
+  font-size: 16px;
+  line-height: 18px;
+  word-break: keep-all;
+}
+
+/* 인장의 서술 한 줄은 자국과 도장이 놓인 창의 아래쪽에 든다 */
+.seal__status {
+  grid-column: 1 / -1;
+  justify-self: stretch;
+  padding-top: 6px;
+  border-top: 2px dotted var(--m-w);
+}
+
+.evi__status::before,
+.seal__status::before {
+  content: "> ";
+}
+
+/* ───────── 인장 대조 ─────────
+   위: 종이에 남은 자국과 손에 든 도장의 면 → 한 줄 서술 → 도장 넷 → 시험 종이 */
+
+.seal {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-family: var(--m-font);
+  color: var(--m-w);
+}
+
+.seal[data-shaking="true"] .seal__stage {
+  animation: case-shake 220ms steps(2) 2;
+}
+
+.seal__stage {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: start;
+  justify-items: center;
+  gap: 8px;
+  margin: 0 2px;
+  padding: 14px 8px 8px;
+  background: #000;
+  box-shadow: var(--m-frame);
+}
+
+.seal__paper,
+.seal__hand {
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  margin: 0;
+}
+
+/* 손에 든 도장은 통째로 단추다: 누르면 돈다 */
+.seal__hand {
+  padding: 0;
+  font: inherit;
+  color: var(--m-w);
+  background: none;
+  border: 0;
+  border-radius: 0;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.seal__hand:disabled {
+  cursor: default;
+}
+
+.seal__spin {
+  padding: 0 6px;
+  font-family: var(--m-font);
+  font-size: 16px;
+  line-height: 20px;
+  color: #000;
+  background: var(--m-w);
+}
+
+.seal__spin::after {
+  content: " ↻";
+}
+
+.seal__spin[data-on="false"] {
+  visibility: hidden;
+}
+
+.seal__hand:active:not(:disabled) .seal__spin {
+  color: var(--m-w);
+  background: #000;
+  box-shadow: var(--m-frame);
+}
+
+.seal figcaption,
+.seal__cap,
+.seal__name {
+  font-family: var(--m-cap);
+  font-size: 12px;
+  line-height: 14px;
+  text-align: center;
+  word-break: keep-all;
+}
+
+/* 종이: 점선 테두리 안에 자국이 남아 있다 */
+.seal__paper .dotgrid {
+  box-sizing: content-box;
+  padding: 6px;
+  border: 2px dotted var(--m-w);
+}
+
+/* 도장: 겹줄을 두른 덩어리. 위쪽을 가리키는 눈금이 도장과 함께 돈다. */
+.seal__block {
+  position: relative;
+  display: grid;
+  place-items: center;
+  padding: 6px;
+  font-family: var(--m-cap);
+  font-size: 12px;
+  line-height: 16px;
+  text-align: center;
+  border: 2px solid var(--m-w);
+  box-shadow: 0 0 0 2px #000, 0 0 0 4px var(--m-w);
+}
+
+.seal__block--none {
+  box-sizing: content-box;
+  border-style: dotted;
+  box-shadow: none;
+}
+
+.seal__notch {
+  position: absolute;
+  width: 12px;
+  height: 6px;
+  background: var(--m-w);
+}
+
+.seal__block[data-turn="0"] .seal__notch {
+  left: calc(50% - 6px);
+  top: -12px;
+}
+
+.seal__block[data-turn="1"] .seal__notch {
+  right: -12px;
+  top: calc(50% - 6px);
+  width: 6px;
+  height: 12px;
+}
+
+.seal__block[data-turn="2"] .seal__notch {
+  left: calc(50% - 6px);
+  bottom: -12px;
+}
+
+.seal__block[data-turn="3"] .seal__notch {
+  left: -12px;
+  top: calc(50% - 6px);
+  width: 6px;
+  height: 12px;
+}
+
+.seal__press {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 14px;
+  font-family: var(--m-font);
+  font-size: 16px;
+  line-height: 20px;
+  color: var(--m-w);
+  background: #000;
+  border: 0;
+  border-radius: 0;
+  box-shadow: inset 0 0 0 2px var(--m-w);
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.seal__press:active:not(:disabled) {
+  color: #000;
+  background: var(--m-w);
+}
+
+.seal__rack {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  margin: 0 2px;
+}
+
+.seal__pick {
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: 4px;
+  min-width: 0;
+  min-height: 44px;
+  padding: 8px 2px 4px;
+  color: var(--m-w);
+  background: #000;
+  border: 0;
+  border-radius: 0;
+  box-shadow: inset 0 0 0 2px var(--m-w);
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* 손에 든 도장: 칸이 뒤집히고 이름 앞에 ▶ 가 붙는다 */
+.seal__pick[data-selected="true"] {
+  color: #000;
+  background: var(--m-w);
+}
+
+.seal__pick[data-selected="true"] .dotgrid {
+  box-shadow: 0 0 0 2px #000;
+}
+
+.seal__pick[data-selected="true"] .seal__name::before {
+  content: "▶";
+}
+
+.seal__trials {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 2px;
+}
+
+.seal__press {
+  flex: none;
+}
+
+.seal__left {
+  min-width: 20px;
+  padding: 0 4px;
+  color: #000;
+  background: var(--m-w);
+}
+
+.seal__press:active:not(:disabled) .seal__left {
+  color: var(--m-w);
+  background: #000;
+}
+
+.seal__press[data-left="0"] {
+  box-shadow: none;
+  border: 2px dotted var(--m-w);
+}
+
+.seal__sheets {
+  display: flex;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.seal__sheet {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  padding: 4px;
+  border: 2px dotted var(--m-w);
+}
+
+.seal__sheet[data-used="true"] {
+  border-style: solid;
+}
+
+.seal__sheet[data-fresh="true"] {
+  animation: case-blink 400ms steps(1) both;
+}
+
+.seal__blank {
+  display: block;
+}
+
+/* 정답: 자국이 뒤집히며 겹친다 */
+.seal[data-verdict="correct"] .seal__paper .dotgrid,
+.seal[data-verdict="correct"] .seal__block {
+  animation: case-blink 480ms steps(1) both;
+}
+
+.seal[data-verdict="correct"] .seal__paper .dotgrid {
+  border-style: solid;
+}
+
+/* ───────── 채점 결과의 정답 표시 ───────── */
+
+.graded__outro {
+  margin: 6px 0 0;
+  padding: 6px 0 0;
+  font-size: 16px;
+  line-height: 22px;
+  word-break: keep-all;
+  border-top: 2px dotted var(--m-w);
+}
+
+.solution__lie,
+.solution__fact,
+.solution__stamp,
+.solution__from {
+  margin: 0;
+  font-family: var(--m-font);
+  font-size: 16px;
+  line-height: 20px;
+  word-break: keep-all;
+  color: var(--m-w);
+}
+
+.solution__lie {
+  padding: 4px 0 8px;
+}
+
+.solution__chain {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.solution__chain li {
+  display: grid;
+  gap: 2px;
+}
+
+.solution__from {
+  font-family: var(--m-cap);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.solution__from::after {
+  content: " →";
+}
+
+.solution__seals {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 10px 0 4px;
+}
+
+.solution__seals figure {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  margin: 0;
+}
+
+.solution__seals figure .dotgrid {
+  box-sizing: content-box;
+  padding: 4px;
+  border: 2px solid var(--m-w);
+}
+
+.solution__seals figure:last-child .dotgrid {
+  border-style: dotted;
+}
+
+.solution__seals figcaption,
+.solution__arrow {
+  font-family: var(--m-cap);
+  font-size: 12px;
+  line-height: 14px;
+  color: var(--m-w);
+}
+
+.solution__arrow::after {
+  content: " →";
+}
+
+/* ───────── 낮은 화면 ───────── */
+
+@media (max-height: 740px) {
+  .caseplay .desk__scroll,
+  .evi,
+  .seal {
+    gap: 6px;
+  }
+
+  .evi__board {
+    gap: 6px;
+    padding: 8px 8px 4px;
+  }
+
+  .evi__facts {
+    gap: 4px 6px;
+  }
+
+  .evichip {
+    min-height: 44px;
+  }
+
+  .evislot {
+    min-height: 62px;
+    padding: 2px 8px 4px;
+  }
+
+  .evislot__empty {
+    min-height: 52px;
+  }
+
+  .evi__bench {
+    gap: 4px;
+    padding: 4px 8px;
+  }
+
+  .seal__stage {
+    gap: 6px 8px;
+    padding: 12px 8px 4px;
+  }
+
+  .seal__paper,
+  .seal__hand {
+    gap: 6px;
+  }
+
+  .seal__status {
+    padding-top: 4px;
+  }
+
+  .seal__sheet {
+    padding: 2px 4px;
+  }
+
+  .seal__pick {
+    padding: 6px 2px 2px;
+  }
+}
+
+/* 아주 낮은 화면(아이폰 미니의 사파리 등): 제목을 한 단계 줄이고 틈을 더 조여 게시판에 자리를 내준다 */
+@media (max-height: 640px) {
+  .caseplay .casebrief .exampaper__title {
+    font-size: 16px;
+    line-height: 20px;
+  }
+
+  .caseplay .casebrief {
+    padding-top: 4px;
+    padding-bottom: 4px;
+  }
+
+  .caseplay .desk__scroll,
+  .evi {
+    gap: 4px;
+  }
+
+  .evi__board {
+    padding: 8px 8px 2px;
+  }
+
+  .evislot {
+    min-height: 58px;
+    padding: 0 8px 2px;
+  }
+
+  .evi__bench {
+    padding: 2px 8px;
+  }
+
+  .evi__board {
+    gap: 4px;
+  }
+}

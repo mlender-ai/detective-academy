@@ -1,33 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { expectLayoutOk, placeByTap, preset, setCode, shot, stored } from "./helpers";
-
-/**
- * 화면에서 검정(#000)도 흰색(#f1f1ea)도 아닌 화소의 비율(0~1).
- * 회색·투명도·흐림을 쓰면 이 값이 커진다. 점선의 끝처럼 반 화소에 걸린 자리는 조금 남을 수 있다.
- */
-async function offToneRatio(page: Page): Promise<number> {
-  await page.evaluate(() => document.fonts.ready.then(() => undefined));
-  const png = await page.screenshot({ animations: "disabled", style: ".demo { visibility: hidden !important; }" });
-  return page.evaluate(async (base64) => {
-    const image = new Image();
-    image.src = `data:image/png;base64,${base64}`;
-    await image.decode();
-    const canvas = document.createElement("canvas");
-    canvas.width = image.naturalWidth;
-    canvas.height = image.naturalHeight;
-    const ctx = canvas.getContext("2d")!;
-    ctx.drawImage(image, 0, 0);
-    const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
-    let off = 0;
-    for (let i = 0; i < data.length; i += 4) {
-      const [r, g, b] = [data[i], data[i + 1], data[i + 2]];
-      const black = r < 16 && g < 16 && b < 16;
-      const white = Math.abs(r - 241) < 16 && Math.abs(g - 241) < 16 && Math.abs(b - 234) < 16;
-      if (!black && !white) off++;
-    }
-    return off / (data.length / 4);
-  }, png.toString("base64"));
-}
+import { CINE_ON, enterFromHome, expectLayoutOk, offToneRatio, placeByTap, preset, setCode, shot, stored, toDesk, toSafe } from "./helpers";
 
 /**
  * 1비트 흑백 도트로 그렸는지 확인한다: 비트맵 글꼴, 스프라이트, 점으로 찍는 표시, 두 가지 색, 자막 화면.
@@ -41,25 +13,30 @@ test("공고를 펼쳐 암호를 풀고 채점 결과까지 간다", async ({ pa
   expect(await page.getByTestId("daily-file-cta").evaluate((el) => getComputedStyle(el).fontFamily)).toContain("NeoDGM");
   await page.evaluate(() => document.fonts.ready.then(() => undefined));
   expect(await page.evaluate(() => document.fonts.check('16px "NeoDGM"') && document.fonts.check('12px "Galmuri11"'))).toBe(true);
-  // 장면 아래의 서술 한 줄
+  // 방 위쪽의 서술 한 줄
   await expect(page.getByTestId("narration")).toContainText("오늘의 사건");
   await expect(page.locator(".hall__sign .sprite")).toBeVisible();
   await expect(page.getByTestId("daily-file-status")).toHaveText("미해결");
   await shot(page, "mono-01-home");
 
-  await page.getByTestId("daily-file-cta").click();
+  await enterFromHome(page, "daily-file");
   await expect(page.getByTestId("play-screen")).toBeVisible();
-  await expect(page.getByTestId("dial-0")).toBeVisible();
-
-  // 오답: 정답은 드러나지 않는다
-  await page.getByTestId("submit").click();
-  await expect(page.getByTestId("notice-wrong")).toBeVisible();
-  await expect(page.getByTestId("solution")).toHaveCount(0);
+  // 암호 사건은 자료실 장면에서 푼다: 위에 살아 있는 방과 서술 한 줄, 그 아래 책상의 기록
+  await expect(page.locator('.vaultscene [data-testid="iso-canvas"]')).toBeVisible();
+  await expect(page.getByTestId("narration")).toContainText("기록");
+  await expect(page.getByTestId("record")).toBeVisible();
 
   // 메모는 시도 기록에 점 표시로 반영된다
   await page.getByTestId("memo-5").click();
   await expect(page.locator('.clue__digit[data-memo="out"]')).toHaveCount(3);
   await expect(page.locator('.clue__digit[data-memo="out"] .pxmark svg').first()).toBeVisible();
+  await shot(page, "mono-02-record");
+
+  // 금고 앞으로. 오답: 정답은 드러나지 않는다
+  await toSafe(page);
+  await page.getByTestId("submit").click();
+  await expect(page.getByTestId("notice-wrong")).toBeVisible();
+  await expect(page.getByTestId("solution")).toHaveCount(0);
 
   // 릴을 밀어서 1 → 4
   const dial = (await page.getByTestId("dial-0").boundingBox())!;
@@ -75,10 +52,10 @@ test("공고를 펼쳐 암호를 풀고 채점 결과까지 간다", async ({ pa
   await page.getByTestId("submit").click();
   await expect(page.getByTestId("result-screen")).toBeVisible();
   await expect(page.getByTestId("result-lead")).toContainText("추론이 정확했습니다");
-  await expect(page.getByTestId("reward")).toContainText("+100");
+  await expect(page.getByTestId("reward")).toContainText("+60");
   await expect(page.getByTestId("no-hint")).toBeVisible();
   await expect(page.getByTestId("solution")).toBeVisible();
-  expect((await stored(page)).credits).toBe(140);
+  expect((await stored(page)).credits).toBe(100);
   await expect(page.locator(".pxcaret")).toHaveCount(0); // 문구 출력이 끝났다
   await shot(page, "mono-03-result");
 
@@ -86,7 +63,7 @@ test("공고를 펼쳐 암호를 풀고 채점 결과까지 간다", async ({ pa
   await page.getByTestId("result-home").click();
   await expect(page.getByTestId("home-screen")).toBeVisible();
   await expect(page.getByTestId("daily-file-status")).toHaveText("해결");
-  await expect(page.getByTestId("credit-balance")).toHaveText("140");
+  await expect(page.getByTestId("credit-balance")).toHaveText("100");
 });
 
 for (const viewport of [
@@ -108,15 +85,25 @@ for (const viewport of [
       expect(tile.y + tile.height).toBeLessThanOrEqual(viewport.height);
       await shot(page, `mono-viewport-${tag}-home`);
 
-      await page.getByTestId("daily-file-cta").click();
-      await expect(page.getByTestId("dial-0")).toBeVisible();
+      await enterFromHome(page, "daily-file");
+      // 책상 앞: 시도 기록 다섯 건과 숫자 메모가 스크롤 없이 단추 줄 위에 다 보인다
+      await expect(page.getByTestId("record")).toBeVisible();
+      await expectLayoutOk(page, '[data-testid="to-safe"]');
+      const goTop = (await page.getByTestId("to-safe").boundingBox())!.y;
+      const clues = (await page.locator(".clues").boundingBox())!;
+      const memo = (await page.getByTestId("memo-9").boundingBox())!;
+      expect(clues.y).toBeGreaterThanOrEqual(0);
+      expect(memo.y + memo.height).toBeLessThanOrEqual(goTop);
+      expect(await page.locator(".sceneplay__panel").evaluate((el) => el.scrollHeight - el.clientHeight)).toBeLessThanOrEqual(1);
+      await shot(page, `mono-viewport-${tag}-record`);
+
+      // 금고 앞: 드럼과 제출 단추가 한 화면에 있다
+      await toSafe(page);
       await expectLayoutOk(page, '[data-testid="submit"]');
       const submitTop = (await page.getByTestId("submit").boundingBox())!.y;
-      const clues = (await page.locator(".clues").boundingBox())!;
       const dials = (await page.locator(".lock__dials").boundingBox())!;
-      expect(clues.y).toBeGreaterThanOrEqual(0);
       expect(dials.y + dials.height).toBeLessThanOrEqual(submitTop);
-      expect(await page.locator(".play__scroll").evaluate((el) => el.scrollHeight - el.clientHeight)).toBeLessThanOrEqual(1);
+      expect(await page.locator(".sceneplay__panel").evaluate((el) => el.scrollHeight - el.clientHeight)).toBeLessThanOrEqual(1);
       await shot(page, `mono-viewport-${tag}-code`);
 
       // 숫자가 겹쳐 경고가 떠도 화살표 단추는 그대로 눌린다
@@ -146,10 +133,10 @@ test("입학해서 진술 추리와 승급 시험을 풀고 신분증까지 확�
 
   /* 연습실 → 진술 추리 */
   await preset(page, "daily-solved");
-  await page.getByTestId("practice-entry").click();
+  await enterFromHome(page, "practice-entry");
   await expect(page.getByTestId("practice-room")).toBeVisible();
   await shot(page, "mono-12-practice");
-  await page.getByTestId("practice-file-cta").click();
+  await page.getByTestId("practice-file-practice-truth-001").click();
   await expect(page.getByTestId("play-screen")).toHaveAttribute("data-type", "truth");
   await expect(page.locator(".suspect .portrait.sprite")).toHaveCount(4);
 
@@ -168,13 +155,15 @@ test("입학해서 진술 추리와 승급 시험을 풀고 신분증까지 확�
   await page.getByTestId("submit").click();
   await expect(page.getByTestId("result-screen")).toBeVisible();
   await expect(page.getByTestId("solution")).toContainText("세라");
-  await expect(page.getByTestId("reward")).toContainText("+60");
+  await expect(page.getByTestId("reward")).toContainText("+30");
   await shot(page, "mono-14-truth-result");
 
-  /* 승급 시험 */
-  await page.getByTestId("result-next").click();
+  /* 승급 시험: 과제 셋을 풀어 둔 상태에서 */
+  await preset(page, "exam-ready");
+  await enterFromHome(page, "exam-cta");
   await expect(page.getByTestId("exam-gate")).toBeVisible();
-  await expect(page.locator(".envelope .sprite")).toHaveCount(4);
+  // 시험실은 방으로 그린다: 봉투는 방 안의 책상 위에 있다
+  await expect(page.locator('.examscene [data-testid="iso-canvas"]')).toBeVisible();
   await shot(page, "mono-15-exam-gate");
   await page.getByTestId("open-envelope").click();
   await expect(page.getByTestId("play-screen")).toHaveAttribute("data-variant", "exam");
@@ -190,14 +179,14 @@ test("입학해서 진술 추리와 승급 시험을 풀고 신분증까지 확�
   await expect(page.getByTestId("ceremony-title")).toHaveText("D급 초급 탐정");
   await expect(page.getByTestId("ceremony")).toHaveAttribute("data-done", "true", { timeout: 10_000 });
   await expect(page.getByTestId("id-rank")).toHaveText("D급 초급 탐정");
-  await expect(page.getByTestId("reward")).toContainText("+150");
+  await expect(page.getByTestId("reward")).toContainText("+80");
   await shot(page, "mono-17-ceremony");
   expect((await stored(page)).rank).toBe("D");
 
   /* 신분증 */
   await page.getByTestId("ceremony-card").click();
   await expect(page.getByTestId("profile-screen")).toBeVisible();
-  await expect(page.getByTestId("record-exam")).toContainText("제출 1회");
+  await expect(page.getByTestId("record-exam")).toContainText("D급 승급 시험 합격");
   await expect(page.getByTestId("rank-note")).toContainText("현재 D급 초급 탐정");
   expect(await page.getByTestId("rank-note").evaluate((el) => getComputedStyle(el).fontFamily)).toContain("NeoDGM");
   await shot(page, "mono-18-profile");
@@ -218,9 +207,9 @@ for (const viewport of [
       await expectLayoutOk(page, '[data-testid="enroll"]');
 
       await preset(page, "daily-solved");
-      await page.getByTestId("practice-entry").click();
-      await expectLayoutOk(page, '[data-testid="practice-file-cta"]');
-      await page.getByTestId("practice-file-cta").click();
+      await enterFromHome(page, "practice-entry");
+      await expectLayoutOk(page, '[data-testid="practice-file-practice-truth-001"]');
+      await page.getByTestId("practice-file-practice-truth-001").click();
       await page.getByTestId("suspect-junho").click();
       await expectLayoutOk(page, '[data-testid="submit"]');
       for (const button of await page.locator(".statement__memo button").all()) {
@@ -229,7 +218,7 @@ for (const viewport of [
       }
 
       await preset(page, "exam-ready");
-      await page.getByTestId("exam-cta").click();
+      await enterFromHome(page, "exam-cta");
       await expectLayoutOk(page, '[data-testid="open-envelope"]');
       await page.getByTestId("open-envelope").click();
       await placeByTap(page, "doyun", 0);
@@ -239,7 +228,7 @@ for (const viewport of [
       expect(tray.y + tray.height).toBeLessThanOrEqual(submitTop);
 
       await preset(page, "promoted");
-      await page.getByTestId("identity").click();
+      await enterFromHome(page, "identity");
       await expectLayoutOk(page, '[data-testid="rename"]');
     });
   });
@@ -273,28 +262,33 @@ test("모든 화면이 검정과 흰색 두 가지로만 그려진다", async ({
   await preset(page, "daily-unsolved");
   await expect(page.getByTestId("home-screen")).toBeVisible();
   await check("홈");
-  await page.getByTestId("daily-file-cta").click();
-  await expect(page.getByTestId("dial-0")).toBeVisible();
-  await check("암호 풀이");
+  await enterFromHome(page, "daily-file");
+  await expect(page.getByTestId("record")).toBeVisible();
+  await page.waitForTimeout(900); // 탐정이 책상 앞에 설 때까지
+  await check("암호 풀이 · 책상의 기록");
+  await toSafe(page);
+  await page.waitForTimeout(900); // 금고 앞에 설 때까지
+  await check("암호 풀이 · 금고 앞");
   await page.getByTestId("submit").click();
   await expect(page.getByTestId("notice-wrong")).toBeVisible();
   await check("오답 쪽지");
+  await toDesk(page);
   await page.getByTestId("hint-button").click();
   await expect(page.getByTestId("hint-drawer")).toBeVisible();
   await check("수사 지원 서랍");
 
   await preset(page, "daily-solved");
-  await page.getByTestId("practice-entry").click();
+  await enterFromHome(page, "practice-entry");
   await expect(page.getByTestId("practice-room")).toBeVisible();
   await check("연습실");
-  await page.getByTestId("practice-file-cta").click();
+  await page.getByTestId("practice-file-practice-truth-001").click();
   await expect(page.getByTestId("play-screen")).toHaveAttribute("data-type", "truth");
   await page.getByTestId("suspect-hana").click();
   await page.getByTestId("memo-junho-true").click();
   await check("진술 추리");
 
   await preset(page, "exam-ready");
-  await page.getByTestId("exam-cta").click();
+  await enterFromHome(page, "exam-cta");
   await expect(page.getByTestId("exam-gate")).toBeVisible();
   await check("시험실");
   await page.getByTestId("open-envelope").click();
@@ -303,7 +297,7 @@ test("모든 화면이 검정과 흰색 두 가지로만 그려진다", async ({
   await check("승급 시험 풀이");
 
   await preset(page, "promoted");
-  await page.getByTestId("identity").click();
+  await enterFromHome(page, "identity");
   await expect(page.getByTestId("profile-screen")).toBeVisible();
   await check("신분증");
   await page.goto("/?demo=1#/daily");
@@ -311,30 +305,108 @@ test("모든 화면이 검정과 흰색 두 가지로만 그려진다", async ({
   await check("채점 기록");
 });
 
+test("새로 더한 화면도 두 가지 색뿐이다: 달력이 끝난 날의 홈, 지난 사건, 신분증의 지난 사건 단추, 과제 여섯 줄의 연습실", async ({ page }) => {
+  const check = async (name: string) => {
+    await page.waitForTimeout(500); // 화면 전환이 끝난 뒤에 찍는다
+    expect(await offToneRatio(page), `${name}: 두 색이 아닌 화소가 너무 많다`).toBeLessThan(0.005);
+  };
+  const fontSize = (selector: string) => page.locator(selector).first().evaluate((el) => getComputedStyle(el).fontSize);
+
+  // 달력이 끝난 다음 날(12월 6일): 게시판은 새 사건을 준비 중이다
+  await preset(page, "promoted", "&date=2026-12-06");
+  await page.getByTestId("daily-file").click();
+  await expect(page.getByTestId("home-screen")).toHaveAttribute("data-at", "board");
+  await expect(page.getByTestId("daily-file-cta")).toHaveText("지난 사건 다시 보기");
+  // 새 글자도 정해진 크기다: 제목 32px, 한 줄 16px
+  expect(await page.locator(".isocard__subject").evaluate((el) => getComputedStyle(el).fontFamily)).toContain("NeoDGM");
+  expect(await fontSize(".isocard__subject")).toBe("32px");
+  expect(await fontSize('[data-testid="daily-past-count"]')).toBe("16px");
+  await check("달력이 끝난 날의 홈");
+
+  await page.getByTestId("daily-file-cta").click();
+  await expect(page.getByTestId("past-screen")).toBeVisible();
+  expect(await fontSize(".dailypast .ledger__title")).toBe("32px");
+  expect(await fontSize(".dailypast__note")).toBe("16px");
+  expect(await fontSize(".dailypast__list .isotask__title")).toBe("16px");
+  expect(await fontSize(".dailypast__list .isotask__meta")).toBe("12px");
+  await check("지난 사건");
+  // 줄을 누르고 있는 동안(뒤집힌 줄)에도 두 색이다
+  const first = (await page.locator(".dailypast__list .isotask").first().boundingBox())!;
+  await page.mouse.move(first.x + first.width / 2, first.y + first.height / 2);
+  await page.mouse.down();
+  await check("지난 사건 · 누른 줄");
+  await page.mouse.up();
+  await expect(page.getByTestId("play-screen")).toBeVisible();
+
+  // 오늘 문제를 푼 날의 게시판(단추 둘)과, 오늘의 줄에 꼬리표가 붙은 지난 사건
+  await preset(page, "daily-solved", "&date=2026-11-25");
+  await page.getByTestId("daily-file").click();
+  await expect(page.getByTestId("daily-past-cta")).toBeVisible();
+  expect(await fontSize('[data-testid="daily-past-cta"]')).toBe("16px");
+  await check("오늘 문제를 푼 날의 게시판");
+  await page.getByTestId("daily-past-cta").click();
+  await expect(page.locator(".dailypast__list .isotask__flag")).toHaveText("오늘");
+  expect(await fontSize(".dailypast__list .isotask__flag")).toBe("12px");
+  await check("지난 사건 · 오늘의 꼬리표");
+
+  await page.goto("/?demo=1&date=2026-11-25#/profile");
+  await page.getByTestId("record-past").scrollIntoViewIfNeeded();
+  expect(await fontSize('[data-testid="record-past"]')).toBe("16px");
+  await check("신분증 · 지난 사건 단추");
+
+  // 과제 여섯 줄의 서류함(머리의 세모, 특수 도전의 꼬리표)
+  await preset(page, "ready-b");
+  await page.goto("/?demo=1#/practice");
+  await page.getByTestId("drawer-C").click();
+  await expect(page.getByTestId("practice-room")).toHaveAttribute("data-at", "C");
+  await expect(page.getByTestId("practice-more")).toHaveText("▼");
+  expect(await fontSize('[data-testid="practice-more"]')).toBe("16px");
+  await check("연습실 · 과제 여섯 줄");
+  await page.getByTestId("practice-list").evaluate((el) => el.scrollTo(0, el.scrollHeight));
+  await expect(page.getByTestId("practice-special-special-code-001")).toBeVisible();
+  await check("연습실 · 특수 도전의 꼬리표");
+});
+
 test.describe("자막 화면", () => {
   // 다른 테스트에서는 꺼 둔 자막 화면을 여기서만 켠다 (저장소의 끔 표시를 비운다)
-  test.use({ storageState: { cookies: [], origins: [] } });
+  test.use({ storageState: CINE_ON });
+
+  /** 추리 책상에서 여는 사건(연습실의 진술 추리)을 연다 */
+  const openDeskCase = async (page: Page) => {
+    await preset(page, "daily-solved");
+    await enterFromHome(page, "practice-entry");
+    await page.getByTestId("practice-file-practice-truth-001").click();
+  };
 
   test("사건을 열면 제목이 찍힌 검은 화면이 뜨고, 누르면 바로 걷힌다", async ({ page }) => {
-    await preset(page, "daily-unsolved");
-    await page.getByTestId("daily-file-cta").click();
+    await openDeskCase(page);
     const card = page.getByTestId("cine-card");
     await expect(card).toBeVisible();
     await expect(card).toContainText("사건 기록");
     await card.click();
     await expect(card).toHaveCount(0);
     // 걷힌 뒤에는 바로 조작된다
-    await page.getByTestId("submit").click();
-    await expect(page.getByTestId("notice-wrong")).toBeVisible();
+    await page.getByTestId("suspect-hana").click();
+    await expect(page.getByTestId("truth-prompt")).toContainText("하나가 숨겼다면");
   });
 
   test("누르지 않아도 제목이 다 찍히면 스스로 걷힌다", async ({ page }) => {
-    await preset(page, "daily-unsolved");
-    await page.getByTestId("daily-file-cta").click();
+    await openDeskCase(page);
     const card = page.getByTestId("cine-card");
-    await expect(card).toContainText("자료실 금고의 암호");
+    await expect(card).toContainText("사라진 시험 답안지");
     await expect(card).toHaveCount(0, { timeout: 6_000 });
-    await expect(page.getByTestId("dial-0")).toBeVisible();
+    await expect(page.getByTestId("suspect-hana")).toBeVisible();
+  });
+
+  test("암호 사건은 자막 화면 대신 자료실에 들어서는 장면으로 시작한다", async ({ page }) => {
+    await preset(page, "daily-unsolved");
+    await enterFromHome(page, "daily-file");
+    await expect(page.getByTestId("play-screen")).toHaveAttribute("data-ux", "b");
+    await expect(page.getByTestId("cine-card")).toHaveCount(0);
+    await expect(page.getByTestId("narration")).toContainText("자료실");
+    // 들어서는 중에도 바로 조작된다
+    await page.getByTestId("memo-5").click();
+    await expect(page.getByTestId("memo-5")).toHaveAttribute("data-state", "out");
   });
 
   test.describe("모션 줄이기 설정", () => {
@@ -343,8 +415,8 @@ test.describe("자막 화면", () => {
     test("자막 화면이 뜨지 않고 서술은 한 번에 나온다", async ({ page }) => {
       await preset(page, "daily-unsolved");
       await expect(page.locator(".narr__line")).toContainText("붙어 있다.");
-      await page.getByTestId("daily-file-cta").click();
-      await expect(page.getByTestId("dial-0")).toBeVisible();
+      await openDeskCase(page);
+      await expect(page.getByTestId("suspect-hana")).toBeVisible();
       await expect(page.getByTestId("cine-card")).toHaveCount(0);
     });
   });

@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>탐정학원 · 사건 수사 CASE D-001</title>
+<style>
+@font-face { font-family: "NeoDGM"; src: url("../../node_modules/@kfonts/neodgm/neodgm.woff2") format("woff2"); }
+@font-face { font-family: "Galmuri11"; src: url("../../node_modules/galmuri/dist/Galmuri11.woff2") format("woff2"); }
+* { box-sizing: border-box; }
+html, body { margin: 0; background: #000; color: #f1f1ea; }
+body { font: 16px/1.5 "NeoDGM", monospace; -webkit-font-smoothing: none; }
+main { padding: 20px 16px 48px; }
+h1 { font-size: 32px; line-height: 40px; font-weight: 400; margin: 0 0 6px; }
+h2 { font-size: 16px; line-height: 24px; font-weight: 400; margin: 18px 0 6px; padding: 0 6px; display: inline-block; color: #000; background: #f1f1ea; }
+p { margin: 0 0 8px; }
+a { color: inherit; }
+.note { font: 12px/1.7 "Galmuri11", monospace; }
+.bar { display: flex; flex-wrap: wrap; gap: 8px 20px; align-items: center; margin: 14px 0 6px; }
+.bar span { font: 12px/1.5 "Galmuri11", monospace; }
+.seg { display: flex; flex-wrap: wrap; gap: 2px; }
+.seg button, .again { min-height: 32px; padding: 0 10px; font: 16px "NeoDGM", monospace; color: #f1f1ea; background: #000; border: 0; box-shadow: inset 0 0 0 2px #f1f1ea; cursor: pointer; }
+.seg button[aria-pressed="true"] { color: #000; background: #f1f1ea; }
+.again:active { color: #000; background: #f1f1ea; }
+.wrap { display: flex; gap: 28px; align-items: flex-start; }
+.list { flex: 1 1 420px; max-width: 600px; }
+.scenes { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.scene { display: grid; grid-template-columns: 44px 1fr; gap: 0 12px; align-items: center; width: 100%; padding: 6px 10px; text-align: left; font: 16px/1.4 "NeoDGM", monospace; color: #f1f1ea; background: #000; border: 0; box-shadow: inset 0 0 0 2px #f1f1ea; cursor: pointer; }
+.scene[aria-pressed="true"] { color: #000; background: #f1f1ea; }
+.scene b { grid-row: 1 / 3; font-weight: 400; font-size: 32px; line-height: 36px; text-align: center; }
+.scene i { font: 12px/1.5 "Galmuri11", monospace; font-style: normal; }
+.stage { flex: none; position: sticky; top: 12px; }
+.phone { display: block; border: 0; background: #000; box-shadow: 0 0 0 2px #f1f1ea; }
+.open { display: none; margin-top: 6px; padding: 12px; text-decoration: none; box-shadow: inset 0 0 0 2px #f1f1ea; }
+.open::before { content: "▶ "; }
+table { border-collapse: collapse; margin: 6px 0 10px; font: 12px/1.6 "Galmuri11", monospace; }
+th, td { padding: 3px 10px 3px 0; text-align: left; vertical-align: top; border-bottom: 2px dotted #f1f1ea; font-weight: 400; }
+th { border-bottom: 2px solid #f1f1ea; }
+/* 좁은 화면(휴대폰): 나란히 띄우지 않고, 장면마다 전체 화면으로 여는 단추만 둔다 */
+@media (max-width: 900px) {
+  .wrap { display: block; }
+  .stage, .bar .size, .again { display: none; }
+  .open { display: block; }
+  .scene { cursor: default; }
+}
+</style>
+</head>
+<body>
+<main>
+  <h1>사건 수사 · CASE D-001</h1>
+  <p>「BJ 토끼의 마지막 방송」 전 4장. D급의 첫 사건이다. 제1장부터 사건 해결까지 이어서 플레이한다.</p>
+  <p class="note">처음부터 플레이하려면 <b>홈</b>에서 사건 접수함을 누른다(전 4장, 20~30분). 아래의 장면을 고르면 그 지점까지 진행된 상태로 바로 열린다: 상태는 실제 엔진 함수를 차례로 불러 만든 것이고, 장면마다 저장 칸이 따로라 실제 플레이 기록과 섞이지 않는다. 정답은 여기에 적지 않았다. 방송실 그림만 따로 보려면 <a href="./art.html">art.html</a>.</p>
+
+  <div class="bar">
+    <button class="again" id="again">이 장면 처음부터 다시</button>
+    <button class="again" id="resume">새로고침(이어서)</button>
+    <span class="size">화면 크기</span>
+    <div class="seg size" id="size">
+      <button data-v="390x844" aria-pressed="true">390×844</button>
+      <button data-v="390x664" aria-pressed="false">390×664 주소창 보임</button>
+      <button data-v="375x629" aria-pressed="false">375×629 13 미니 사파리</button>
+      <button data-v="430x932" aria-pressed="false">430×932</button>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="list">
+      <h2>장면</h2>
+      <ol class="scenes" id="scenes"></ol>
+
+      <h2>제1장이 묻는 것과 묻지 않는 것</h2>
+      <table>
+        <tr><th>확인되는 것</th><td>마지막 방송은 미리 제작된 영상의 예약 송출이었다</td></tr>
+        <tr><th>정해지지 않는 것</th><td>토끼의 생사 · 지금 있는 곳 · 영상을 예약한 사람</td></tr>
+        <tr><th>보상</th><td>수사 크레딧 +120 (처음 한 번)</td></tr>
+        <tr><th>등급</th><td>D급부터. 해결해도 등급과 승급 시험의 응시 조건은 그대로다</td></tr>
+        <tr><th>수사 지원</th><td>두 단계, 문제의 힌트와 같은 값(20 · 40)</td></tr>
+      </table>
+      <p class="note">사건의 논리는 가능한 경우를 전부 세어 검증한다(<b>src/story/cases/d001/logic.ts</b>, 테스트 <b>src/tests/story/d001.test.ts</b>): 맞는 전송 기록이 하나뿐인가, 가진 증거로 확정되는 결론이 하나뿐인가, LIVE 표시만으로는 방식이 정해지지 않는가, 매니저·생사·행방이 열려 있는가. 자료를 고쳐 답이 여럿이 되거나 없어지면 테스트가 실패한다.</p>
+    </div>
+
+    <div class="stage">
+      <iframe class="phone" id="phone" title="탐정학원"></iframe>
+    </div>
+  </div>
+
+  <p class="note" style="margin-top:18px">볼 것: ① 웹 퀴즈가 아니라 사건을 조사하는 느낌이 드는가 ② 방송 화면과 토끼 가면의 그림체가 지금 화풍과 어울리는가 ③ 타임라인과 화면 조사가 누르기 편한가 ④ 틀렸을 때의 안내가 답을 흘리지 않으면서 다음 할 일을 알려 주는가 ⑤ 끝 장면의 LIVE → 예약 영상 연출과 다음 장의 미끼 ⑥ 홈의 「사건 수사」 줄과 창 아래 텔레비전이 기존 홈을 해치지 않는가.</p>
+</main>
+<script type="module" src="./index.ts"></script>
+</body>
+</html>

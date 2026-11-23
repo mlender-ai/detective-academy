@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
-import { goBack } from "../app/router";
-import { playSound } from "../app/sound";
+import { todayKey } from "../app/clock";
+import { goBack, navigate } from "../app/router";
+import { ensureContext, playSound } from "../app/sound";
 import { gameStore, useGame } from "../app/store";
 import { PenMark } from "../art/pixel";
 import { RankMark } from "../art/objects";
@@ -8,17 +9,11 @@ import { Sprite } from "../art/pixel";
 import { DeskWood } from "../components/DeskWood";
 import { CreditTag } from "../components/CreditReward";
 import { IdCard } from "../components/IdCard";
-import { PUZZLES } from "../data/puzzles";
+import { ALL_PUZZLES, PRACTICE_PUZZLES, getDailyPuzzle } from "../data/puzzles";
 import { RANKS, nextRank, rankLabel } from "../data/ranks";
-import { NICKNAME_MAX, getProgress } from "../engine/progressEngine";
-import { formatDuration } from "../engine/time";
-import type { PuzzleCategory, PuzzleProgress } from "../engine/types";
-
-const CATEGORY_LABEL: Record<PuzzleCategory, string> = {
-  daily: "오늘의 추리",
-  practice: "연습실",
-  exam: "승급 시험",
-};
+import { NICKNAME_MAX, emptyProgress, getProgress, solvedCount } from "../engine/progressEngine";
+import { dottedDate, formatDuration } from "../engine/time";
+import type { PuzzleProgress } from "../engine/types";
 
 function recordLine(progress: PuzzleProgress): string {
   if (progress.status === "solved") {
@@ -34,13 +29,46 @@ function recordLine(progress: PuzzleProgress): string {
 }
 
 /** 탐정 신분증: 책상 위에 신분증과 학생 기록부가 놓여 있다 */
+/** 음량 단추: 막대 넷 가운데 지금 단계만큼 찬다. 누르면 한 칸 올라가고 끝에서 처음으로 돌아간다. */
+function VolumeButton({ label, level, disabled, onStep, testId }: { label: string; level: number; disabled: boolean; onStep: () => void; testId: string }) {
+  return (
+    <button
+      type="button"
+      className="volbtn leaf"
+      onClick={onStep}
+      disabled={disabled}
+      aria-label={disabled ? `${label} 음량. ${label}이 꺼져 있습니다` : `${label} 음량 ${level}단계. 누르면 바뀝니다`}
+      data-level={level}
+      data-testid={testId}
+    >
+      {/* 꺼져 있으면 막대를 비운다(저장된 단계는 data-level 에 그대로 남는다) */}
+      <span className="volbtn__bars" aria-hidden="true">
+        {[1, 2, 3, 4].map((n) => (
+          <i key={n} data-on={!disabled && n <= level} />
+        ))}
+      </span>
+      <small aria-hidden="true">음량 {disabled ? "-" : level}</small>
+    </button>
+  );
+}
+
 export function DetectiveProfile() {
   const game = useGame();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(game.nickname);
   const rankIndex = RANKS.findIndex((r) => r.id === game.rank);
   const upcoming = nextRank(game.rank);
-  const issuedAt = game.promotions[game.promotions.length - 1]?.at ?? game.enrolledAt;
+  const lastPromotion = game.promotions[game.promotions.length - 1] ?? null;
+  const issuedAt = lastPromotion?.at ?? game.enrolledAt;
+  // 달력이 끝난 날에는 오늘의 추리가 없다(null)
+  const daily = getDailyPuzzle(todayKey());
+  const dailyProgress = daily ? getProgress(game, daily.id) : emptyProgress();
+  const dailySolved = solvedCount(game, "daily");
+  const practiceSolved = solvedCount(game, "practice");
+  // 가장 최근에 해결한 연습 과제
+  const lastPractice =
+    ALL_PUZZLES.filter((p) => p.category === "practice" && getProgress(game, p.id).solvedAt)
+      .sort((x, y) => (getProgress(game, y.id).solvedAt ?? "").localeCompare(getProgress(game, x.id).solvedAt ?? ""))[0] ?? null;
 
   const save = (event: FormEvent) => {
     event.preventDefault();
@@ -52,6 +80,19 @@ export function DetectiveProfile() {
     const on = !game.settings.sound;
     gameStore.setSound(on);
     if (on) playSound("success");
+  };
+
+  const toggleMusic = () => {
+    // 사파리는 사용자의 조작 안에서 깨운 소리만 낸다
+    ensureContext();
+    gameStore.setMusic(!game.settings.music);
+  };
+
+  /** 음량 단계를 한 칸씩 올리고, 끝에서 처음으로 돌아간다 */
+  const stepVolume = (kind: "sound" | "music") => {
+    const now = kind === "sound" ? game.settings.soundVolume : game.settings.musicVolume;
+    gameStore.setVolume(kind, (now % 4) + 1);
+    if (kind === "sound") playSound("tick");
   };
 
   return (
@@ -144,38 +185,83 @@ export function DetectiveProfile() {
             수사 기록
           </h2>
           <ul className="records">
-            {PUZZLES.map((puzzle) => {
-              const progress = getProgress(game, puzzle.id);
-              return (
-                <li key={puzzle.id} data-status={progress.status} data-testid={`record-${puzzle.category}`}>
-                  <span className="tickbox" aria-hidden="true">
-                    {progress.status === "solved" && <PenMark kind="check" />}
-                  </span>
-                  <span className="records__cat">{CATEGORY_LABEL[puzzle.category]}</span>
-                  <span className="records__title">{puzzle.title}</span>
-                  <span className="records__line hand num">{recordLine(progress)}</span>
-                </li>
-              );
-            })}
+            <li data-status={dailyProgress.status} data-testid="record-daily">
+              <span className="tickbox" aria-hidden="true">
+                {dailyProgress.status === "solved" && <PenMark kind="check" />}
+              </span>
+              <span className="records__cat">오늘의 추리 · 지금까지 {dailySolved}개 해결</span>
+              <span className="records__title">{daily ? daily.title : "새 사건 준비 중"}</span>
+              <span className="records__line hand num">{daily ? recordLine(dailyProgress) : "새 사건을 준비하고 있습니다"}</span>
+              {/* 지난 사건: 게시판에 붙었던 오늘의 추리를 다시 본다 */}
+              <button type="button" className="minibtn leaf records__more" onClick={() => navigate({ name: "daily-past" })} data-testid="record-past">
+                지난 사건 보기
+              </button>
+            </li>
+            <li data-status={practiceSolved > 0 ? "solved" : "new"} data-testid="record-practice">
+              <span className="tickbox" aria-hidden="true">
+                {practiceSolved > 0 && <PenMark kind="check" />}
+              </span>
+              <span className="records__cat">연습실</span>
+              <span className="records__title">
+                과제 {practiceSolved}/{PRACTICE_PUZZLES.length} 해결
+              </span>
+              <span className="records__line hand num">{lastPractice ? `마지막으로 푼 과제 · ${lastPractice.title}` : "아직 풀지 않았습니다"}</span>
+            </li>
+            <li data-status={lastPromotion ? "solved" : game.exam ? "in_progress" : "new"} data-testid="record-exam">
+              <span className="tickbox" aria-hidden="true">
+                {lastPromotion && <PenMark kind="check" />}
+              </span>
+              <span className="records__cat">승급 시험</span>
+              <span className="records__title">
+                {lastPromotion ? `${lastPromotion.to}급 승급 시험 합격` : upcoming ? `${upcoming}급 승급 시험` : "승급 시험"}
+              </span>
+              <span className="records__line hand num">
+                {lastPromotion ? `${dottedDate(lastPromotion.at)} · 승급 ${game.promotions.length}번` : game.exam ? "시험을 치르는 중입니다" : "아직 치르지 않았습니다"}
+              </span>
+            </li>
           </ul>
         </section>
 
-        <button
-          type="button"
-          className="soundswitch leaf"
-          role="switch"
-          aria-checked={game.settings.sound}
-          onClick={toggleSound}
-          data-testid="sound-toggle"
-        >
-          <span className="soundswitch__text">
-            <span>효과음</span>
-            <small>{game.settings.sound ? "켜짐" : "꺼짐 (기본)"}</small>
-          </span>
-          <span className="tickbox" aria-hidden="true">
-            {game.settings.sound && <PenMark kind="check" />}
-          </span>
-        </button>
+        <section className="soundset" aria-label="소리 설정">
+          <div className="soundset__row">
+            <button
+              type="button"
+              className="soundswitch leaf"
+              role="switch"
+              aria-checked={game.settings.sound}
+              onClick={toggleSound}
+              data-testid="sound-toggle"
+            >
+              <span className="soundswitch__text">
+                <span>효과음</span>
+                <small>{game.settings.sound ? "켜짐" : "꺼짐"}</small>
+              </span>
+              <span className="tickbox" aria-hidden="true">
+                {game.settings.sound && <PenMark kind="check" />}
+              </span>
+            </button>
+            <VolumeButton label="효과음" level={game.settings.soundVolume} disabled={!game.settings.sound} onStep={() => stepVolume("sound")} testId="sound-volume" />
+          </div>
+          <div className="soundset__row">
+            <button
+              type="button"
+              className="soundswitch leaf"
+              role="switch"
+              aria-checked={game.settings.music}
+              onClick={toggleMusic}
+              data-testid="music-toggle"
+            >
+              <span className="soundswitch__text">
+                <span>음악</span>
+                <small>{game.settings.music ? "켜짐" : "꺼짐"}</small>
+              </span>
+              <span className="tickbox" aria-hidden="true">
+                {game.settings.music && <PenMark kind="check" />}
+              </span>
+            </button>
+            <VolumeButton label="음악" level={game.settings.musicVolume} disabled={!game.settings.music} onStep={() => stepVolume("music")} testId="music-volume" />
+          </div>
+        </section>
       </div>
     </div>
   );

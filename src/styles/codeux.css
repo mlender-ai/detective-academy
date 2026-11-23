@@ -1,0 +1,612 @@
+/* 암호 풀이 화면 (V3 GATE 03). 기본은 자료실 장면(.sceneplay, 사용자가 고른 B안)이고,
+   수사 수첩(.notebook, C안)은 다른 문제에 쓸 후보로 남겨 둔 것이라 ?play=c 로 열었을 때만 쓰인다.
+   색은 검정과 흰색(--m-w) 두 가지, 점 하나는 2px, 글자는 16·32·48px 이라는 mono.css 의 약속을 그대로 따른다. */
+
+/* ───────── 공통: 시도 기록의 간편 보기 (글 없이 숫자와 표시만) ───────── */
+
+.cluestrip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.cluestrip__item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cluestrip .clue__digit {
+  width: 14px;
+  height: 20px;
+  margin: 0 2px;
+  font-size: 16px;
+  line-height: 20px;
+}
+
+.cluestrip .clue__pegs {
+  gap: 2px;
+}
+
+/* 작은 칸에서는 펜 자국 대신 칸 자체로 메모를 나타낸다: 제외한 숫자는 점선 칸에 줄을 긋고, 후보는 칸을 뒤집는다 */
+.cluestrip .pxmark {
+  display: none;
+}
+
+.cluestrip .clue__digit[data-memo="out"] {
+  box-shadow: none;
+  outline: 2px dotted var(--m-w);
+  text-decoration: line-through;
+  text-decoration-thickness: 2px;
+}
+
+.cluestrip .clue__digit[data-memo="maybe"] {
+  color: #000;
+  background: var(--m-w);
+}
+
+/* ───────── 공통: 자물쇠 자리 ─────────
+   남는 높이를 모두 쓰고, 드럼의 창이 그 높이를 따라 길어진다(114~214px, 4px 단위). 고리는 그리지 않는다. */
+
+.lockstage {
+  --lock-extra: 124px;
+  position: relative;
+  z-index: 1;
+  flex: 1 0 auto;
+  min-height: 226px;
+  display: grid;
+  place-items: center;
+  padding: 6px 12px 8px;
+  container-type: size;
+}
+
+.lockstage .lock__shackle {
+  display: none;
+}
+
+.lockstage .dial__window {
+  height: 114px;
+  height: clamp(114px, round(down, calc(100cqh - var(--lock-extra)), 4px), 214px);
+}
+
+@media (max-height: 740px) {
+  .lockstage {
+    min-height: 196px;
+  }
+}
+
+/* ───────── 공통: 자료실 장면 ───────── */
+
+.vaultscene {
+  position: relative;
+  z-index: 1;
+  flex: 0 1000 208px;
+  min-height: 124px;
+  border-bottom: 2px solid var(--m-w);
+}
+
+.livescene[data-kind="vault"] canvas {
+  left: calc(50% - 216px);
+  left: round(down, calc(50% - 216px), 2px);
+  bottom: 0;
+  width: 432px;
+  height: 208px;
+}
+
+.vaultscene[data-interactive="true"] {
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ───────── B안 · 장면 전개 ─────────
+   위: 자료실(누르면 걸어간다) → 서술 한 줄 → 지금 선 곳의 클로즈업(책상이면 기록, 금고면 자물쇠) → 단추 줄 */
+
+.sceneplay .narr {
+  min-height: 62px;
+}
+
+.sceneplay__panel {
+  position: relative;
+  z-index: 1;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: 0 12px 8px;
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+
+.sceneplay__panel::-webkit-scrollbar {
+  display: none;
+}
+
+.sceneplay__record {
+  animation: m-open 160ms steps(2) both;
+}
+
+.sceneplay__safe {
+  --lock-extra: 164px;
+  align-content: center;
+  gap: 8px;
+  padding: 0 0 4px;
+  animation: m-open 160ms steps(2) both;
+}
+
+/* 책상에서 적어 온 메모 한 줄 */
+.carry {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 2px 12px;
+  margin: 0;
+  padding: 2px 10px;
+  font-family: var(--m-font);
+  font-size: 16px;
+  line-height: 22px;
+  color: var(--m-w);
+  background: #000;
+  box-shadow: var(--m-frame);
+}
+
+.carry b {
+  font-weight: 400;
+  color: #000;
+  background: var(--m-w);
+  padding: 0 4px;
+}
+
+.carry i,
+.notebook__memo i {
+  font-style: normal;
+}
+
+/* 금고 문에 새겨진 조건 (등급이 오르면 시도 기록에 더해진다). 뒤집힌 이름표 + 흰 글씨 줄 */
+.engraved {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 6px 0 4px;
+  border-top: 2px solid var(--m-w);
+  font-family: var(--m-font);
+  font-size: 16px;
+  line-height: 20px;
+  color: var(--m-w);
+}
+
+.engraved__title {
+  justify-self: start;
+  margin: 0;
+  padding: 0 4px;
+  font-size: 16px;
+  font-weight: 400;
+  color: #000;
+  background: var(--m-w);
+}
+
+.engraved__list {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.engraved__list li::before {
+  content: "◆ ";
+}
+
+/* 금고 앞에서 들고 보는 것: 이름표 없이 줄만, 테를 두른 한 덩이 */
+.engraved[data-compact="true"],
+.sceneplay__safe .engraved {
+  padding: 2px 10px;
+  border-top: 0;
+  background: #000;
+  box-shadow: var(--m-frame);
+}
+
+.engraved[data-compact="true"] .engraved__title {
+  display: none;
+}
+
+/* 새겨진 글의 줄 수만큼 드럼이 쓸 높이를 덜어 낸다 */
+.sceneplay__safe[data-engraved="1"] {
+  --lock-extra: 196px;
+}
+
+.sceneplay__safe[data-engraved="2"] {
+  --lock-extra: 218px;
+}
+
+/* 새겨진 글이 있는 금고 앞은 메모 · 글 · 자물쇠(가장 낮을 때 164px)가 다 들어갈 높이를 먼저 잡는다.
+   이 자리는 제 안의 내용으로 높이가 정해지지 않으므로(container-type: size), 잡아 두지 않으면 낮은 화면에서
+   위의 방(자료실)이 줄지 않은 채 내용이 가운데에서 위아래로 넘쳐 "내 메모" 줄의 윗부분이 방 밑으로 잘린다
+   (375×629 에서 글 두 줄일 때 7px, 390×664 에서 5px. 방이 쿼터뷰로 바뀌어 띠가 높아진 뒤로 생겼다).
+   높이를 잡아 두면 모자라는 만큼 위의 방이 줄어든다(196px 까지). 값은 내용의 높이에 메모 줄의 테(2px)가 잘리지 않을 여유 8px 를 더한 것이다. */
+.sceneplay__safe[data-engraved="1"] {
+  min-height: 244px;
+}
+
+.sceneplay__safe[data-engraved="2"] {
+  min-height: 264px;
+}
+
+/* ───────── C안 · 혼합형 (수사 수첩) ─────────
+   위: 수사 수첩(접힘 · 간편 보기) → 자물쇠(남는 자리를 모두 쓴다) → 단추 줄. 전체 보기는 화면을 덮는다. */
+
+.notebook {
+  position: relative;
+  z-index: 1;
+  flex: none;
+  margin: 10px 12px 0;
+  background: #000;
+  box-shadow: var(--m-frame);
+}
+
+/* 표지: 흰 수첩. 왼쪽 가장자리에 스프링 구멍이 뚫려 있다. */
+.notebook__cover {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 44px;
+  margin: 0;
+  padding: 0 10px 0 0;
+  font-family: var(--m-font);
+  font-size: 16px;
+  line-height: 22px;
+  text-align: left;
+  color: #000;
+  background: var(--m-w);
+  border: 0;
+  border-radius: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.notebook__rings {
+  flex: none;
+  align-self: stretch;
+  width: 16px;
+  background: repeating-linear-gradient(#000 0 4px, transparent 4px 10px) 6px 5px / 4px 100% no-repeat;
+}
+
+.notebook__name {
+  flex: none;
+}
+
+.notebook__sum {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-family: var(--m-cap);
+  font-size: 12px;
+  line-height: 16px;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.notebook__do {
+  flex: none;
+  padding: 0 6px;
+  color: var(--m-w);
+  background: #000;
+}
+
+.notebook__cover:active .notebook__do {
+  color: #000;
+  background: var(--m-w);
+  box-shadow: inset 0 0 0 2px #000;
+}
+
+.notebook__peek {
+  padding: 6px 10px 10px 22px;
+  background: linear-gradient(var(--m-w), var(--m-w)) 14px 0 / 2px 100% no-repeat;
+  animation: m-open 160ms steps(2) both;
+}
+
+.notebook__rule {
+  margin: 0 0 6px;
+  font-family: var(--m-cap);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.notebook__flagged {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.notebook__flagged .clue:first-child {
+  border-top: 0;
+}
+
+.notebook__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.notebook__memo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 10px;
+  margin: 0;
+  min-width: 0;
+  font-family: var(--m-font);
+  font-size: 16px;
+  line-height: 22px;
+}
+
+.notebook__more {
+  flex: none;
+  min-height: 36px;
+  margin: 0;
+  padding: 0 10px;
+  font-family: var(--m-font);
+  font-size: 16px;
+  color: var(--m-w);
+  background: #000;
+  border: 0;
+  border-radius: 0;
+  box-shadow: var(--m-frame);
+}
+
+.notebook__more::after {
+  content: " ▶";
+}
+
+.notebook__more:active {
+  color: #000;
+  background: var(--m-w);
+}
+
+/* 전체 보기 */
+.notefull {
+  position: absolute;
+  inset: 0;
+  z-index: 15;
+  display: flex;
+  flex-direction: column;
+  font-family: var(--m-font);
+  font-size: 16px;
+  line-height: 22px;
+  color: var(--m-w);
+  background: #000;
+  animation: m-open 200ms steps(3) both;
+}
+
+.notefull__head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 52px;
+  padding: env(safe-area-inset-top) 10px 0 0;
+  color: #000;
+  background: var(--m-w);
+}
+
+.notefull__title {
+  flex: 1;
+  margin: 0;
+  font-size: 32px;
+  font-weight: 400;
+  line-height: 36px;
+}
+
+.notefull__close {
+  min-width: 56px;
+  min-height: 36px;
+  margin: 0;
+  padding: 0 10px;
+  font-family: var(--m-font);
+  font-size: 16px;
+  color: var(--m-w);
+  background: #000;
+  border: 0;
+  border-radius: 0;
+}
+
+.notefull__page {
+  flex: 1;
+  min-height: 0;
+  padding: 0 12px 8px 26px;
+  overflow-y: auto;
+  /* 수첩의 왼쪽 여백 줄 */
+  background: linear-gradient(var(--m-w), var(--m-w)) 14px 0 / 2px 100% no-repeat;
+  scrollbar-width: none;
+}
+
+.notefull__page::-webkit-scrollbar {
+  display: none;
+}
+
+.notefull__sec {
+  padding: 10px 0 8px;
+}
+
+.notefull__sec + .notefull__sec {
+  border-top: 2px dotted var(--m-w);
+}
+
+.notefull__sec h3 {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  margin: 0 0 4px;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 22px;
+}
+
+.notefull__sec h3::before {
+  content: "■";
+  margin-right: -2px;
+}
+
+.notefull__sec h3 .clues__legend {
+  margin: 0 0 0 auto;
+}
+
+.notefull__sec p {
+  margin: 0;
+}
+
+.notefull__case {
+  font-size: 32px;
+  line-height: 36px;
+}
+
+.notefull__clues {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.notefull__clues .clue,
+.notebook__flagged .clue {
+  grid-template-columns: auto auto 1fr auto;
+}
+
+.notefull__clues .clue:first-child {
+  border-top: 0;
+}
+
+/* 중요 표시: 꺼져 있으면 점선, 켜면 뒤집힌 칸 */
+.notefull__flag {
+  min-width: 44px;
+  min-height: 32px;
+  margin: 0;
+  padding: 0 6px;
+  font-family: var(--m-cap);
+  font-size: 12px;
+  color: var(--m-w);
+  background: #000;
+  border: 0;
+  border-radius: 0;
+  outline: 2px dotted var(--m-w);
+  outline-offset: -4px;
+}
+
+.notefull__flag[aria-pressed="true"] {
+  color: #000;
+  background: var(--m-w);
+  outline: 0;
+  box-shadow: inset 0 0 0 2px #000, inset 0 0 0 4px var(--m-w);
+}
+
+.notefull .memo {
+  margin: 0;
+  border-top: 0;
+}
+
+.notefull .memo__head {
+  justify-content: flex-end;
+  padding-top: 0;
+}
+
+.notefull__hint {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px;
+}
+
+.notefull__hint b {
+  align-self: start;
+  min-width: 20px;
+  font-weight: 400;
+  text-align: center;
+  color: #000;
+  background: var(--m-w);
+}
+
+.notefull__foot {
+  flex: none;
+  padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+  border-top: 2px solid var(--m-w);
+}
+
+/* 도입 장면: 검은 화면에 제목, 자료실, 상황 세 문장 */
+.vaultintro {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  margin: 0;
+  padding: 0 0 40px;
+  font-family: var(--m-font);
+  text-align: left;
+  color: var(--m-w);
+  background: #000;
+  border: 0;
+  border-radius: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.vaultintro__kicker {
+  padding: 0 12px;
+  font-size: 16px;
+  line-height: 22px;
+}
+
+.vaultintro__title {
+  padding: 0 12px 10px;
+  font-size: 32px;
+  line-height: 36px;
+}
+
+.vaultintro .vaultscene {
+  flex: none;
+  width: 100%;
+  height: 208px;
+  border-top: 2px solid var(--m-w);
+}
+
+.vaultintro .narr {
+  min-height: 84px;
+}
+
+.vaultintro__skip {
+  padding-top: 8px;
+  font-family: var(--m-cap);
+  font-size: 12px;
+  line-height: 16px;
+  text-align: center;
+}
+
+/* 낮은 화면의 금고 앞: 새겨진 글이 있으면 메모·글·자물쇠 사이의 틈을 줄여 한 화면에 넣는다 */
+@media (max-height: 640px) {
+  .sceneplay__safe:not([data-engraved="0"]) {
+    gap: 2px;
+    padding-bottom: 0;
+  }
+
+  .sceneplay__safe .engraved {
+    padding: 0 10px;
+    line-height: 18px;
+  }
+
+  .sceneplay__safe:not([data-engraved="0"]) .carry {
+    padding: 0 10px;
+    line-height: 20px;
+  }
+
+  /* 틈을 줄인 만큼 잡아 둘 높이도 낮다 */
+  .sceneplay__safe[data-engraved="1"] {
+    min-height: 216px;
+  }
+
+  .sceneplay__safe[data-engraved="2"] {
+    min-height: 234px;
+  }
+}

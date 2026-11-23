@@ -1,0 +1,551 @@
+/* 쿼터뷰 홈과 방들. 층 밖이고 새 이름만 쓴다.
+   위에서부터: 학원 이름과 등급 → 방(화면의 대부분. 누르는 게임 장면) → 서술 한 줄과 지금 선 곳의 창 */
+
+.hall--iso {
+  overflow: hidden;
+}
+
+/* 방: 남는 높이를 모두 쓴다. 캔버스(392×600px = 196×300점)는 아래에 붙이고, 화면이 낮으면 어두운 위쪽부터 가려진다. */
+.isostage {
+  position: relative;
+  flex: 1 1 0;
+  min-height: 280px;
+  overflow: hidden;
+  background: #000;
+  border-bottom: 2px solid var(--m-w);
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* 방의 그림은 장면마다 크기가 다르다(--iso-w · --iso-h 는 캔버스의 점 × 2px). 가운데에 놓고 아래에 붙인다. */
+.isostage__world {
+  position: absolute;
+  left: calc(50% - var(--iso-w, 392px) / 2);
+  left: round(down, calc(50% - var(--iso-w, 392px) / 2), 2px);
+  bottom: 0;
+  width: var(--iso-w, 392px);
+  height: var(--iso-h, 600px);
+  cursor: pointer;
+}
+
+.isostage[data-still="true"] .isostage__world {
+  cursor: default;
+}
+
+/* 아래에 붙이되 2px 격자에서 어긋나지 않게 한다: 방의 틀의 높이가 홀수이면(화면 높이가 홀수일 때) 한 화소 올려 짝수 자리에 둔다 */
+@supports (top: round(down, 1px, 2px)) {
+  .isostage__world {
+    /* 방의 틀이 그림보다 높으면(긴 화면의 작은 방) 가운데에서 조금 아래에 둔다 */
+    top: round(down, min(calc((100% - var(--iso-h, 600px)) / 2 + 24px), calc(100% - var(--iso-h, 600px))), 2px);
+    bottom: auto;
+  }
+}
+
+.isostage canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  image-rendering: pixelated;
+}
+
+/* 누르는 자리: 문과 물건 위에 겹쳐 놓은 보이지 않는 단추 */
+.isospot {
+  position: absolute;
+  margin: 0;
+  padding: 0;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.isospot:focus-visible {
+  outline: 2px solid var(--m-w);
+  outline-offset: 2px;
+}
+
+/* 이름표: 물건 위에 뜬 작은 꼬리말. 탐정이 선 곳(가는 곳)의 것은 뒤집힌다. */
+.isotag {
+  position: absolute;
+  /* 다른 물건의 누르는 자리 위에 걸쳐도 이름표가 위다 */
+  z-index: 1;
+  transform: translate(-50%, calc(-100% - 4px));
+  transform: translate(round(down, -50%, 2px), calc(-100% - 4px));
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 4px;
+  font-family: var(--m-cap);
+  font-size: 12px;
+  line-height: 16px;
+  white-space: nowrap;
+  color: var(--m-w);
+  background: #000;
+  box-shadow: 0 0 0 2px var(--m-w);
+  /* 이름표도 그 물건의 단추다: 눌러도 그곳으로 간다(단추의 영역 밖에 떠 있어도 단추의 자식이라 누름이 단추로 간다) */
+  cursor: pointer;
+}
+
+/* 이름표의 누르는 자리를 글자보다 넉넉하게: 위아래 6px, 좌우 4px */
+.isotag::after {
+  content: "";
+  position: absolute;
+  inset: -6px -4px;
+}
+
+.isotag b {
+  font-weight: 400;
+}
+
+/* 가려 둔 이름표: 물건 자체는 그대로 눌린다 */
+.isospot[data-tag="false"] .isotag {
+  visibility: hidden;
+}
+
+.isospot[data-on="true"] .isotag,
+.isospot:active .isotag {
+  color: #000;
+  background: var(--m-w);
+  box-shadow: 0 0 0 2px var(--m-w), 0 0 0 4px #000;
+}
+
+/* 서술 한 줄: 방 위쪽의 어둠에 얹는다(영화의 자막처럼). 화면이 낮아 방의 윗부분과 겹칠 때는 검은 띠가 그 뒤를 가린다. */
+.isostage .narr {
+  position: absolute;
+  inset: 0 0 auto 0;
+  z-index: 2;
+  min-height: 60px;
+  padding: 8px 12px 8px;
+  background: #000;
+  /* 띠는 누름을 받아 삼킨다: 화면이 낮아 띠가 방의 윗부분을 덮을 때, 글자를 눌렀는데 밑의 창으로 걸어가는 일이 없게 */
+}
+
+/* ───────── 풀이 화면 위쪽의 띠로 놓이는 방(자료실) ─────────
+   방은 284px(142점)까지 다 보이고, 화면이 낮으면 어두운 위쪽부터 가려진다. 서술 한 줄은 그 위쪽 어둠에 얹힌다. */
+.isostage.vaultscene--iso {
+  flex: 0 1000 284px;
+  min-height: 196px;
+}
+
+.isostage.vaultscene--iso .narr {
+  min-height: 50px;
+  padding: 4px 12px 2px;
+}
+
+/* ───────── 연습실: 아래 창에 고른 서류함의 과제가 한 줄씩 놓인다 ─────────
+   과제는 서류함마다 대여섯 개다. 창의 높이는 그대로 못박아 두고(위의 방이 밀리지 않는다), 머리 아래의 목록이 그 안에서 위아래로 밀린다.
+   밀린다는 것은 두 가지로 보인다: 넷째 줄이 창의 아래 변에 잘려 있고, 머리의 오른쪽 끝에 ▲▼ 가 뜬다. */
+.practice--iso {
+  overflow: hidden;
+}
+
+.isowin.isowin--tasks {
+  height: 184px;
+}
+
+.isowin--tasks .isocard {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: 100%;
+}
+
+.isowin--tasks .isocard__head {
+  flex: none;
+}
+
+.isowin--tasks .isotasks {
+  flex: 0 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  scrollbar-width: none;
+}
+
+.isowin--tasks .isotasks::-webkit-scrollbar {
+  display: none;
+}
+
+/* 줄은 44px(누르는 높이의 아래 한계): 세 줄이 다 보이고 넷째 줄의 제목이 창의 아래 변에 반쯤 잘려, 아래에 더 있다는 것이 보인다 */
+.isowin--tasks .isotask {
+  min-height: 44px;
+  padding-top: 3px;
+  padding-bottom: 3px;
+}
+
+/* 더 있는 쪽을 가리키는 세모: 머리(흰 바탕)의 오른쪽 끝 */
+.isocard__more {
+  flex: none;
+  min-width: 16px;
+  text-align: right;
+}
+
+.isotasks {
+  display: grid;
+  margin: 0;
+  padding: 0 8px 4px;
+  list-style: none;
+}
+
+/* 줄에 붙는 뒤집힌 꼬리표: 특수 도전, (지난 사건의) 오늘 */
+.isotask__flag {
+  display: inline-block;
+  margin-right: 6px;
+  padding: 0 4px;
+  font-weight: 400;
+  color: #000;
+  background: var(--m-w);
+}
+
+.isotask:active .isotask__flag {
+  color: var(--m-w);
+  background: #000;
+}
+
+.isotasks li + li {
+  background: repeating-linear-gradient(90deg, var(--m-w) 0 2px, #000 2px 6px) 0 0 / 100% 2px no-repeat;
+}
+
+/* 과제 한 줄: 제목, 그 아래에 유형과 상태(또는 보상). 눌린 줄과 권하는 줄은 뒤집힌다. */
+.isotask {
+  display: grid;
+  gap: 0;
+  width: 100%;
+  min-height: 48px;
+  margin: 0;
+  padding: 4px 4px 2px;
+  font-family: var(--m-font);
+  font-size: 16px;
+  line-height: 22px;
+  text-align: left;
+  color: var(--m-w);
+  background: none;
+  border: 0;
+  border-radius: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.isotask__title {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: clip;
+}
+
+.isotask__meta {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--m-cap);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.isotask[data-primary="true"] .isotask__title::before {
+  content: "▶ ";
+}
+
+.isotask:active {
+  color: #000;
+  background: var(--m-w);
+}
+
+.isocard__shut {
+  margin: 0;
+  padding: 10px;
+  font-family: var(--m-font);
+  font-size: 16px;
+  line-height: 22px;
+  color: var(--m-w);
+}
+
+/* 잠긴 서류함의 이름표는 점선 테 */
+.isospot[data-locked="true"] .isotag {
+  box-shadow: none;
+  outline: 2px dotted var(--m-w);
+  outline-offset: 0;
+}
+
+/* ───────── 시험실: 위 막대 아래에 방, 그 아래에 안내와 단추 ─────────
+   띠 배경(.room__scene)은 놓지 않는다(승급 증서와 합격 기록 화면만 쓴다). 봉투는 방 안의 책상 위에 있다. */
+.room.room--iso {
+  --room-h: 0px;
+}
+
+/* 안내는 제 높이만큼만 차지하고, 남는 높이는 모두 방이 쓴다. 화면이 낮아 방이 168px 까지 줄면 그때부터 안내가 스크롤된다. */
+.room--iso .room__scroll {
+  flex: 0 1 auto;
+  min-height: 0;
+  padding: 10px 12px 12px;
+}
+
+.isostage.examscene {
+  flex: 1 1 0;
+  min-height: 168px;
+}
+
+/* 음악 켜고 끄기: 방의 오른쪽 아래 구석(바닥 판 바깥의 어둠). 켜면 뒤집힌다. 누르는 자리는 글자보다 넓게 잡는다. */
+.isomusic {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  width: 76px;
+  height: 48px;
+  margin: 0;
+  padding: 0 8px 8px 0;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.isomusic span {
+  padding: 0 4px;
+  font-family: var(--m-cap);
+  font-size: 12px;
+  line-height: 16px;
+  white-space: nowrap;
+  color: var(--m-w);
+  background: #000;
+  box-shadow: 0 0 0 2px var(--m-w);
+}
+
+.isomusic[aria-checked="true"] span,
+.isomusic:active span {
+  color: #000;
+  background: var(--m-w);
+}
+
+.isomusic:focus-visible {
+  outline: 2px solid var(--m-w);
+  outline-offset: -4px;
+}
+
+/* 아래의 창: 지금 선 곳의 이름 · 상태 · 할 일 하나 */
+.isowin {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  /* 높이를 못박는다: 선 곳에 따라 창의 내용이 달라져도 위의 방이 밀리지 않는다 */
+  box-sizing: content-box;
+  height: 170px;
+  padding: 10px 10px calc(10px + env(safe-area-inset-bottom));
+  background: #000;
+}
+
+/* 아무 곳도 고르지 않았을 때: 조작 안내와, 오늘 할 일로 돌아가는 단추 */
+.isowin__idle {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 10px;
+  height: 100%;
+}
+
+.isowin__hint {
+  margin: auto 0;
+  font-family: var(--m-cap);
+  font-size: 12px;
+  line-height: 16px;
+  text-align: center;
+  color: var(--m-w);
+}
+
+.isowin .isowin__todo {
+  margin: 0;
+}
+
+.isocard {
+  box-shadow: var(--m-frame);
+  animation: m-open 160ms steps(2) both;
+}
+
+.isocard__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+  margin: 0;
+  padding: 0 10px 0 6px;
+  font-family: var(--m-font);
+  font-size: 16px;
+  line-height: 22px;
+  color: #000;
+  background: var(--m-w);
+}
+
+.isocard__name {
+  flex: none;
+}
+
+.isocard__state {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.isocard__body {
+  display: grid;
+  gap: 2px;
+  padding: 8px 10px 0;
+  font-family: var(--m-font);
+  font-size: 16px;
+  line-height: 22px;
+  color: var(--m-w);
+}
+
+.isocard__subject {
+  font-size: 32px;
+  line-height: 36px;
+}
+
+.isocard__line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 10px;
+}
+
+.isowin .isocard__go {
+  display: block;
+  width: calc(100% - 20px);
+  margin: 8px 10px 10px;
+}
+
+/* 단추 둘을 한 줄에: 왼쪽은 곁길(지난 사건), 오른쪽이 주 단추. 창의 높이는 단추 하나일 때와 같다. */
+.isocard__gos {
+  display: flex;
+  gap: 8px;
+  margin: 8px 10px 10px;
+}
+
+.isowin .isocard__gos .isocard__go {
+  flex: 1 1 0;
+  width: auto;
+  min-width: 0;
+  margin: 0 0 4px;
+  padding: 0 6px;
+  white-space: nowrap;
+}
+
+.isowin .isocard__gos .isocard__go:first-child {
+  flex: none;
+  font-size: 16px;
+}
+
+/* 둘이 나란할 때 주 단추의 ▶ 는 뺀다(추리 책상의 아래 단추 줄과 같다): 375px 폭에서 32px 글자 여섯 자가 들어갈 자리를 낸다 */
+.isocard__gos .inkbtn--wine::before {
+  content: none;
+}
+
+/* 375px 보다 좁은 화면에서는 주 단추의 글자도 16px 로 낮춘다(32px 이면 잘린다) */
+@media (max-width: 374px) {
+  .isowin .isocard__gos .isocard__go {
+    font-size: 16px;
+  }
+}
+
+/* ───────── 지난 사건(추리 책상): 기록부 한 장에 과제 줄이 날짜 순서로 놓인다 ───────── */
+.dailypast__ledger {
+  padding: 12px 10px 8px;
+}
+
+.dailypast__ledger .ledger__title {
+  padding-bottom: 6px;
+}
+
+.dailypast__note {
+  margin: 8px 0 4px;
+  font-family: var(--m-font);
+  line-height: 22px;
+}
+
+.dailypast__list {
+  padding: 0;
+}
+
+/* 신분증의 수사 기록: 오늘의 추리 줄 아래에 지난 사건으로 가는 작은 단추 */
+.records__more {
+  grid-column: 2;
+  justify-self: start;
+  min-height: 44px;
+  margin: 6px 0 10px;
+  padding: 0 12px;
+}
+
+@media (max-height: 700px) {
+  .isostage .narr {
+    min-height: 52px;
+    padding-top: 6px;
+    padding-bottom: 2px;
+  }
+
+  .isowin {
+    height: 156px;
+    padding-top: 8px;
+  }
+
+  .isocard__subject {
+    font-size: 16px;
+    line-height: 22px;
+  }
+}
+
+/* 좁은 휴대폰(폭 384px 아래): 32px 제목은 열 자 남짓에서 두 줄로 꺾여 높이가 못박힌 아래 창을 넘긴다. 제목을 낮춘다 */
+@media (max-width: 383px) {
+  .isocard__subject {
+    font-size: 16px;
+    line-height: 22px;
+  }
+}
+
+/* 주소창이 보이는 작은 휴대폰(높이 640px 아래, 예: 375×629): 위 띠와 아래 창을 더 조여 게시판 윗변까지 방이 다 보이게 한다 */
+@media (max-height: 640px) {
+  .hall--iso .hall__top {
+    padding-top: calc(6px + env(safe-area-inset-top));
+    padding-bottom: 4px;
+  }
+
+  .isostage .narr {
+    min-height: 50px;
+    padding: 4px 12px 2px;
+  }
+
+  .isowin {
+    height: 150px;
+    padding-top: 6px;
+    padding-bottom: calc(6px + env(safe-area-inset-bottom));
+  }
+
+  .isocard__body {
+    padding-top: 6px;
+  }
+
+  .isowin .isocard__go {
+    margin: 6px 10px 8px;
+  }
+
+  .isocard__gos {
+    margin: 6px 10px 8px;
+  }
+
+  .isowin .isocard__gos .isocard__go {
+    margin: 0 0 4px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .isocard {
+    animation: none;
+  }
+}

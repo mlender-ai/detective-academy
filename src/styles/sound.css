@@ -1,0 +1,97 @@
+/* ───────── 소리 설정 (신분증 화면): 효과음과 음악을 따로 켜고, 음량도 따로 ───────── */
+
+.soundset {
+  display: grid;
+  gap: 10px;
+  /* 화면 끝에 붙지 않게: 맨 아래 줄 밑에 여백을 둔다 */
+  margin-bottom: calc(14px + env(safe-area-inset-bottom));
+}
+
+.soundset__row {
+  display: flex;
+  gap: 10px;
+}
+
+/* 켜기 단추와 음량 단추의 아랫변을 맞춘다(픽셀안에서 물려받은 아래 여백 4px 를 지운다) */
+.soundset .soundswitch {
+  flex: 1;
+  min-width: 0;
+  margin-bottom: 0;
+}
+
+/* 음량 단추: 막대 넷이 지금 단계만큼 차고, 그 아래에 단계를 글자로 적는다. 꺼진 소리의 단추는 줄을 점선으로 바꾸고 막대를 비운다. */
+.volbtn {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  width: 72px;
+  padding: 0;
+  color: var(--m-w);
+  background: #000;
+  border: 0;
+  box-shadow: var(--m-frame);
+}
+
+.volbtn__bars {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 18px;
+}
+
+.volbtn small {
+  font-family: var(--m-cap);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.volbtn i {
+  width: 8px;
+  background: #000;
+  box-shadow: inset 0 0 0 2px var(--m-w);
+}
+
+.volbtn i:nth-child(1) {
+  height: 6px;
+}
+
+.volbtn i:nth-child(2) {
+  height: 10px;
+}
+
+.volbtn i:nth-child(3) {
+  height: 14px;
+}
+
+.volbtn i:nth-child(4) {
+  height: 18px;
+}
+
+.volbtn i[data-on="true"] {
+  background: var(--m-w);
+}
+
+/* 눌린 동안: 단추 전체가 뒤집힌다. 찬 막대는 검게, 빈 막대는 검은 테만 남는다. */
+.volbtn:active:not(:disabled) {
+  color: #000;
+  background: var(--m-w);
+}
+
+.volbtn:active:not(:disabled) i {
+  background: var(--m-w);
+  box-shadow: inset 0 0 0 2px #000;
+}
+
+.volbtn:active:not(:disabled) i[data-on="true"] {
+  background: #000;
+}
+
+/* 꺼진 단추: 실선 테와 같은 자리에 점선 테를 두른다(켜고 끌 때 상자의 크기가 달라 보이지 않게) */
+.volbtn:disabled {
+  box-shadow: none;
+  outline: 2px dotted var(--m-w);
+  outline-offset: 0;
+}

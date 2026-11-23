@@ -1,6 +1,32 @@
 import { expect, type Page } from "@playwright/test";
 
 export const STORAGE_KEY = "detective-academy:v1";
+
+/** 테스트에서 고정해 둔 게임 날짜: 달력의 첫날. 오늘의 추리는 '자료실 금고의 암호'다. */
+export const TEST_DATE = "2026-11-22";
+
+/**
+ * 게임의 "지금"(ms). 테스트는 게임 날짜를 TEST_DATE 로 옮겨 놓고 돌므로, 게임의 시계는 실제 시각에서 날짜만큼 밀려 있다
+ * (src/app/clock.ts 의 gameNow 와 같은 셈). 저장된 상태에 시각을 써 넣을 때는 Date.now() 가 아니라 이것을 쓴다:
+ * 실제 날짜가 TEST_DATE 와 다른 날에는 둘이 하루 넘게 어긋나, 제한 시간이 영영 끝나지 않는다(2026-11-23 에 실제로 겪었다).
+ */
+export function gameNowMs(): number {
+  const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Seoul" }).format(new Date());
+  const days = Math.round((Date.parse(`${TEST_DATE}T00:00:00Z`) - Date.parse(`${today}T00:00:00Z`)) / 86_400_000);
+  return Date.now() + days * 86_400_000;
+}
+
+/** 브라우저 테스트가 여는 빌드본의 주소. playwright.config.ts 와 같은 값이다(E2E_PORT 로 포트를 나눈다). */
+export const ORIGIN = `http://127.0.0.1:${Number(process.env.E2E_PORT ?? 4183)}`;
+
+/**
+ * 자막 화면을 켜고 돌릴 때의 저장소: 자막을 끄는 값만 빼고, 게임 날짜는 그대로 고정한다.
+ * (playwright.config.ts 의 기본값은 자막을 끄고 날짜를 고정한다)
+ */
+export const CINE_ON = {
+  cookies: [],
+  origins: [{ origin: ORIGIN, localStorage: [{ name: "detective-academy:date", value: TEST_DATE }] }],
+};
 export const SHOTS = "docs/screenshots";
 
 /** 저장된 게임 상태를 그대로 읽는다 */
@@ -30,10 +56,34 @@ export async function enroll(page: Page, nickname?: string) {
   await expect(page.getByTestId("home-screen")).toBeVisible();
 }
 
+/** 홈(쿼터뷰 학원 홀)에서 누르는 곳: 방 안의 문과 물건 */
+export type HomeSpot = "daily-file" | "practice-entry" | "exam-cta" | "exam-wait" | "exam-record" | "story-entry" | "identity";
+
+/** 홈의 아래 창에 있는 큰 단추: 지금 고른 곳으로 들어간다 */
+export const homeGo = (page: Page, id: HomeSpot) => page.getByTestId(id === "daily-file" ? "daily-file-cta" : `${id}-go`);
+
+/**
+ * 홈에서 그곳으로 들어간다: 방 안의 문이나 물건을 눌러 고르고(탐정이 걸어간다), 아래 창의 큰 단추를 누른다.
+ * 이미 골라져 있으면(들어서면 오늘 할 일이 골라져 있다) 큰 단추만 누른다. 탐정이 아직 걷는 중이면 도착하는 대로 들어간다.
+ */
+export async function enterFromHome(page: Page, id: HomeSpot) {
+  const spot = page.getByTestId(id);
+  await expect(spot).toBeVisible();
+  if ((await spot.getAttribute("data-on")) !== "true") await spot.click();
+  // 탐정이 그 앞에 막 도착한 참이었다면(모션 줄이기에서는 곧바로 선다) 방금의 누름이 곧 "한 번 더 눌러 들어가기"다.
+  // 그때는 홈이 이미 사라졌으므로 큰 단추를 기다리지 않는다.
+  const go = homeGo(page, id);
+  const home = page.getByTestId("home-screen");
+  await Promise.race([go.waitFor({ state: "visible" }), home.waitFor({ state: "detached" })]);
+  if ((await home.count()) > 0 && (await go.count()) > 0) await go.click().catch(async (error) => {
+    if ((await home.count()) > 0) throw error;
+  });
+}
+
 /** QA 패널(?demo=1)로 원하는 진행 상태를 만든다 */
 export async function preset(
   page: Page,
-  id: "first-run" | "daily-unsolved" | "daily-solved" | "exam-ready" | "promoted",
+  id: "first-run" | "daily-unsolved" | "daily-solved" | "exam-ready" | "promoted" | "ready-c" | "ready-b" | "ready-a" | "ready-s" | "rank-s",
   /** 주소에 덧붙일 값. 예: "&save=b" (다른 저장 칸으로 열기) */
   query = "",
 ) {
@@ -41,6 +91,27 @@ export async function preset(
   await page.getByTestId("demo-toggle").click();
   await page.getByTestId(`demo-${id}`).click();
   await expect(page.getByTestId("demo-toggle")).toHaveAttribute("aria-expanded", "false");
+}
+
+/**
+ * 암호 해독은 자료실 장면에서 푼다: 책상에 시도 기록·숫자 메모·수사 지원이 있고, 금고 앞에 자물쇠와 제출 단추가 있다.
+ * 금고 앞으로 간다. 이미 금고 앞이면(풀다가 나갔다 온 경우) 그대로 둔다.
+ */
+export async function toSafe(page: Page) {
+  const screen = page.getByTestId("play-screen");
+  await expect(screen).toHaveAttribute("data-ux", "b");
+  if ((await screen.getAttribute("data-at")) !== "safe") await page.getByTestId("to-safe").click();
+  await expect(screen).toHaveAttribute("data-at", "safe");
+  await expect(page.getByTestId("dial-0")).toBeVisible();
+}
+
+/** 책상 앞으로 간다(기록을 다시 본다). 이미 책상 앞이면 그대로 둔다. */
+export async function toDesk(page: Page) {
+  const screen = page.getByTestId("play-screen");
+  await expect(screen).toHaveAttribute("data-ux", "b");
+  if ((await screen.getAttribute("data-at")) !== "desk") await page.getByTestId("to-desk").click();
+  await expect(screen).toHaveAttribute("data-at", "desk");
+  await expect(page.getByTestId("record")).toBeVisible();
 }
 
 export async function dialValue(page: Page, index: number) {
@@ -151,4 +222,32 @@ export async function expectLayoutOk(page: Page, primarySelector: string) {
   expect(box.x, "주 버튼이 왼쪽으로 잘린다").toBeGreaterThanOrEqual(0);
   expect(box.x + box.width, "주 버튼이 오른쪽으로 잘린다").toBeLessThanOrEqual(viewport.width);
   expect(box.height, "주 버튼 터치 영역이 44px 보다 작다").toBeGreaterThanOrEqual(44);
+}
+
+/**
+ * 화면에서 검정(#000)도 흰색(#f1f1ea)도 아닌 화소의 비율(0~1).
+ * 회색·투명도·흐림을 쓰면 이 값이 커진다. 점선의 끝처럼 반 화소에 걸린 자리는 조금 남을 수 있다.
+ */
+export async function offToneRatio(page: Page): Promise<number> {
+  await page.evaluate(() => document.fonts.ready.then(() => undefined));
+  const png = await page.screenshot({ animations: "disabled", style: ".demo { visibility: hidden !important; }" });
+  return page.evaluate(async (base64) => {
+    const image = new Image();
+    image.src = `data:image/png;base64,${base64}`;
+    await image.decode();
+    const canvas = document.createElement("canvas");
+    canvas.width = image.naturalWidth;
+    canvas.height = image.naturalHeight;
+    const ctx = canvas.getContext("2d")!;
+    ctx.drawImage(image, 0, 0);
+    const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+    let off = 0;
+    for (let i = 0; i < data.length; i += 4) {
+      const [r, g, b] = [data[i], data[i + 1], data[i + 2]];
+      const black = r < 16 && g < 16 && b < 16;
+      const white = Math.abs(r - 241) < 16 && Math.abs(g - 241) < 16 && Math.abs(b - 234) < 16;
+      if (!black && !white) off++;
+    }
+    return off / (data.length / 4);
+  }, png.toString("base64"));
 }
