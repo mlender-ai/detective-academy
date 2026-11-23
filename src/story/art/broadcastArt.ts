@@ -14,7 +14,8 @@ export const SH = 92;
 const DESK = 70;
 const CX = 82;
 
-export type StreamFrameId = "t0015" | "t0310" | "t0640" | "t0700";
+/** 방송의 네 시점, 그리고 사건의 끝 장면("mask": 책상 위에 놓인 가면을 가까이에서) */
+export type StreamFrameId = "t0015" | "t0310" | "t0640" | "t0700" | "mask";
 
 export interface StreamArt {
   tone: Record<string, HTMLCanvasElement>;
@@ -138,6 +139,49 @@ function maskSprite(droop = false): Sprite {
   // 입: 꿰맨 자국. 살짝 비뚤다.
   for (const [x, y] of [[7, 11], [9, 12], [11, 12], [13, 12], [15, 11]] as const) putDot(s, x, top + y, -1);
   for (const x of [9, 13]) putDot(s, x, top + 11, -1);
+  return haloDots(s, -1);
+}
+
+/**
+ * 가까이에서 본 가면(사건의 끝 장면). 작은 가면을 늘린 것이 아니라 같은 생김새를 큰 치수로 다시 찍는다(점은 그대로 한 점이다).
+ * 곧은 왼쪽 귀, 끝이 바깥으로 접힌 오른쪽 귀, 단추 눈 둘, 꿰맨 입.
+ */
+function bigMaskSprite(): Sprite {
+  const s = makeSprite(42, 52, 20, 51);
+  // 왼쪽 귀: 곧게
+  rectDots(s, 7, 2, 7, 24, 1);
+  rectDots(s, 8, 1, 5, 1, 1);
+  rectDots(s, 9, 0, 3, 1, 1);
+  rectDots(s, 9, 6, 3, 17, -1);
+  rectDots(s, 9, 6, 1, 17, 1);
+  // 오른쪽 귀: 끝이 바깥으로 접혔다
+  rectDots(s, 26, 10, 7, 16, 1);
+  fillPoly(s, [[26, 10], [33, 10], [41, 4], [37, 0], [28, 5]], 1);
+  rectDots(s, 28, 13, 3, 10, -1);
+  rectDots(s, 30, 13, 1, 10, 1);
+  lineDots(s, 28, 9, 33, 9, -1);
+  // 얼굴: 둥근 네모
+  rectDots(s, 6, 24, 29, 1, 1);
+  rectDots(s, 4, 25, 33, 23, 1);
+  rectDots(s, 5, 48, 31, 1, 1);
+  rectDots(s, 7, 49, 27, 1, 1);
+  putDot(s, 4, 25, 0);
+  putDot(s, 36, 25, 0);
+  putDot(s, 4, 47, 0);
+  putDot(s, 36, 47, 0);
+  // 눈: 검은 단추. 실 구멍 둘.
+  for (const ex of [13, 27]) {
+    disc(s, ex, 34, 3.4, 3.4, -1);
+    putDot(s, ex - 1, 33, 1);
+    putDot(s, ex + 1, 35, 1);
+  }
+  // 코와 입: 꿰맨 자국. 살짝 비뚤다.
+  rectDots(s, 19, 39, 2, 1, -1);
+  for (let x = 13; x <= 27; x += 2) putDot(s, x, x < 17 ? 43 : x > 23 ? 43 : 44, -1);
+  for (const x of [15, 20, 25]) {
+    putDot(s, x, x === 20 ? 43 : 42, -1);
+    putDot(s, x, x === 20 ? 45 : 44, -1);
+  }
   return haloDots(s, -1);
 }
 
@@ -489,6 +533,41 @@ export function paintStream(): StreamArt {
   const hung = maskSprite(true);
   ink.hung = placed(hung, CX + 12 - hung.ax, 49 - hung.ay);
 
+  // ── 사건의 끝 장면: 불 꺼진 방송실, 책상 위에 가면만 놓여 있다 ──
+  tone.maskpool = layer((c) => {
+    // 책상에 떨어진 빛의 웅덩이와, 뒤쪽 벽에 번진 약한 빛
+    glow(c, CX, 70, 62, 20, [
+      [0, 0.66],
+      [0.5, 0.3],
+      [1, 0],
+    ]);
+    glow(c, CX, 34, 40, 30, [
+      [0, 0.2],
+      [1, 0],
+    ]);
+  });
+  {
+    const s = makeSprite(SW, SH);
+    // 빈 의자의 등받이: 검은 덩어리에 흰 테
+    rectDots(s, CX - 17, 18, 34, 40, -1);
+    rectDots(s, CX - 15, 16, 30, 2, -1);
+    lineDots(s, CX - 15, 16, CX + 14, 16, 1);
+    lineDots(s, CX - 17, 18, CX - 17, 57, 1);
+    lineDots(s, CX + 16, 18, CX + 16, 57, 1);
+    putDot(s, CX - 16, 17, 1);
+    putDot(s, CX + 15, 17, 1);
+    rectDots(s, CX - 7, 22, 14, 6, -1);
+    box(s, CX - 7, 22, 14, 6, 1);
+    // 책상의 뒤쪽 끝
+    rectDots(s, 0, 58, SW, 1, 1);
+    rectDots(s, 0, 59, SW, 1, -1);
+    // 가면이 책상에 드리운 그림자
+    disc(s, CX + 3, 84, 25, 3, -1);
+    ink.maskdesk = placed(s);
+    const big = bigMaskSprite();
+    ink.bigmask = placed(big, CX - big.ax, 85 - big.ay);
+  }
+
   // ── 꺼진 화면의 잡음: 가로줄로 흩뿌린 점 ──
   const noise = [0, 1, 2].map((seed) => {
     const s = makeSprite(SW, SH);
@@ -519,6 +598,17 @@ export function streamFrame(art: StreamArt, frame: StreamFrameId, time: number, 
     // 방송이 끝났다: 방은 보이지 않고 잡음만 흐른다
     add("off", 1, "over");
     ink.push({ canvas: art.noise[still ? 0 : Math.floor(time * 9) % art.noise.length], x: 0, y: 0 });
+    return { tone, shadows: [], ink };
+  }
+
+  if (frame === "mask") {
+    // 사건의 끝: 방의 불은 꺼졌고 책상 위에만 빛이 남았다. 빛이 아주 느리게 숨을 쉰다.
+    const breath = still ? 1 : 0.9 + 0.1 * Math.sin(time * 0.9);
+    add("off", 1, "over");
+    add("maskpool", breath, "add");
+    add("vignette", 1, "mul");
+    put(art.ink.maskdesk);
+    put(art.ink.bigmask);
     return { tone, shadows: [], ink };
   }
 

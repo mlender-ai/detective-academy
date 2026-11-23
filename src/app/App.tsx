@@ -34,7 +34,8 @@ function Screen({ route }: { route: Route }) {
     case "profile":
       return <DetectiveProfile />;
     case "story":
-      return <StoryCaseScreen id={route.id} />;
+      // 사건이나 장이 바뀌면 화면을 새로 연다(들어선 순간에 열 곳을 정해 두므로)
+      return <StoryCaseScreen key={`${route.id}/${route.chapter ?? ""}`} id={route.id} chapter={route.chapter} />;
   }
 }
 

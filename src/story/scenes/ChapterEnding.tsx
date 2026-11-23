@@ -2,9 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { prefersReducedMotion } from "../../app/motion";
 import { playSound } from "../../app/sound";
 import { Stamp } from "../../components/Stamp";
-import { PLATFORM } from "../cases/d001/case";
+import { EndingStill, hasEndingStill } from "../art/endingArt";
 import { EvidenceCard } from "../components/StoryParts";
-import { StreamView } from "../components/StreamView";
 import type { ChapterProgress, StoryCase, StoryChapter } from "../engine/storyTypes";
 
 interface Props {
@@ -13,37 +12,44 @@ interface Props {
   p: ChapterProgress;
   /** 사건 기록으로 */
   onRecord: () => void;
-  /** 학원 복도로 */
+  /** 학원 홀로 */
   onHome: () => void;
+  /** 다음 장으로. 마지막 장이면 없다 */
+  onNext?: () => void;
 }
 
-type Stage = "tape" | "lines" | "evidence" | "result";
-const ORDER: Stage[] = ["tape", "lines", "evidence", "result"];
+type Stage = "still" | "lines" | "evidence" | "result";
+const ORDER: Stage[] = ["still", "lines", "evidence", "result"];
 const TYPE_MS = 44;
 
 /**
- * 장의 끝. 그날 밤의 방송이 다시 돌아가고, 화면 구석의 LIVE 표시가 꺼진 자리에 "예약 영상"이 찍힌다.
- * 이어서 끝 글 두 줄, 새로 드러난 기록 한 장, 수사 결과. 화면을 누르면 다음으로 가고, 한 번에 건너뛸 수도 있다.
+ * 장의 끝. 그 장의 그림 한 장면(그림이 한 번 바뀐다) → 끝 글(사건이 끝나는 장은 마지막에 사건 해결이 찍힌다)
+ * → 새로 드러난 기록 한 장 → 수사 결과. 화면을 누르면 다음으로 가고, 한 번에 건너뛸 수도 있다.
+ * 이미 본 끝 장면을 다시 열면 연출 없이 결과부터 나온다(다시 보려면 결과에서 고른다).
  */
-export function ChapterEnding({ c, ch, p, onRecord, onHome }: Props) {
+export function ChapterEnding({ c, ch, p, onRecord, onHome, onNext }: Props) {
   const still = prefersReducedMotion();
   // 이미 본 끝 장면을 다시 볼 때는 보상을 "받음"으로 적는다
   const [replay] = useState(p.endingSeen);
-  const [stage, setStage] = useState<Stage>(still ? "result" : "tape");
-  const [relabeled, setRelabeled] = useState(still);
+  const { next, closing } = ch.ending;
+  // 끝 글: 걸개 두 줄, 사건이 끝나는 장은 그 뒤에 사건 해결 한 줄
+  const lines = closing ? [...ch.ending.lines, closing] : ch.ending.lines;
+  const art = hasEndingStill(c.id, ch.id);
+  const [stage, setStage] = useState<Stage>(still || replay ? "result" : art ? "still" : "lines");
+  const [after, setAfter] = useState(still || replay);
   const [line, setLine] = useState(0);
   const [count, setCount] = useState(0);
-  const { lines, next } = ch.ending;
   const evidence = ch.evidence.find((e) => e.id === ch.ending.evidence)!;
   const typed = count >= lines[line].length;
   const at = ORDER.indexOf(stage);
   const sounded = useRef(false);
+  const last = !next;
 
-  // 테이프: LIVE 표시가 두어 번 깜빡이다 꺼지고, 그 자리에 예약 영상이라고 찍힌다
+  // 그림: 잠깐 보여 준 뒤 한 번 바뀌고(LIVE 표시가 꺼진다, 제목이 바뀐다, 가면만 남는다), 끝 글로 넘어간다
   useEffect(() => {
-    if (stage !== "tape") return;
+    if (stage !== "still") return;
     const swap = window.setTimeout(() => {
-      setRelabeled(true);
+      setAfter(true);
       playSound("stamp");
     }, 1500);
     const on = window.setTimeout(() => setStage("lines"), 2900);
@@ -67,8 +73,8 @@ export function ChapterEnding({ c, ch, p, onRecord, onHome }: Props) {
   }, [stage]);
 
   const advance = () => {
-    if (stage === "tape") {
-      setRelabeled(true);
+    if (stage === "still") {
+      setAfter(true);
       setStage("lines");
     } else if (stage === "lines") {
       if (!typed) setCount(lines[line].length);
@@ -80,14 +86,22 @@ export function ChapterEnding({ c, ch, p, onRecord, onHome }: Props) {
   };
 
   const skip = () => {
-    setRelabeled(true);
+    setAfter(true);
     setLine(lines.length - 1);
     setCount(999);
     setStage("result");
   };
 
+  const again = () => {
+    sounded.current = false;
+    setAfter(false);
+    setLine(0);
+    setCount(0);
+    setStage(art ? "still" : "lines");
+  };
+
   return (
-    <div className="screen inkworld story ending" data-stage={stage} data-testid="story-ending">
+    <div className="screen inkworld story ending" data-stage={stage} data-chapter={ch.id} data-last={last} data-testid="story-ending">
       {stage !== "result" && (
         <button type="button" className="storyintro__skip" onClick={skip} data-testid="ending-skip">
           건너뛰기
@@ -96,30 +110,12 @@ export function ChapterEnding({ c, ch, p, onRecord, onHome }: Props) {
 
       {stage !== "result" ? (
         <button type="button" className="ending__stage" onClick={advance} aria-label="다음" data-testid="ending-next">
-          <span className="crt ending__crt" data-relabeled={relabeled}>
-            <span className="crt__bar">
-              <span>{PLATFORM.name}</span>
-              <span>{PLATFORM.channel} · 2026.11.21 다시보기</span>
-            </span>
-            <span className="crt__screen">
-              <StreamView frame={relabeled ? "t0640" : "t0015"} />
-              {relabeled ? (
-                <span className="crt__live crt__live--tape" data-testid="ending-label">
-                  예약 영상
-                </span>
-              ) : (
-                <span className="crt__live crt__live--dying" data-testid="ending-label">
-                  <i />
-                  LIVE
-                </span>
-              )}
-            </span>
-          </span>
+          <EndingStill caseId={c.id} chapterId={ch.id} after={after} />
 
           {at >= 1 && (
             <span className="ending__lines">
               {lines.slice(0, line + 1).map((t, i) => (
-                <span className="ending__line" key={i}>
+                <span className="ending__line" key={i} data-closing={!!closing && i === lines.length - 1}>
                   {i === line ? t.slice(0, count) : t}
                   {i === line && <i className="narr__caret" />}
                 </span>
@@ -134,7 +130,7 @@ export function ChapterEnding({ c, ch, p, onRecord, onHome }: Props) {
             </span>
           )}
           <span className="sr-only" aria-live="polite">
-            {at >= 1 ? lines[line] : "그날 밤의 방송이 다시 재생된다."}
+            {at >= 1 ? lines[line] : (ch.ending.still ?? "")}
           </span>
         </button>
       ) : (
@@ -142,7 +138,7 @@ export function ChapterEnding({ c, ch, p, onRecord, onHome }: Props) {
           <p className="ending__case">{c.code}</p>
           <p className="ending__kicker">CHAPTER {String(ch.no).padStart(2, "0")} CLEARED</p>
           <h1 className="ending__title">{ch.title}</h1>
-          <Stamp label="조사 완료" animate={!still} />
+          <Stamp label={closing ? "사건 해결" : "조사 완료"} animate={!still && !replay} />
           <ul className="ending__rows">
             <li>
               <span>수사 기록</span>
@@ -161,24 +157,43 @@ export function ChapterEnding({ c, ch, p, onRecord, onHome }: Props) {
                 {replay ? " 받음" : ""}
               </b>
             </li>
+            {closing && !!c.reward && (
+              <li>
+                <span>사건 해결 보상</span>
+                <b className="num" data-testid="result-case-reward">
+                  +{c.reward}
+                  {replay ? " 받음" : ""}
+                </b>
+              </li>
+            )}
             <li>
               <span>새 사건 기록</span>
               <b>{evidence.no} 획득</b>
             </li>
           </ul>
           <ul className="ending__closing">
-            {lines.map((t) => (
+            {ch.ending.lines.map((t) => (
               <li key={t}>{t}</li>
             ))}
           </ul>
-          {next && (
+          {next ? (
             <p className="ending__next" data-testid="result-next">
               <span>다음 장</span>
               <b>
                 제{next.no}장 · {next.title}
               </b>
-              <span>준비 중</span>
             </p>
+          ) : (
+            closing && (
+              <p className="ending__solved" data-testid="result-closing">
+                {closing}
+              </p>
+            )
+          )}
+          {replay && (
+            <button type="button" className="ending__again" onClick={again} data-testid="result-again">
+              끝 장면 다시 보기
+            </button>
           )}
         </div>
       )}
@@ -187,11 +202,22 @@ export function ChapterEnding({ c, ch, p, onRecord, onHome }: Props) {
         {stage === "result" ? (
           <>
             <button type="button" className="inkbtn" onClick={onRecord} data-testid="result-record">
-              사건 기록 보기
+              사건 기록
             </button>
-            <button type="button" className="inkbtn inkbtn--wine" onClick={onHome} data-testid="result-home">
-              탐정학원으로
-            </button>
+            {onNext ? (
+              <>
+                <button type="button" className="inkbtn" onClick={onHome} data-testid="result-home">
+                  학원 홀로
+                </button>
+                <button type="button" className="inkbtn inkbtn--wine" onClick={onNext} data-testid="result-continue">
+                  다음 장으로
+                </button>
+              </>
+            ) : (
+              <button type="button" className="inkbtn inkbtn--wine" onClick={onHome} data-testid="result-home">
+                학원 홀로
+              </button>
+            )}
           </>
         ) : (
           <p className="storyintro__hint" aria-hidden="true">

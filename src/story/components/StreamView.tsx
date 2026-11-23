@@ -10,13 +10,15 @@ const art = () => (cached ??= paintStream());
 interface Props {
   frame: StreamFrameId;
   className?: string;
+  /** 멈춘 한 장면으로 둔다 (정지 화면) */
+  paused?: boolean;
 }
 
 /**
  * 방송 기록의 한 시점. 캔버스 하나에 방송실을 그린다(점 하나 = 2px).
  * 시점을 바꾸면 그 시점의 처음부터 다시 움직인다. 화면을 떠나면 그리기를 멈춘다.
  */
-export function StreamView({ frame, className }: Props) {
+export function StreamView({ frame, className, paused = false }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const frameRef = useRef(frame);
   const timeRef = useRef(0);
@@ -29,7 +31,7 @@ export function StreamView({ frame, className }: Props) {
 
   useEffect(() => {
     const stage = new Stage(canvasRef.current!, SW, SH);
-    const still = prefersReducedMotion();
+    const still = paused || prefersReducedMotion();
     const draw = () => stage.draw(streamFrame(art(), frameRef.current, timeRef.current, still));
     if (still) {
       draw();
@@ -39,13 +41,13 @@ export function StreamView({ frame, className }: Props) {
       timeRef.current += dt;
       draw();
     });
-  }, []);
+  }, [paused]);
 
-  // 모션 줄이기: 루프가 없으므로 시점이 바뀔 때 한 번 다시 그린다
+  // 모션 줄이기·정지 화면: 루프가 없으므로 시점이 바뀔 때 한 번 다시 그린다
   useEffect(() => {
-    if (!prefersReducedMotion() || !canvasRef.current) return;
+    if ((!paused && !prefersReducedMotion()) || !canvasRef.current) return;
     new Stage(canvasRef.current, SW, SH).draw(streamFrame(art(), frame, 0, true));
-  }, [frame]);
+  }, [frame, paused]);
 
   return (
     <canvas

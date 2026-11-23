@@ -20,7 +20,8 @@ const lastFrame = new Map<string, string>();
  */
 export function BroadcastRoom(props: SceneProps & { scene: TimelineScene }) {
   const { c, ch, p, go, scene } = props;
-  const [frameId, setFrameId] = useState(() => lastFrame.get(scene.id) ?? scene.frames[0].id);
+  // 아직 아무것도 조사하지 않았으면(처음, 또는 다시 풀기를 막 시작했으면) 첫 시점부터 본다
+  const [frameId, setFrameId] = useState(() => (p.notes.length > 0 ? lastFrame.get(scene.id) : undefined) ?? scene.frames[0].id);
   const [line, setLine] = useState(scene.enter);
   const [gain, setGain] = useState(false);
   const frame = scene.frames.find((f) => f.id === frameId) ?? scene.frames[0];

@@ -6,7 +6,7 @@ const art = paintStream();
 const grid = document.getElementById("grid")!;
 const fixed = new URLSearchParams(location.search).get("t");
 const scale = Number(new URLSearchParams(location.search).get("k") ?? 4);
-const frames: StreamFrameId[] = ["t0015", "t0310", "t0640", "t0700"];
+const frames: StreamFrameId[] = ["t0015", "t0310", "t0640", "t0700", "mask"];
 const stages = frames.map((id) => {
   const figure = document.createElement("figure");
   const canvas = document.createElement("canvas");

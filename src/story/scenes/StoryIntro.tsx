@@ -10,6 +10,8 @@ interface Props {
   ch: StoryChapter;
   /** 이미 본 도입인가 (다시 볼 때는 사건 접수 화면 없이 글만 본다) */
   seen: boolean;
+  /** 사건 접수 서류부터 보여 줄 것인가 (사건의 첫 장만) */
+  file?: boolean;
   onStart: () => void;
   onExit: () => void;
 }
@@ -17,11 +19,12 @@ interface Props {
 const TYPE_MS = 38;
 
 /**
- * 사건 접수와 도입. 먼저 접수된 사건의 서류를 보고 수락하면, 검은 화면에 도입 글이 한 줄씩 찍힌다.
- * 화면을 누르면 찍히던 줄이 바로 다 나오고, 한 번 더 누르면 다음 줄로 간다. 언제든 건너뛸 수 있다.
+ * 사건 접수와 도입. 사건의 첫 장은 접수된 사건의 서류를 먼저 보고 수락하면, 검은 화면에 도입 글이 한 줄씩 찍힌다.
+ * 다음 장부터는 장의 제목과 도입 글만 나온다. 화면을 누르면 찍히던 줄이 바로 다 나오고, 한 번 더 누르면 다음 줄로 간다.
+ * 언제든 건너뛸 수 있다.
  */
-export function StoryIntro({ c, ch, seen, onStart, onExit }: Props) {
-  const [stage, setStage] = useState<"file" | "lines">(seen ? "lines" : "file");
+export function StoryIntro({ c, ch, seen, file = true, onStart, onExit }: Props) {
+  const [stage, setStage] = useState<"file" | "lines">(seen || !file ? "lines" : "file");
   const [line, setLine] = useState(0);
   const [count, setCount] = useState(0);
   const still = prefersReducedMotion();
@@ -51,7 +54,7 @@ export function StoryIntro({ c, ch, seen, onStart, onExit }: Props) {
     return (
       <div className="screen desk inkworld story storyfile" data-testid="story-file">
         <header className="deskbar">
-          <button type="button" className="tilebtn" aria-label="학원 복도로" onClick={onExit} data-testid="story-back">
+          <button type="button" className="tilebtn" aria-label="학원 홀로" onClick={onExit} data-testid="story-back">
             <Sprite name="arrow-left" />
           </button>
           <p className="deskbar__tag leaf">
@@ -88,6 +91,12 @@ export function StoryIntro({ c, ch, seen, onStart, onExit }: Props) {
                 <dt>예상 시간</dt>
                 <dd className="num">{ch.minutes}</dd>
               </div>
+              <div>
+                <dt>사건 전체</dt>
+                <dd className="num">
+                  전 {c.plannedChapters}장 · {c.totalMinutes}
+                </dd>
+              </div>
             </dl>
           </article>
         </div>
@@ -118,6 +127,9 @@ export function StoryIntro({ c, ch, seen, onStart, onExit }: Props) {
         <span className="storyintro__kicker">
           {c.code} · 제{ch.no}장
         </span>
+        <span className="storyintro__chapter" data-testid="story-intro-title">
+          {ch.title}
+        </span>
         {ch.intro.slice(0, line + 1).map((t, i) => (
           <span className="storyintro__line" key={i} data-now={i === line}>
             {i === line && !still ? t.slice(0, count) : t}
@@ -131,7 +143,7 @@ export function StoryIntro({ c, ch, seen, onStart, onExit }: Props) {
       <footer className="storyintro__foot">
         {last && typed ? (
           <button type="button" className="inkbtn inkbtn--wine inkbtn--block" onClick={onStart} data-testid="story-start">
-            마지막 방송 확인하기
+            수사 시작
           </button>
         ) : (
           <p className="storyintro__hint" aria-hidden="true">
