@@ -4,12 +4,10 @@ import { motionMs, prefersReducedMotion, useSequence } from "../app/motion";
 import { goBack, navigate } from "../app/router";
 import { playSound } from "../app/sound";
 import { gameStore, useGame } from "../app/store";
-import { VIEW_ISO } from "../app/variant";
 import { EXAMROOM } from "../app/backdrop";
 import { PenMark, Sprite } from "../art/pixel";
 import { RankMedal } from "../art/objects";
 import { cineDuration } from "../components/CineCard";
-import { ExamEnvelope } from "../components/ExamEnvelope";
 import { IdCard } from "../components/IdCard";
 import { Stamp } from "../components/Stamp";
 import { PUZZLE_BY_ID } from "../data/puzzles";
@@ -33,7 +31,7 @@ const goHome = () => navigate({ name: "home" }, { replace: true });
 /* ───────── 시험실 ───────── */
 
 /**
- * 쿼터뷰 시험실(기본. 2026-11-23, 사용자: "나머지도 방으로"): 등불 아래 책상에 봉투가 놓여 있고 탐정이 그 앞으로 걸어가 선다.
+ * 쿼터뷰 시험실(2026-11-23, 사용자: "나머지도 방으로"): 등불 아래 책상에 봉투가 놓여 있고 탐정이 그 앞으로 걸어가 선다.
  * 응시 전 · 문제 사이 · 조건 미달 · 시험 종료에 쓴다. 누르는 장면이 아니라 보여 주는 장면이다(할 일은 아래의 단추다).
  */
 function ExamRoomIso({ phase }: { phase: ExamPhase }) {
@@ -46,7 +44,7 @@ function ExamRoomIso({ phase }: { phase: ExamPhase }) {
   return <IsoCanvas ref={ref} scene={scene} state={{ phase }} still className="examscene" />;
 }
 
-/** 응시자 자리에서 올려다본 시험실. 아래쪽은 책상에 가려진다. */
+/** 응시자 자리에서 올려다본 시험실(띠 배경). 아래쪽은 책상에 가려진다. 승급 증서(식)와 합격 기록 화면이 쓴다. */
 function RoomScene() {
   return (
     <>
@@ -264,18 +262,11 @@ function ExamGate({ rule, status, session, state, onOpen }: GateProps) {
   const timed = rule.exam.timeLimitSec !== null;
 
   return (
-    <div className={VIEW_ISO ? "screen room room--iso inkworld" : "screen room inkworld"} data-state={state} data-between={between} data-testid={between ? "exam-between" : "exam-gate"}>
-      {!VIEW_ISO && <RoomScene />}
+    <div className="screen room room--iso inkworld" data-state={state} data-between={between} data-testid={between ? "exam-between" : "exam-gate"}>
       <RoomBar title={`${rule.to}급 승급 시험`} note={between ? `${index}/${puzzles.length} 통과` : undefined} />
-      {VIEW_ISO && <ExamRoomIso phase={blocked ? "empty" : state === "opening" ? "opening" : "sealed"} />}
+      <ExamRoomIso phase={blocked ? "empty" : state === "opening" ? "opening" : "sealed"} />
 
       <div className="screen__scroll room__scroll">
-        {!VIEW_ISO && (
-          <div className="room__envelope">
-            <ExamEnvelope state={state} letterTitle={between ? `${index + 1}번 문제` : `${rule.from}급 → ${rule.to}급`} />
-          </div>
-        )}
-
         {between ? (
           <section className="roomnote leaf" aria-label="다음 시험지">
             <p className="roomnote__lead" data-testid="between-lead">
@@ -345,18 +336,11 @@ function TaskMeter({ solved, required }: { solved: number; required: number }) {
 function ExamLocked({ rule, status }: { rule: PromotionRule; status: ExamStatus }) {
   const left = Math.max(0, status.required - status.solved);
   return (
-    <div className={VIEW_ISO ? "screen room room--iso inkworld" : "screen room inkworld"} data-state="locked" data-testid="exam-locked">
-      {!VIEW_ISO && <RoomScene />}
+    <div className="screen room room--iso inkworld" data-state="locked" data-testid="exam-locked">
       <RoomBar title={`${rule.to}급 승급 시험`} note="응시 전" />
-      {VIEW_ISO && <ExamRoomIso phase="empty" />}
+      <ExamRoomIso phase="empty" />
 
       <div className="screen__scroll room__scroll">
-        {!VIEW_ISO && (
-          <div className="room__envelope">
-            <ExamEnvelope state="locked" letterTitle={`${rule.from}급 → ${rule.to}급`} />
-          </div>
-        )}
-
         <section className="roomnote leaf" aria-label="응시 조건">
           <p className="roomnote__lead">아직 응시할 수 없습니다. 오늘의 추리와 연습실의 과제를 {left}개 더 해결하면 봉투가 열립니다.</p>
           <div className="roomnote__need">
@@ -395,18 +379,11 @@ function ExamFailed({ rule, session, status }: { rule: PromotionRule; session: E
   }, []);
 
   return (
-    <div className={VIEW_ISO ? "screen room room--iso inkworld" : "screen room inkworld"} data-state="failed" data-testid="exam-failed">
-      {!VIEW_ISO && <RoomScene />}
+    <div className="screen room room--iso inkworld" data-state="failed" data-testid="exam-failed">
       <RoomBar title={`${rule.to}급 승급 시험`} note="시험 종료" />
-      {VIEW_ISO && <ExamRoomIso phase="ended" />}
+      <ExamRoomIso phase="ended" />
 
       <div className="screen__scroll room__scroll">
-        {!VIEW_ISO && (
-          <div className="room__envelope">
-            <ExamEnvelope state="locked" letterTitle={`${rule.from}급 → ${rule.to}급`} />
-          </div>
-        )}
-
         <section className="roomnote roomnote--failed leaf" aria-label="시험 결과">
           <h2 className="roomnote__title" data-testid="failed-title">
             {byTime ? "시간이 끝났습니다" : "제출을 다 썼습니다"}

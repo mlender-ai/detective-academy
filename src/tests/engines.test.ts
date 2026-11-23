@@ -72,13 +72,20 @@ describe("크레딧 정책", () => {
     expect(spend(0, 20)).toEqual({ ok: false, credits: 0 });
   });
 
-  it("모든 문제의 보상이 정책표와 같다: 오늘의 추리 60, 연습 과제는 등급별, 시험 문제는 0", () => {
+  it("모든 문제의 보상이 정책표와 같다: 오늘의 추리 60, 연습 과제는 등급별, 특수 도전 60, 시험 문제는 0", () => {
     for (const puzzle of ALL_PUZZLES) {
-      expect(puzzle.reward, puzzle.id).toBe(policyReward(puzzle.category, puzzle.rank));
+      expect(puzzle.reward, puzzle.id).toBe(policyReward(puzzle.category, puzzle.rank, puzzle.special));
     }
     expect(policyReward("daily", "F")).toBe(60);
     expect(["F", "D", "C", "B", "A"].map((rank) => policyReward("practice", rank as never))).toEqual([30, 35, 40, 45, 50]);
     expect(policyReward("exam", "A")).toBe(0);
+    // 특수 도전은 놓인 서랍의 등급과 무관하다: 가장 높은 연습 보상보다 크고, 가장 낮은 합격 보상보다 작다
+    expect(["F", "C", "A"].map((rank) => policyReward("practice", rank as never, true))).toEqual([60, 60, 60]);
+    expect(CREDIT_POLICY.special).toBeGreaterThan(Math.max(...Object.values(CREDIT_POLICY.practice)));
+    expect(CREDIT_POLICY.special).toBeLessThan(Math.min(...PROMOTION_RULES.map((r) => r.reward)));
+    // 특수 도전이 아닌 것에는 붙지 않는다
+    expect(policyReward("daily", "F", true)).toBe(60);
+    expect(policyReward("exam", "A", true)).toBe(0);
   });
 
   it("밸런스의 뼈대: 문제 하나의 보상은 첫 힌트보다 크고, 힌트 두 단계의 값을 넘지 않는다", () => {
@@ -87,8 +94,8 @@ describe("크레딧 정책", () => {
       expect(puzzle.reward, puzzle.id).toBeGreaterThan(CREDIT_POLICY.hintCosts[0]);
       expect(puzzle.reward, puzzle.id).toBeLessThanOrEqual(full);
     }
-    // 연습 과제를 모두 풀어 받는 총액과, 승급 보상의 총액
-    expect(PRACTICE_PUZZLES.reduce((sum, p) => sum + p.reward, 0)).toBe(600);
+    // 연습 과제를 모두 풀어 받는 총액(GATE 05 의 600 + 더한 F·D·C 둘씩 210 + 특수 도전 60)과, 승급 보상의 총액
+    expect(PRACTICE_PUZZLES.reduce((sum, p) => sum + p.reward, 0)).toBe(870);
     expect(PROMOTION_RULES.reduce((sum, r) => sum + r.reward, 0)).toBe(660);
   });
 
@@ -223,26 +230,31 @@ describe("추론 제출과 보상", () => {
 });
 
 describe("오늘의 추리: 날짜별 배정", () => {
-  it("시작일에 '자료실 금고의 암호'가 붙고, 그 뒤 일곱 날은 일일 문제 일곱 개가 차례로 붙는다", () => {
+  it("시작일에 '자료실 금고의 암호'가 붙고, 그 뒤 열세 날은 일일 문제 열세 개가 차례로 붙는다", () => {
     expect(DAILY_CALENDAR.start).toBe("2026-11-22");
     expect(getDailyPuzzle("2026-11-22")).toBe(DAILY_CODE);
     DAILY_SET.forEach((puzzle, i) => {
       expect(getDailyPuzzle(addDays("2026-11-22", i + 1)), puzzle.id).toBe(puzzle);
     });
-    expect(DAILY_CALENDAR.order).toHaveLength(8);
-    expect(new Set(DAILY_CALENDAR.order).size).toBe(8);
+    expect(DAILY_SET).toHaveLength(13);
+    expect(DAILY_CALENDAR.order).toHaveLength(14);
+    expect(new Set(DAILY_CALENDAR.order).size).toBe(14);
     expect(DAILY_CALENDAR.order.every((id) => PUZZLE_BY_ID[id]?.category === "daily")).toBe(true);
     // 일일 문제는 모두 달력에 있다
     expect(ALL_PUZZLES.filter((p) => p.category === "daily").every((p) => DAILY_CALENDAR.order.includes(p.id))).toBe(true);
   });
 
-  it("같은 날짜에는 누구에게나 같은 문제가 붙고, 여덟 날마다 돌아온다", () => {
-    expect(getDailyPuzzle("2026-11-30")).toBe(DAILY_CODE);
-    expect(getDailyPuzzle("2026-12-01")).toBe(DAILY_SET[0]);
-    expect(dailyIndex("2027-03-01")).toBe(daysBetween("2026-11-22", "2027-03-01") % 8);
+  it("같은 날짜에는 누구에게나 같은 문제가 붙고, 열나흘마다 돌아온다", () => {
+    // 앞 여덟 날의 배정은 문제가 늘어도 그대로다: 아흐레째(11월 30일)부터 둘째 주의 문제가 붙는다
+    expect(getDailyPuzzle("2026-11-29")).toBe(DAILY_SET[6]);
+    expect(getDailyPuzzle("2026-11-30")).toBe(DAILY_SET[7]);
+    expect(getDailyPuzzle("2026-12-05")).toBe(DAILY_SET[12]);
+    expect(getDailyPuzzle("2026-12-06")).toBe(DAILY_CODE);
+    expect(getDailyPuzzle("2026-12-07")).toBe(DAILY_SET[0]);
+    expect(dailyIndex("2027-03-01")).toBe(daysBetween("2026-11-22", "2027-03-01") % 14);
     // 시작일 이전의 날짜도 같은 주기로 센다
-    expect(getDailyPuzzle("2026-11-21")).toBe(DAILY_SET[6]);
-    expect(getDailyPuzzle("2026-11-14")).toBe(DAILY_CODE);
+    expect(getDailyPuzzle("2026-11-21")).toBe(DAILY_SET[12]);
+    expect(getDailyPuzzle("2026-11-08")).toBe(DAILY_CODE);
     // 깨진 날짜는 첫 문제로 본다
     expect(getDailyPuzzle("어제")).toBe(DAILY_CODE);
   });
@@ -271,18 +283,21 @@ describe("오늘의 추리: 날짜별 배정", () => {
 });
 
 describe("연습실: 등급별 서랍", () => {
-  it("열다섯 문제가 다섯 등급에 셋씩 들어 있고, 등급마다 유형이 겹치지 않는다", () => {
-    expect(PRACTICE_PUZZLES).toHaveLength(15);
+  it("스물두 문제가 다섯 등급에 들어 있다: F·D 다섯, C 여섯(특수 도전 하나), B·A 셋. 서랍의 보통 과제는 유형이 겹치지 않는다", () => {
+    expect(PRACTICE_PUZZLES).toHaveLength(22);
+    expect((["F", "D", "C", "B", "A"] as const).map((rank) => practiceOfRank(rank).length)).toEqual([5, 5, 6, 3, 3]);
     for (const rank of ["F", "D", "C", "B", "A"] as const) {
-      const sheets = practiceOfRank(rank);
-      expect(sheets, rank).toHaveLength(3);
-      expect(new Set(sheets.map((p) => p.type)).size, rank).toBe(3);
+      const sheets = practiceOfRank(rank).filter((p) => !p.special);
+      // 특수 도전을 뺀 보통 과제는 한 서랍에서 유형이 겹치지 않는다(F·D·C 는 다섯 유형이 모두 있다)
+      expect(new Set(sheets.map((p) => p.type)).size, rank).toBe(sheets.length);
     }
+    for (const rank of ["F", "D", "C"] as const) expect(practiceOfRank(rank).filter((p) => !p.special), rank).toHaveLength(5);
     expect(practiceOfRank("S")).toHaveLength(0);
-    // 유형마다 세 문제씩
-    for (const type of ["code", "truth", "schedule", "evidence", "spatial"]) {
-      expect(PRACTICE_PUZZLES.filter((p) => p.type === type), type).toHaveLength(3);
-    }
+    // 특수 도전은 하나뿐이고 C 서랍의 맨 끝에 놓인다
+    expect(PRACTICE_PUZZLES.filter((p) => p.special).map((p) => p.id)).toEqual(["special-code-001"]);
+    expect(practiceOfRank("C").at(-1)?.id).toBe("special-code-001");
+    // 유형별 과제 수(특수 도전 포함): 암호 5 · 진술 4 · 순서 4 · 증거 5 · 인장 4
+    expect(["code", "truth", "schedule", "evidence", "spatial"].map((type) => PRACTICE_PUZZLES.filter((p) => p.type === type).length)).toEqual([5, 4, 4, 5, 4]);
     // 목록은 등급 순서다
     const order = PRACTICE_PUZZLES.map((p) => RANKS.findIndex((r) => r.id === p.rank));
     expect(order).toEqual([...order].sort((a, b) => a - b));
@@ -308,14 +323,16 @@ describe("연습실: 등급별 서랍", () => {
 });
 
 describe("승급 시험: 응시 조건", () => {
-  it("등급마다 시험이 하나씩 있고, 문제 수는 1·2·3·4·5 다", () => {
+  it("등급마다 시험이 하나씩 있고, 문제 수는 1·3·3·4·5 다", () => {
     expect(PROMOTION_RULES.map((r) => `${r.from}${r.to}`)).toEqual(["FD", "DC", "CB", "BA", "AS"]);
-    expect(PROMOTION_RULES.map((r) => r.examPuzzleIds.length)).toEqual([1, 2, 3, 4, 5]);
+    expect(PROMOTION_RULES.map((r) => r.examPuzzleIds.length)).toEqual([1, 3, 3, 4, 5]);
+    // D→C 시험의 셋째 문제는 맨 뒤에 붙었다(앞의 두 문제와 순서는 그대로다)
+    expect(rule("D").examPuzzleIds).toEqual(["exam-code-d-c", "exam-truth-d-c", "exam-evidence-d-c"]);
     expect(PROMOTION_RULES.map((r) => r.requiredSolved)).toEqual([3, 5, 8, 12, 15]);
     const ids = PROMOTION_RULES.flatMap((r) => r.examPuzzleIds);
-    expect(new Set(ids).size).toBe(15);
+    expect(new Set(ids).size).toBe(16);
     for (const id of ids) expect(PUZZLE_BY_ID[id]?.category, id).toBe("exam");
-    expect(ALL_PUZZLES.filter((p) => p.category === "exam")).toHaveLength(15);
+    expect(ALL_PUZZLES.filter((p) => p.category === "exam")).toHaveLength(16);
     // 시험 문제의 권장 등급은 응시하는 등급이다
     for (const r of PROMOTION_RULES) for (const id of r.examPuzzleIds) expect(PUZZLE_BY_ID[id].rank, id).toBe(r.from);
     // 한 시험 안에서 유형이 겹치지 않는다
@@ -401,10 +418,10 @@ describe("승급 시험: 한 번의 응시", () => {
     expect(promoted.promotions).toHaveLength(1);
   });
 
-  it("D→C: 두 문제를 차례로 푼다. 문제 사이에서는 다음 시험지를 펼쳐야 이어진다", () => {
+  it("D→C: 세 문제를 차례로 푼다. 문제 사이에서는 다음 시험지를 펼쳐야 이어진다", () => {
     let state = buildDemoState("ready-c", NOW);
     expect(state.rank).toBe("D");
-    const [first, second] = puzzlesOf("D");
+    const [first, second, third] = puzzlesOf("D");
     state = startExam(state, NOW);
     // 두 번째 문제는 아직 풀 수 없다
     expect(canPlay(state, second)).toBe(false);
@@ -421,9 +438,20 @@ describe("승급 시험: 한 번의 응시", () => {
     state = openExamSheet(state, NOW);
     expect(state.exam).toMatchObject({ index: 1, stage: "playing" });
     const two = submitAnswer(state, second, second.solution, NOW);
-    expect(two.outcome).toMatchObject({ correct: true, reward: 100, promotedTo: "C", exam: { ended: "passed" } });
-    expect(two.state.rank).toBe("C");
-    expect(two.state.promotions.map((p) => p.to)).toEqual(["D", "C"]);
+    expect(two.outcome).toMatchObject({ correct: true, reward: 0, promotedTo: null, exam: { ended: null } });
+    state = two.state;
+    expect(state.rank).toBe("D");
+    expect(state.exam).toMatchObject({ index: 2, stage: "ready", submits: 0 });
+    // 셋째 문제(증거 조합)도 시험지를 펼쳐야 제출이 접수된다
+    expect(third.type).toBe("evidence");
+    expect(submitAnswer(state, third, third.solution, NOW).outcome.accepted).toBe(false);
+
+    state = openExamSheet(state, NOW);
+    expect(state.exam).toMatchObject({ index: 2, stage: "playing" });
+    const three = submitAnswer(state, third, third.solution, NOW);
+    expect(three.outcome).toMatchObject({ correct: true, reward: 100, promotedTo: "C", exam: { ended: "passed" } });
+    expect(three.state.rank).toBe("C");
+    expect(three.state.promotions.map((p) => p.to)).toEqual(["D", "C"]);
   });
 
   it("응시할 때마다 시험 문제의 풀이 기록을 새로 쓴다", () => {

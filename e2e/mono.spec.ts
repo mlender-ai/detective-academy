@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { CINE_ON, expectLayoutOk, offToneRatio, placeByTap, preset, setCode, shot, stored, toDesk, toSafe } from "./helpers";
+import { CINE_ON, enterFromHome, expectLayoutOk, offToneRatio, placeByTap, preset, setCode, shot, stored, toDesk, toSafe } from "./helpers";
 
 /**
  * 1비트 흑백 도트로 그렸는지 확인한다: 비트맵 글꼴, 스프라이트, 점으로 찍는 표시, 두 가지 색, 자막 화면.
@@ -13,16 +13,16 @@ test("공고를 펼쳐 암호를 풀고 채점 결과까지 간다", async ({ pa
   expect(await page.getByTestId("daily-file-cta").evaluate((el) => getComputedStyle(el).fontFamily)).toContain("NeoDGM");
   await page.evaluate(() => document.fonts.ready.then(() => undefined));
   expect(await page.evaluate(() => document.fonts.check('16px "NeoDGM"') && document.fonts.check('12px "Galmuri11"'))).toBe(true);
-  // 장면 아래의 서술 한 줄
+  // 방 위쪽의 서술 한 줄
   await expect(page.getByTestId("narration")).toContainText("오늘의 사건");
   await expect(page.locator(".hall__sign .sprite")).toBeVisible();
   await expect(page.getByTestId("daily-file-status")).toHaveText("미해결");
   await shot(page, "mono-01-home");
 
-  await page.getByTestId("daily-file").click();
+  await enterFromHome(page, "daily-file");
   await expect(page.getByTestId("play-screen")).toBeVisible();
-  // 암호 사건은 자료실 장면에서 푼다: 위에 살아 있는 장면, 그 아래 서술 한 줄, 그 아래 책상의 기록
-  await expect(page.locator('[data-testid="live-scene"][data-kind="vault"] canvas')).toBeVisible();
+  // 암호 사건은 자료실 장면에서 푼다: 위에 살아 있는 방과 서술 한 줄, 그 아래 책상의 기록
+  await expect(page.locator('.vaultscene [data-testid="iso-canvas"]')).toBeVisible();
   await expect(page.getByTestId("narration")).toContainText("기록");
   await expect(page.getByTestId("record")).toBeVisible();
 
@@ -85,7 +85,7 @@ for (const viewport of [
       expect(tile.y + tile.height).toBeLessThanOrEqual(viewport.height);
       await shot(page, `mono-viewport-${tag}-home`);
 
-      await page.getByTestId("daily-file").click();
+      await enterFromHome(page, "daily-file");
       // 책상 앞: 시도 기록 다섯 건과 숫자 메모가 스크롤 없이 단추 줄 위에 다 보인다
       await expect(page.getByTestId("record")).toBeVisible();
       await expectLayoutOk(page, '[data-testid="to-safe"]');
@@ -133,7 +133,7 @@ test("입학해서 진술 추리와 승급 시험을 풀고 신분증까지 확�
 
   /* 연습실 → 진술 추리 */
   await preset(page, "daily-solved");
-  await page.getByTestId("practice-entry").click();
+  await enterFromHome(page, "practice-entry");
   await expect(page.getByTestId("practice-room")).toBeVisible();
   await shot(page, "mono-12-practice");
   await page.getByTestId("practice-file-practice-truth-001").click();
@@ -160,9 +160,10 @@ test("입학해서 진술 추리와 승급 시험을 풀고 신분증까지 확�
 
   /* 승급 시험: 과제 셋을 풀어 둔 상태에서 */
   await preset(page, "exam-ready");
-  await page.getByTestId("exam-cta").click();
+  await enterFromHome(page, "exam-cta");
   await expect(page.getByTestId("exam-gate")).toBeVisible();
-  await expect(page.locator(".envelope .sprite")).toHaveCount(4);
+  // 시험실은 방으로 그린다: 봉투는 방 안의 책상 위에 있다
+  await expect(page.locator('.examscene [data-testid="iso-canvas"]')).toBeVisible();
   await shot(page, "mono-15-exam-gate");
   await page.getByTestId("open-envelope").click();
   await expect(page.getByTestId("play-screen")).toHaveAttribute("data-variant", "exam");
@@ -206,7 +207,7 @@ for (const viewport of [
       await expectLayoutOk(page, '[data-testid="enroll"]');
 
       await preset(page, "daily-solved");
-      await page.getByTestId("practice-entry").click();
+      await enterFromHome(page, "practice-entry");
       await expectLayoutOk(page, '[data-testid="practice-file-practice-truth-001"]');
       await page.getByTestId("practice-file-practice-truth-001").click();
       await page.getByTestId("suspect-junho").click();
@@ -217,7 +218,7 @@ for (const viewport of [
       }
 
       await preset(page, "exam-ready");
-      await page.getByTestId("exam-cta").click();
+      await enterFromHome(page, "exam-cta");
       await expectLayoutOk(page, '[data-testid="open-envelope"]');
       await page.getByTestId("open-envelope").click();
       await placeByTap(page, "doyun", 0);
@@ -227,7 +228,7 @@ for (const viewport of [
       expect(tray.y + tray.height).toBeLessThanOrEqual(submitTop);
 
       await preset(page, "promoted");
-      await page.getByTestId("identity").click();
+      await enterFromHome(page, "identity");
       await expectLayoutOk(page, '[data-testid="rename"]');
     });
   });
@@ -261,7 +262,7 @@ test("모든 화면이 검정과 흰색 두 가지로만 그려진다", async ({
   await preset(page, "daily-unsolved");
   await expect(page.getByTestId("home-screen")).toBeVisible();
   await check("홈");
-  await page.getByTestId("daily-file").click();
+  await enterFromHome(page, "daily-file");
   await expect(page.getByTestId("record")).toBeVisible();
   await page.waitForTimeout(900); // 탐정이 책상 앞에 설 때까지
   await check("암호 풀이 · 책상의 기록");
@@ -277,7 +278,7 @@ test("모든 화면이 검정과 흰색 두 가지로만 그려진다", async ({
   await check("수사 지원 서랍");
 
   await preset(page, "daily-solved");
-  await page.getByTestId("practice-entry").click();
+  await enterFromHome(page, "practice-entry");
   await expect(page.getByTestId("practice-room")).toBeVisible();
   await check("연습실");
   await page.getByTestId("practice-file-practice-truth-001").click();
@@ -287,7 +288,7 @@ test("모든 화면이 검정과 흰색 두 가지로만 그려진다", async ({
   await check("진술 추리");
 
   await preset(page, "exam-ready");
-  await page.getByTestId("exam-cta").click();
+  await enterFromHome(page, "exam-cta");
   await expect(page.getByTestId("exam-gate")).toBeVisible();
   await check("시험실");
   await page.getByTestId("open-envelope").click();
@@ -296,7 +297,7 @@ test("모든 화면이 검정과 흰색 두 가지로만 그려진다", async ({
   await check("승급 시험 풀이");
 
   await preset(page, "promoted");
-  await page.getByTestId("identity").click();
+  await enterFromHome(page, "identity");
   await expect(page.getByTestId("profile-screen")).toBeVisible();
   await check("신분증");
   await page.goto("/?demo=1#/daily");
@@ -311,7 +312,7 @@ test.describe("자막 화면", () => {
   /** 추리 책상에서 여는 사건(연습실의 진술 추리)을 연다 */
   const openDeskCase = async (page: Page) => {
     await preset(page, "daily-solved");
-    await page.getByTestId("practice-entry").click();
+    await enterFromHome(page, "practice-entry");
     await page.getByTestId("practice-file-practice-truth-001").click();
   };
 
@@ -337,7 +338,7 @@ test.describe("자막 화면", () => {
 
   test("암호 사건은 자막 화면 대신 자료실에 들어서는 장면으로 시작한다", async ({ page }) => {
     await preset(page, "daily-unsolved");
-    await page.getByTestId("daily-file").click();
+    await enterFromHome(page, "daily-file");
     await expect(page.getByTestId("play-screen")).toHaveAttribute("data-ux", "b");
     await expect(page.getByTestId("cine-card")).toHaveCount(0);
     await expect(page.getByTestId("narration")).toContainText("자료실");

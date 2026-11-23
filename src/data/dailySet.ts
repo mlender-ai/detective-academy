@@ -1,14 +1,16 @@
 /**
- * 일일 문제 7개 (V3 GATE 04).
+ * 일일 문제. 이 파일에 첫 주의 일곱 문제(V3 GATE 04)가 있고, 둘째 주의 여섯 문제는 sets/dailyWeek2.ts 에 있다.
  *
- * 새 유형 둘(증거 조합, 인장 대조)과 기존 유형 셋을 섞어 일주일치를 지었다.
- * 아직 날짜에 배정하지 않았다(GATE 05 의 일). 지금은 QA 주소의 ?day=1~7 로만 오늘의 추리 자리에 놓인다.
+ * 첫 주: 새 유형 둘(증거 조합, 인장 대조)과 기존 유형 셋을 섞어 일주일치를 지었다.
+ * 날짜 배정은 puzzles.ts 의 DAILY_CALENDAR 가 한다(시작일의 '자료실 금고의 암호' 뒤에 이 순서대로 붙는다).
+ * QA 주소의 ?day=1~7 은 첫 주의 일곱 문제만 가리킨다.
  *
  * solution 은 개발·검증용이다. 화면에는 플레이어가 해결한 뒤에만 노출한다.
  * 정답이 하나뿐인지, 힌트와 해설이 규칙과 맞는지는 src/tests/dailySet.test.ts 가 전수 탐색으로 확인한다.
  */
 import type { CodePuzzle, EvidencePuzzle, Puzzle, SchedulePuzzle, SpatialPuzzle, TruthPuzzle } from "../engine/types";
 import { daon, doyun, hana, harin, junho, minjae, sea, sera } from "./people";
+import { DAILY_WEEK_2 } from "./sets/dailyWeek2";
 
 /* ───────── 1일차 · 증거 조합 ───────── */
 
@@ -638,7 +640,13 @@ export const DAILY_SEAL_2: SpatialPuzzle = {
   reward: 60,
 };
 
-/** 일주일치. 순서가 곧 일차(1~7)다. */
+/** 첫 주의 문제 수. QA 주소의 ?day= 가 가리키는 범위다. */
+export const DAILY_WEEK_1_COUNT = 7;
+
+/**
+ * 일일 문제 열세 개(첫 주 일곱 + 둘째 주 여섯). 순서가 곧 달력에 붙는 순서다.
+ * 새 문제는 맨 뒤에만 덧붙인다: 앞의 순서가 바뀌면 이미 지나간 날짜의 배정과 기록이 뒤바뀐다.
+ */
 export const DAILY_SET: Puzzle[] = [
   DAILY_EVIDENCE_1,
   DAILY_SEAL_1,
@@ -647,4 +655,5 @@ export const DAILY_SET: Puzzle[] = [
   DAILY_EVIDENCE_2,
   DAILY_SCHEDULE_1,
   DAILY_SEAL_2,
+  ...DAILY_WEEK_2,
 ];

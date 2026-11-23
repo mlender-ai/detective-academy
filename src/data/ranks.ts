@@ -77,7 +77,7 @@ export const PROMOTION_RULES: PromotionRule[] = [
     from: "D",
     to: "C",
     requiredSolved: 5,
-    examPuzzleIds: ["exam-code-d-c", "exam-truth-d-c"],
+    examPuzzleIds: ["exam-code-d-c", "exam-truth-d-c", "exam-evidence-d-c"],
     exam: OPEN,
     reward: 100,
   },

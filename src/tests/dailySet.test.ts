@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { DAILY_EVIDENCE_1, DAILY_EVIDENCE_2, DAILY_SCHEDULE_1, DAILY_SEAL_1, DAILY_SEAL_2, DAILY_SET, DAILY_TRUTH_1 } from "../data/dailySet";
+import { DAILY_EVIDENCE_1, DAILY_EVIDENCE_2, DAILY_SCHEDULE_1, DAILY_SEAL_1, DAILY_SEAL_2, DAILY_SET, DAILY_TRUTH_1, DAILY_WEEK_1_COUNT } from "../data/dailySet";
 import { ALL_PUZZLES, PUZZLES } from "../data/puzzles";
 import { allCards, auditEvidence, contradicts, deriveFrom, entailedPositions, entails, enumerateEvidence, satisfiable, solveEvidence } from "../engine/evidence";
 import { checkAnswer, countTrue, solveSchedule, verifyGuidance, verifyPuzzle } from "../engine/puzzleValidator";
@@ -7,18 +7,31 @@ import { auditSpatial, dotCount, enumerateSeals, imprintMatches, mirrorGrid, pre
 import type { EvidencePuzzle, SpatialPuzzle } from "../engine/types";
 import { evidencePair, initialInput, readiness, restoreInput, toAnswer } from "../games/logic";
 
+/** 첫 주의 일곱 문제 (GATE 04). 둘째 주의 여섯 문제는 content-v3.test.ts 가 본다. */
+const WEEK_1 = DAILY_SET.slice(0, DAILY_WEEK_1_COUNT);
+
 describe("일일 문제 일곱 개", () => {
   it("일곱 개이고, 새 유형이 둘씩 들어 있으며, 이름표가 겹치지 않는다", () => {
-    expect(DAILY_SET).toHaveLength(7);
-    expect(DAILY_SET.filter((p) => p.type === "evidence")).toHaveLength(2);
-    expect(DAILY_SET.filter((p) => p.type === "spatial")).toHaveLength(2);
-    expect(new Set(DAILY_SET.map((p) => p.type)).size).toBe(5);
+    expect(WEEK_1).toHaveLength(7);
+    // 첫 주의 순서와 이름표는 문제가 늘어도 그대로다(날짜별 기록이 뒤바뀌지 않게)
+    expect(WEEK_1.map((p) => p.id)).toEqual([
+      "daily-evidence-001",
+      "daily-seal-001",
+      "daily-code-002",
+      "daily-truth-001",
+      "daily-evidence-002",
+      "daily-schedule-001",
+      "daily-seal-002",
+    ]);
+    expect(WEEK_1.filter((p) => p.type === "evidence")).toHaveLength(2);
+    expect(WEEK_1.filter((p) => p.type === "spatial")).toHaveLength(2);
+    expect(new Set(WEEK_1.map((p) => p.type)).size).toBe(5);
     expect(new Set(ALL_PUZZLES.map((p) => p.id)).size).toBe(ALL_PUZZLES.length);
     // 지금 제품의 흐름(입학 → 승급)에 놓인 문제는 그대로 셋이다
     expect(PUZZLES).toHaveLength(3);
   });
 
-  it.each(DAILY_SET.map((p) => [p.id, p] as const))("%s: 정답이 정확히 하나이고 짜임새에 문제가 없다", (_id, puzzle) => {
+  it.each(WEEK_1.map((p) => [p.id, p] as const))("%s: 정답이 정확히 하나이고 짜임새에 문제가 없다", (_id, puzzle) => {
     const result = verifyPuzzle(puzzle);
     expect(result.issues).toEqual([]);
     expect(result.solutions).toHaveLength(1);
@@ -27,7 +40,7 @@ describe("일일 문제 일곱 개", () => {
     expect(result.candidateCount).toBeGreaterThanOrEqual(4);
   });
 
-  it.each(DAILY_SET.map((p) => [p.id, p] as const))("%s: 힌트와 해설이 규칙과 맞고, 힌트만으로 답이 드러나지 않는다", (_id, puzzle) => {
+  it.each(WEEK_1.map((p) => [p.id, p] as const))("%s: 힌트와 해설이 규칙과 맞고, 힌트만으로 답이 드러나지 않는다", (_id, puzzle) => {
     const result = verifyGuidance(puzzle);
     expect(result.issues).toEqual([]);
     expect(result.candidatesAfterHints).toBeGreaterThanOrEqual(2);
@@ -35,7 +48,7 @@ describe("일일 문제 일곱 개", () => {
     expect(puzzle.explanation.length).toBeGreaterThanOrEqual(3);
   });
 
-  it.each(DAILY_SET.map((p) => [p.id, p] as const))("%s: 사건을 여는 글과 닫는 글이 한두 문장이다", (_id, puzzle) => {
+  it.each(WEEK_1.map((p) => [p.id, p] as const))("%s: 사건을 여는 글과 닫는 글이 한두 문장이다", (_id, puzzle) => {
     for (const text of [puzzle.intro, puzzle.outro]) {
       expect(text).toBeTruthy();
       expect(text!.split(/[.?!]\s/).length).toBeLessThanOrEqual(3);

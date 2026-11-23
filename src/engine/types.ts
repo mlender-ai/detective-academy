@@ -259,6 +259,8 @@ interface PuzzleBase<T extends PuzzleType, R, S, F> {
   rank?: RankId;
   /** 예상 풀이 시간(분) */
   minutes?: number;
+  /** 특수 도전: 연습실에 놓이지만 그 등급의 보통 과제보다 한참 어렵다. 보상은 CREDIT_POLICY.special 을 따른다. */
+  special?: true;
 }
 
 export type CodePuzzle = PuzzleBase<"code", CodeRules, number[], CodeFact>;

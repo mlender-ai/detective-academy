@@ -16,35 +16,16 @@ export function gameNowMs(): number {
   return Date.now() + days * 86_400_000;
 }
 
+/** 브라우저 테스트가 여는 빌드본의 주소. playwright.config.ts 와 같은 값이다(E2E_PORT 로 포트를 나눈다). */
+export const ORIGIN = `http://127.0.0.1:${Number(process.env.E2E_PORT ?? 4183)}`;
+
 /**
  * 자막 화면을 켜고 돌릴 때의 저장소: 자막을 끄는 값만 빼고, 게임 날짜는 그대로 고정한다.
  * (playwright.config.ts 의 기본값은 자막을 끄고 날짜를 고정한다)
  */
 export const CINE_ON = {
   cookies: [],
-  origins: [
-    {
-      origin: "http://127.0.0.1:4183",
-      localStorage: [
-        { name: "detective-academy:date", value: TEST_DATE },
-        { name: "detective-academy:view", value: "side" },
-      ],
-    },
-  ],
-};
-
-/** 기본 홈(쿼터뷰 학원 홀)으로 돌릴 때의 저장소: 홈을 옆에서 본 복도로 돌리는 값만 뺀다 */
-export const HOME_DEFAULT = {
-  cookies: [],
-  origins: [
-    {
-      origin: "http://127.0.0.1:4183",
-      localStorage: [
-        { name: "detective-academy:cine", value: "off" },
-        { name: "detective-academy:date", value: TEST_DATE },
-      ],
-    },
-  ],
+  origins: [{ origin: ORIGIN, localStorage: [{ name: "detective-academy:date", value: TEST_DATE }] }],
 };
 export const SHOTS = "docs/screenshots";
 
@@ -73,6 +54,23 @@ export async function enroll(page: Page, nickname?: string) {
   await expect(page.getByTestId("admission-grant")).toBeVisible();
   await page.getByTestId("enter-academy").click();
   await expect(page.getByTestId("home-screen")).toBeVisible();
+}
+
+/** 홈(쿼터뷰 학원 홀)에서 누르는 곳: 방 안의 문과 물건 */
+export type HomeSpot = "daily-file" | "practice-entry" | "exam-cta" | "exam-wait" | "exam-record" | "story-entry" | "identity";
+
+/** 홈의 아래 창에 있는 큰 단추: 지금 고른 곳으로 들어간다 */
+export const homeGo = (page: Page, id: HomeSpot) => page.getByTestId(id === "daily-file" ? "daily-file-cta" : `${id}-go`);
+
+/**
+ * 홈에서 그곳으로 들어간다: 방 안의 문이나 물건을 눌러 고르고(탐정이 걸어간다), 아래 창의 큰 단추를 누른다.
+ * 이미 골라져 있으면(들어서면 오늘 할 일이 골라져 있다) 큰 단추만 누른다. 탐정이 아직 걷는 중이면 도착하는 대로 들어간다.
+ */
+export async function enterFromHome(page: Page, id: HomeSpot) {
+  const spot = page.getByTestId(id);
+  await expect(spot).toBeVisible();
+  if ((await spot.getAttribute("data-on")) !== "true") await spot.click();
+  await homeGo(page, id).click();
 }
 
 /** QA 패널(?demo=1)로 원하는 진행 상태를 만든다 */

@@ -1,13 +1,12 @@
 import { expect, test, type Page } from "@playwright/test";
 import { getDailyPuzzle } from "../src/data/puzzles";
-import { HOME_DEFAULT, TEST_DATE, expectLayoutOk, offToneRatio, preset } from "./helpers";
+import { TEST_DATE, expectLayoutOk, offToneRatio, preset } from "./helpers";
 import { solve } from "./solve";
 
 /**
  * 쿼터뷰 방들(자료실 · 연습실 · 시험실). 2026-11-23 에 사용자가 "나머지도 방으로"라고 해서 홈에 이어 방으로 바꿨다.
- * 다른 테스트들은 저장소의 값으로 예전 화면(?view=side)에서 돈다. 여기서는 그 값 없이 기본 화면으로 연다.
+ * 방 안의 물건을 눌러 오가는 것, 낮은 화면에서의 넘침, 두 색, 모션 줄이기를 본다. 문제의 판정·보상·시험의 흐름은 flow · growth 가 본다.
  */
-test.use({ storageState: HOME_DEFAULT });
 
 const SHOTS = "docs/compare/iso";
 const hide = ".demo { visibility: hidden !important; }";
@@ -35,7 +34,7 @@ test.describe("자료실(암호 풀이)", () => {
     await page.getByTestId("scene-desk").tap();
     await expect(play).toHaveAttribute("data-at", "desk");
     await expect(page.getByTestId("record")).toBeVisible();
-    // 아래 단추로도 오간다(예전 화면과 같은 단추). 끝까지 풀면 보상이 들어온다.
+    // 아래 단추로도 오간다. 끝까지 풀면 보상이 들어온다.
     await solve(page, getDailyPuzzle(TEST_DATE));
     await expect(page.getByTestId("reward")).toContainText("+60");
   });
@@ -102,6 +101,18 @@ test.describe("연습실", () => {
     await expect(page.getByTestId("home-screen")).toHaveAttribute("data-home", "iso");
   });
 
+  test("걷는 중에 과제를 열어도, 돌아오면 그 과제의 서류함 앞이다", async ({ page }) => {
+    await open(page, "promoted", "practice");
+    await expect(room(page)).toHaveAttribute("data-at", "F");
+    // 서류함을 누르자마자(도착하기 전에) 과제를 연다
+    await page.getByTestId("drawer-D").tap();
+    await page.locator(".isotask").first().tap();
+    await expect(page.getByTestId("play-screen")).toBeVisible();
+    await page.getByTestId("play-back").click();
+    await expect(room(page)).toHaveAttribute("data-at", "D");
+    await expect(room(page)).toHaveAttribute("data-drawer", "D");
+  });
+
   for (const [w, h] of [
     [390, 664],
     [375, 629],
@@ -133,8 +144,6 @@ test.describe("시험실", () => {
     await open(page, "exam-ready", "exam");
     await expect(page.getByTestId("exam-gate")).toBeVisible();
     await expect(page.getByTestId("iso-stage")).toBeVisible();
-    // 예전 화면의 큰 봉투 그림은 놓이지 않는다(봉투는 방 안의 책상 위에 있다)
-    await expect(page.locator(".room__envelope")).toHaveCount(0);
     await page.waitForTimeout(1200);
     await page.screenshot({ path: `${SHOTS}/exam-iso-gate.png`, style: hide });
     expect(await offToneRatio(page)).toBeLessThan(0.0005);

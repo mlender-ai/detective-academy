@@ -1,11 +1,12 @@
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { getDailyPuzzle } from "../src/data/puzzles";
-import { TEST_DATE, gameNowMs, offToneRatio, preset, stored } from "./helpers";
+import { TEST_DATE, enterFromHome, gameNowMs, offToneRatio, preset, stored } from "./helpers";
 import { patchState, solve } from "./solve";
 
 /**
- * 환경·보상 애니메이션 실험(?fx=ascii). ASCII Magic 의 조각을 1비트 점으로 고쳐 옮긴 것(src/fx/ascii)이
- * 켰을 때만 화면에 놓이고, 켜도 두 색 규칙과 조작·보상이 그대로인지 본다. 기본(끔)의 화면은 다른 테스트들이 그대로 본다.
+ * 보상·시간 애니메이션 실험(?fx=ascii). ASCII Magic 의 조각을 1비트 점으로 고쳐 옮긴 것(src/fx/ascii)이
+ * 켰을 때만 화면에 놓이고(채점 결과의 주화, 시험 시간 칸의 모래시계), 켜도 두 색 규칙과 조작·보상이 그대로인지 본다.
+ * 기본(끔)의 화면은 다른 테스트들이 그대로 본다. 복도의 비와 촛불은 예전 홈(옆에서 본 복도)과 함께 걷어냈다.
  */
 
 const SHOTS = "docs/compare/ascii";
@@ -64,7 +65,7 @@ async function expectOnGrid(target: Locator) {
 
 async function toExam(page: Page, query: string) {
   await preset(page, "ready-b", query);
-  await page.getByTestId("exam-cta").click();
+  await enterFromHome(page, "exam-cta");
   await expect(page.getByTestId("exam-gate")).toBeVisible();
   await page.getByTestId("open-envelope").click();
   await page.getByTestId("open-envelope").click({ timeout: 800 }).catch(() => undefined);
@@ -73,7 +74,7 @@ async function toExam(page: Page, query: string) {
 
 test("기본값은 꺼져 있다: 효과의 캔버스가 어디에도 놓이지 않는다", async ({ page }) => {
   await preset(page, "daily-unsolved");
-  await page.getByTestId("daily-file").click();
+  await enterFromHome(page, "daily-file");
   await solve(page, getDailyPuzzle(TEST_DATE));
   await expect(page.getByTestId("reward")).toBeVisible();
   await expect(page.locator(".fxcanvas")).toHaveCount(0);
@@ -84,33 +85,22 @@ test("기본값은 꺼져 있다: 효과의 캔버스가 어디에도 놓이지 
 });
 
 test.describe("?fx=ascii", () => {
-  test("복도: 촛불과 비 내리는 창이 놓여도 두 색이고, 줄을 눌러 들어가는 것은 그대로다", async ({ page }) => {
+  test("홈: 효과를 켜도 학원 홀은 그대로다(두 색이고, 효과의 캔버스가 놓이지 않고, 들어가는 것도 그대로다)", async ({ page }) => {
     await preset(page, "promoted", "&fx=ascii");
     const home = page.getByTestId("home-screen");
+    await expect(home).toHaveAttribute("data-home", "iso");
     await expect(home).toHaveAttribute("data-at", "practice");
+    await expect(page.locator(".fxcanvas")).toHaveCount(0);
     await page.waitForTimeout(700);
     expect(await offToneRatio(page)).toBeLessThan(0.005);
-    await page.screenshot({ path: `${SHOTS}/home-fx-left.png`, style: ".demo { visibility: hidden !important; }" });
-    // 창이 있는 오른쪽 끝으로 간다(시험실 앞)
-    const scene = (await page.getByTestId("live-scene").boundingBox())!;
-    const canvas = (await page.locator('[data-testid="live-scene"] canvas').boundingBox())!;
-    await page.touchscreen.tap(scene.x + scene.width - 26 * 2, canvas.y + 70 * 2);
-    await expect(home).toHaveAttribute("data-at", "exam");
-    await page.waitForTimeout(900);
-    expect(await offToneRatio(page)).toBeLessThan(0.005);
-    await page.screenshot({ path: `${SHOTS}/home-fx-right.png`, style: ".demo { visibility: hidden !important; }" });
-    // 유리에 비가 흐른다: 창 자리의 그림이 시간이 지나면 달라진다(탐정과 텔레비전은 이 자리에 없다)
-    const glass = { x: scene.x + scene.width - 70, y: canvas.y + 44 * 2, width: 54, height: 50 };
-    const before = await page.screenshot({ clip: glass });
-    await expect.poll(async () => (await page.screenshot({ clip: glass })).equals(before)).toBe(false);
-    await page.getByTestId("daily-file").click();
+    await enterFromHome(page, "daily-file");
     await expect(page.getByTestId("play-screen").or(page.getByTestId("result-screen"))).toBeVisible();
   });
 
   test("채점 결과: 크레딧 한 닢이 한 바퀴 돌고 멈추며, 보상은 그대로 한 번만 들어온다", async ({ page }) => {
     await preset(page, "daily-unsolved", "&fx=ascii");
     const before = (await stored(page)).credits as number;
-    await page.getByTestId("daily-file").click();
+    await enterFromHome(page, "daily-file");
     await solve(page, getDailyPuzzle(TEST_DATE));
     await expect(page.getByTestId("reward")).toContainText("+60");
     // 보상은 저장된 크레딧에 한 번 더해진다
@@ -140,7 +130,7 @@ test.describe("?fx=ascii", () => {
     expect((await stored(page)).credits).toBe(before + 60);
     await page.goto("/?demo=1&fx=ascii");
     await expect(page.getByTestId("credit-balance")).toHaveText(String(before + 60));
-    await page.getByTestId("daily-file").click();
+    await enterFromHome(page, "daily-file");
     await expect(page.getByTestId("result-screen")).toBeVisible();
     await expect(page.getByTestId("reward-claimed")).toContainText("수령 완료");
     await expect(page.getByTestId("reward")).toHaveCount(0);
@@ -204,7 +194,7 @@ test.describe("?fx=ascii", () => {
   test("모션 줄이기 설정에서는 멈춘 한 장면을 보여 준다", async ({ page }) => {
     await page.emulateMedia({ reducedMotion: "reduce" });
     await preset(page, "daily-unsolved", "&fx=ascii");
-    await page.getByTestId("daily-file").click();
+    await enterFromHome(page, "daily-file");
     await solve(page, getDailyPuzzle(TEST_DATE));
     const coin = page.locator(".graded__coins.fxcoin");
     await expect(coin).toBeVisible();
