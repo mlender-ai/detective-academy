@@ -9,6 +9,10 @@ import { prefersReducedMotion } from "./motion";
 export type Route =
   | { name: "home" }
   | { name: "daily" }
+  /** 지난 사건: 달력에서 오늘까지 붙었던 오늘의 추리의 목록 */
+  | { name: "daily-past" }
+  /** 지난 사건 하나의 풀이(또는 기록). id 는 문제의 이름표 */
+  | { name: "daily-past-play"; id: string }
   | { name: "practice" }
   | { name: "practice-play"; id: string }
   | { name: "exam" }
@@ -22,6 +26,10 @@ export function toHash(route: Route): string {
       return "#/";
     case "daily":
       return "#/daily";
+    case "daily-past":
+      return "#/daily/past";
+    case "daily-past-play":
+      return `#/daily/past/${encodeURIComponent(route.id)}`;
     case "practice":
       return "#/practice";
     case "practice-play":
@@ -35,20 +43,30 @@ export function toHash(route: Route): string {
   }
 }
 
+/** 주소의 조각을 푼다. 깨진 값(%만 있는 주소 등)이면 그대로 돌려준다: 없는 이름표가 되어 화면이 안전하게 돌려보낸다. */
+function safeDecode(part: string): string {
+  try {
+    return decodeURIComponent(part);
+  } catch {
+    return part;
+  }
+}
+
 export function parseHash(hash: string): Route {
   const path = hash.replace(/^#\/?/, "");
-  const [head, tail] = path.split("/");
+  const [head, tail, leaf] = path.split("/");
   switch (head) {
     case "daily":
+      if (tail === "past") return leaf ? { name: "daily-past-play", id: safeDecode(leaf) } : { name: "daily-past" };
       return { name: "daily" };
     case "practice":
-      return tail ? { name: "practice-play", id: decodeURIComponent(tail) } : { name: "practice" };
+      return tail ? { name: "practice-play", id: safeDecode(tail) } : { name: "practice" };
     case "exam":
       return { name: "exam" };
     case "profile":
       return { name: "profile" };
     case "story":
-      return tail ? { name: "story", id: decodeURIComponent(tail) } : { name: "home" };
+      return tail ? { name: "story", id: safeDecode(tail) } : { name: "home" };
     default:
       return { name: "home" };
   }
@@ -57,6 +75,8 @@ export function parseHash(hash: string): Route {
 let current: Route = typeof window === "undefined" ? { name: "home" } : parseHash(window.location.hash);
 /** 앱 안에서 쌓인 이동 횟수. 0이면 뒤로 갈 앱 화면이 없다. */
 let depth = 0;
+/** 같은 주소의 화면을 처음부터 다시 연 횟수 (navigate 의 fresh) */
+let visit = 0;
 const listeners = new Set<() => void>();
 
 function emit() {
@@ -75,15 +95,32 @@ export function withTransition(update: () => void, direction: "forward" | "back"
   const doc = document as TransitionDocument;
   if (typeof doc.startViewTransition === "function" && !prefersReducedMotion()) {
     doc.documentElement.dataset.nav = direction;
-    doc.startViewTransition(() => flushSync(update));
+    const transition = doc.startViewTransition(() => flushSync(update)) as { ready?: Promise<unknown>; finished?: Promise<unknown> } | undefined;
+    // 전환이 끝나기 전에 다음 전환이 시작되면(주소로 바로 온 화면이 곧바로 다른 화면으로 돌려보낼 때) 앞의 전환은 건너뛴다.
+    // 화면은 이미 바뀌어 있으므로 잘못된 것이 아니다: 건너뛰었다는 거절을 받아 둔다(받지 않으면 처리되지 않은 오류로 남는다).
+    transition?.ready?.catch(() => undefined);
+    transition?.finished?.catch(() => undefined);
   } else {
     update();
   }
 }
 
-export function navigate(route: Route, options: { replace?: boolean } = {}) {
+/**
+ * 화면을 옮긴다. 지금 화면과 같은 주소면 아무 일도 하지 않는다(단추를 두 번 눌러도 화면이 다시 열리지 않는다).
+ * fresh 를 주면 같은 주소여도 그 화면을 처음부터 다시 연다: 오늘의 추리를 풀다 자정을 넘긴 뒤,
+ * 결과 화면에서 "오늘의 추리 풀기"를 누르면 같은 주소(#/daily)에 새 날의 문제가 열려야 한다.
+ */
+export function navigate(route: Route, options: { replace?: boolean; fresh?: boolean } = {}) {
   const hash = toHash(route);
-  if (hash === toHash(current)) return;
+  if (hash === toHash(current)) {
+    if (options.fresh) {
+      withTransition(() => {
+        visit += 1;
+        emit();
+      });
+    }
+    return;
+  }
   withTransition(() => {
     if (options.replace) {
       window.history.replaceState({ depth }, "", hash);
@@ -128,5 +165,14 @@ export function useRoute(): Route {
     subscribe,
     () => current,
     () => current,
+  );
+}
+
+/** 같은 주소의 화면을 다시 연 횟수. 화면의 key 에 붙여, 바뀌면 그 화면을 처음부터 다시 그린다. */
+export function useVisit(): number {
+  return useSyncExternalStore(
+    subscribe,
+    () => visit,
+    () => visit,
   );
 }

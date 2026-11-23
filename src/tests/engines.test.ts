@@ -244,19 +244,20 @@ describe("오늘의 추리: 날짜별 배정", () => {
     expect(ALL_PUZZLES.filter((p) => p.category === "daily").every((p) => DAILY_CALENDAR.order.includes(p.id))).toBe(true);
   });
 
-  it("같은 날짜에는 누구에게나 같은 문제가 붙고, 열나흘마다 돌아온다", () => {
+  it("같은 날짜에는 누구에게나 같은 문제가 붙고, 달력이 끝나면 처음으로 돌아가지 않는다", () => {
     // 앞 여덟 날의 배정은 문제가 늘어도 그대로다: 아흐레째(11월 30일)부터 둘째 주의 문제가 붙는다
     expect(getDailyPuzzle("2026-11-29")).toBe(DAILY_SET[6]);
     expect(getDailyPuzzle("2026-11-30")).toBe(DAILY_SET[7]);
     expect(getDailyPuzzle("2026-12-05")).toBe(DAILY_SET[12]);
-    expect(getDailyPuzzle("2026-12-06")).toBe(DAILY_CODE);
-    expect(getDailyPuzzle("2026-12-07")).toBe(DAILY_SET[0]);
-    expect(dailyIndex("2027-03-01")).toBe(daysBetween("2026-11-22", "2027-03-01") % 14);
-    // 시작일 이전의 날짜도 같은 주기로 센다
-    expect(getDailyPuzzle("2026-11-21")).toBe(DAILY_SET[12]);
-    expect(getDailyPuzzle("2026-11-08")).toBe(DAILY_CODE);
-    // 깨진 날짜는 첫 문제로 본다
-    expect(getDailyPuzzle("어제")).toBe(DAILY_CODE);
+    // 열닷새째부터는 오늘의 추리가 없다: 첫 문제를 새 문제처럼 다시 붙이지 않는다 (자세한 것은 daily-calendar.test.ts)
+    expect(getDailyPuzzle("2026-12-06")).toBeNull();
+    expect(getDailyPuzzle("2026-12-07")).toBeNull();
+    expect(dailyIndex("2027-03-01")).toBeNull();
+    // 시작일 이전에도 붙은 문제가 없다
+    expect(getDailyPuzzle("2026-11-21")).toBeNull();
+    expect(getDailyPuzzle("2026-11-08")).toBeNull();
+    // 깨진 날짜에도 문제를 내지 않는다
+    expect(getDailyPuzzle("어제")).toBeNull();
   });
 
   it("날짜 계산", () => {
@@ -269,9 +270,9 @@ describe("오늘의 추리: 날짜별 배정", () => {
   });
 
   it("날짜가 바뀌면 새 문제가 미해결로 붙고, 어제 푼 문제의 기록은 남는다", () => {
-    let state = submitAnswer(enrolled(), getDailyPuzzle(seoulDateKey(NOW)), [4, 2, 6], NOW).state;
+    let state = submitAnswer(enrolled(), getDailyPuzzle(seoulDateKey(NOW))!, [4, 2, 6], NOW).state;
     const tomorrow = later(DAY);
-    const next = getDailyPuzzle(seoulDateKey(tomorrow));
+    const next = getDailyPuzzle(seoulDateKey(tomorrow))!;
     expect(next).toBe(DAILY_SET[0]);
     expect(getProgress(state, next.id).status).toBe("new");
     state = submitAnswer(state, next, next.solution, tomorrow).state;

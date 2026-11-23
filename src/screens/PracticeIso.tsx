@@ -39,7 +39,8 @@ const ENTRANCE_DELAY_MS = 380;
 
 /**
  * 연습실 · 쿼터뷰 (2026-11-23, 사용자: "나머지도 방으로"). 등급마다 서류함이 하나씩 벽을 따라 서 있다.
- * 서류함을 누르면 탐정이 그 앞으로 가고, 아래 창에 그 서류함의 과제 셋이 놓인다. 과제를 누르면 풀이로 들어간다.
+ * 서류함을 누르면 탐정이 그 앞으로 가고, 아래 창에 그 서류함의 과제가 한 줄씩 놓인다. 과제를 누르면 풀이로 들어간다.
+ * 과제는 서류함마다 대여섯 개다: 아래 창의 높이는 그대로 두고 목록이 그 안에서 위아래로 밀린다.
  */
 export function PracticeIso() {
   const game = useGame();
@@ -51,6 +52,9 @@ export function PracticeIso() {
   const [heading, setHeading] = useState<PracticeSpot | null>(first);
   const leaving = useRef(false);
   const touched = useRef(false);
+  /** 과제 목록(밀리는 자리)과, 아래에 더 있는가 · 위에 더 있는가 */
+  const listRef = useRef<HTMLOListElement>(null);
+  const [more, setMore] = useState({ up: false, down: false });
   const solvedTotal = PRACTICE_PUZZLES.filter((p) => getProgress(game, p.id).status === "solved").length;
 
   useEffect(() => {
@@ -101,6 +105,28 @@ export function PracticeIso() {
   const nextId = locked ? null : (sheets.find((p) => getProgress(game, p.id).status !== "solved")?.id ?? null);
   const todo = startCabinet(game);
   const todoLeft = !isDone(game, todo);
+
+  const measure = () => {
+    const list = listRef.current;
+    const next = list ? { up: list.scrollTop > 1, down: list.scrollTop + list.clientHeight < list.scrollHeight - 1 } : { up: false, down: false };
+    setMore((prev) => (prev.up === next.up && prev.down === next.down ? prev : next));
+  };
+
+  // 서류함을 고르면 권하는 과제(풀지 않은 첫 과제)가 보이는 데까지 목록을 민다: 앞의 셋을 풀었으면 넷째가 창 밖에 있다
+  useEffect(() => {
+    const list = listRef.current;
+    if (list) {
+      const target = list.querySelector<HTMLElement>('[data-primary="true"]');
+      // 목록 안에서 그 줄의 아랫변이 놓인 자리(지금 밀린 만큼을 더해 목록의 맨 위에서 잰다)
+      const bottom = target ? target.getBoundingClientRect().bottom - list.getBoundingClientRect().top + list.scrollTop : 0;
+      // 마지막 줄이면 끝까지 민다(목록의 아래 여백까지): 머리의 ▼ 가 남지 않는다
+      const last = !!target && target.closest("li") === list.lastElementChild;
+      list.scrollTop = bottom <= list.clientHeight ? 0 : last ? list.scrollHeight : Math.ceil(bottom - list.clientHeight);
+    }
+    measure();
+    // 고른 서류함이 바뀔 때만 다시 한다
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rank, locked]);
 
   const line = !selected
     ? "연습실. 벽을 따라 등급마다 서류함이 서 있다."
@@ -182,13 +208,19 @@ export function PracticeIso() {
               <span className="isocard__state num" data-testid="drawer-count">
                 {locked ? "잠김" : `해결 ${solvedHere}/${sheets.length}`}
               </span>
+              {!locked && (more.up || more.down) && (
+                <span className="isocard__more" aria-hidden="true" data-testid="practice-more">
+                  {more.up ? "▲" : ""}
+                  {more.down ? "▼" : ""}
+                </span>
+              )}
             </p>
             {locked ? (
               <p className="isocard__shut" data-testid="drawer-locked">
                 {rankLabel(rank as RankId)}에 오르면 열리는 서류함입니다. 과제 {sheets.length}개가 들어 있습니다. ({RANK_BY_ID[rank as RankId].focus})
               </p>
             ) : (
-              <ol className="isotasks">
+              <ol className="isotasks" ref={listRef} onScroll={measure} data-up={more.up} data-down={more.down} data-testid="practice-list">
                 {sheets.map((puzzle, i) => {
                   const progress = getProgress(game, puzzle.id);
                   const solved = progress.status === "solved";
@@ -200,12 +232,20 @@ export function PracticeIso() {
                         data-status={progress.status}
                         data-primary={puzzle.id === nextId}
                         data-testid={`practice-file-${puzzle.id}`}
-                        aria-label={`연습 과제 ${i + 1}, ${puzzle.title}, ${TYPE_NAME[puzzle.type]}, 난이도 5단계 중 ${puzzle.difficulty}단계, ${sheetStatus(progress)}`}
+                        data-special={puzzle.special === true}
+                        aria-label={`${puzzle.special ? "특수 도전" : `연습 과제 ${i + 1}`}, ${puzzle.title}, ${TYPE_NAME[puzzle.type]}, 난이도 5단계 중 ${puzzle.difficulty}단계, ${sheetStatus(progress)}`}
                         onClick={() => open(puzzle.id)}
                       >
                         <span className="isotask__title">{puzzle.title}</span>
                         <span className="isotask__meta">
-                          <span>{TYPE_NAME[puzzle.type]}</span>
+                          <span>
+                            {puzzle.special && (
+                              <b className="isotask__flag" data-testid={`practice-special-${puzzle.id}`}>
+                                특수 도전
+                              </b>
+                            )}
+                            {TYPE_NAME[puzzle.type]}
+                          </span>
                           <span className="num" data-testid={`practice-status-${puzzle.id}`}>
                             {solved ? "해결" : progress.status === "in_progress" ? "풀이 중" : `+${puzzle.reward}`}
                           </span>

@@ -305,6 +305,68 @@ test("모든 화면이 검정과 흰색 두 가지로만 그려진다", async ({
   await check("채점 기록");
 });
 
+test("새로 더한 화면도 두 가지 색뿐이다: 달력이 끝난 날의 홈, 지난 사건, 신분증의 지난 사건 단추, 과제 여섯 줄의 연습실", async ({ page }) => {
+  const check = async (name: string) => {
+    await page.waitForTimeout(500); // 화면 전환이 끝난 뒤에 찍는다
+    expect(await offToneRatio(page), `${name}: 두 색이 아닌 화소가 너무 많다`).toBeLessThan(0.005);
+  };
+  const fontSize = (selector: string) => page.locator(selector).first().evaluate((el) => getComputedStyle(el).fontSize);
+
+  // 달력이 끝난 다음 날(12월 6일): 게시판은 새 사건을 준비 중이다
+  await preset(page, "promoted", "&date=2026-12-06");
+  await page.getByTestId("daily-file").click();
+  await expect(page.getByTestId("home-screen")).toHaveAttribute("data-at", "board");
+  await expect(page.getByTestId("daily-file-cta")).toHaveText("지난 사건 다시 보기");
+  // 새 글자도 정해진 크기다: 제목 32px, 한 줄 16px
+  expect(await page.locator(".isocard__subject").evaluate((el) => getComputedStyle(el).fontFamily)).toContain("NeoDGM");
+  expect(await fontSize(".isocard__subject")).toBe("32px");
+  expect(await fontSize('[data-testid="daily-past-count"]')).toBe("16px");
+  await check("달력이 끝난 날의 홈");
+
+  await page.getByTestId("daily-file-cta").click();
+  await expect(page.getByTestId("past-screen")).toBeVisible();
+  expect(await fontSize(".dailypast .ledger__title")).toBe("32px");
+  expect(await fontSize(".dailypast__note")).toBe("16px");
+  expect(await fontSize(".dailypast__list .isotask__title")).toBe("16px");
+  expect(await fontSize(".dailypast__list .isotask__meta")).toBe("12px");
+  await check("지난 사건");
+  // 줄을 누르고 있는 동안(뒤집힌 줄)에도 두 색이다
+  const first = (await page.locator(".dailypast__list .isotask").first().boundingBox())!;
+  await page.mouse.move(first.x + first.width / 2, first.y + first.height / 2);
+  await page.mouse.down();
+  await check("지난 사건 · 누른 줄");
+  await page.mouse.up();
+  await expect(page.getByTestId("play-screen")).toBeVisible();
+
+  // 오늘 문제를 푼 날의 게시판(단추 둘)과, 오늘의 줄에 꼬리표가 붙은 지난 사건
+  await preset(page, "daily-solved", "&date=2026-11-25");
+  await page.getByTestId("daily-file").click();
+  await expect(page.getByTestId("daily-past-cta")).toBeVisible();
+  expect(await fontSize('[data-testid="daily-past-cta"]')).toBe("16px");
+  await check("오늘 문제를 푼 날의 게시판");
+  await page.getByTestId("daily-past-cta").click();
+  await expect(page.locator(".dailypast__list .isotask__flag")).toHaveText("오늘");
+  expect(await fontSize(".dailypast__list .isotask__flag")).toBe("12px");
+  await check("지난 사건 · 오늘의 꼬리표");
+
+  await page.goto("/?demo=1&date=2026-11-25#/profile");
+  await page.getByTestId("record-past").scrollIntoViewIfNeeded();
+  expect(await fontSize('[data-testid="record-past"]')).toBe("16px");
+  await check("신분증 · 지난 사건 단추");
+
+  // 과제 여섯 줄의 서류함(머리의 세모, 특수 도전의 꼬리표)
+  await preset(page, "ready-b");
+  await page.goto("/?demo=1#/practice");
+  await page.getByTestId("drawer-C").click();
+  await expect(page.getByTestId("practice-room")).toHaveAttribute("data-at", "C");
+  await expect(page.getByTestId("practice-more")).toHaveText("▼");
+  expect(await fontSize('[data-testid="practice-more"]')).toBe("16px");
+  await check("연습실 · 과제 여섯 줄");
+  await page.getByTestId("practice-list").evaluate((el) => el.scrollTo(0, el.scrollHeight));
+  await expect(page.getByTestId("practice-special-special-code-001")).toBeVisible();
+  await check("연습실 · 특수 도전의 꼬리표");
+});
+
 test.describe("자막 화면", () => {
   // 다른 테스트에서는 꺼 둔 자막 화면을 여기서만 켠다 (저장소의 끔 표시를 비운다)
   test.use({ storageState: CINE_ON });

@@ -35,7 +35,7 @@ test.describe("자료실(암호 풀이)", () => {
     await expect(play).toHaveAttribute("data-at", "desk");
     await expect(page.getByTestId("record")).toBeVisible();
     // 아래 단추로도 오간다. 끝까지 풀면 보상이 들어온다.
-    await solve(page, getDailyPuzzle(TEST_DATE));
+    await solve(page, getDailyPuzzle(TEST_DATE)!);
     await expect(page.getByTestId("reward")).toContainText("+60");
   });
 
@@ -75,8 +75,8 @@ test.describe("연습실", () => {
     await expect(room(page)).toHaveAttribute("data-view", "iso");
     // 들어서면 풀지 않은 과제가 남은 가장 낮은 등급의 서류함 앞에 선다
     await expect(room(page)).toHaveAttribute("data-at", "F");
-    await expect(page.getByTestId("drawer-count")).toHaveText("해결 2/3");
-    await expect(page.getByTestId("practice-total")).toContainText("해결 2/15");
+    await expect(page.getByTestId("drawer-count")).toHaveText("해결 2/5");
+    await expect(page.getByTestId("practice-total")).toContainText("해결 2/22");
     await page.screenshot({ path: `${SHOTS}/practice-iso.png`, style: hide });
     expect(await offToneRatio(page)).toBeLessThan(0.0005);
     // 잠긴 서류함
@@ -84,10 +84,10 @@ test.describe("연습실", () => {
     await expect(room(page)).toHaveAttribute("data-at", "C");
     await expect(page.getByTestId("drawer-locked")).toContainText("C급 정식 탐정에 오르면");
     await expect(page.locator(".isotask")).toHaveCount(0);
-    // 지금 등급의 서류함: 과제 셋. 하나를 누르면 풀이로 들어간다.
+    // 지금 등급의 서류함: 과제 다섯. 하나를 누르면 풀이로 들어간다.
     await page.getByTestId("drawer-D").tap();
     await expect(room(page)).toHaveAttribute("data-at", "D");
-    await expect(page.locator(".isotask")).toHaveCount(3);
+    await expect(page.locator(".isotask")).toHaveCount(5);
     await page.locator(".isotask").first().tap();
     await expect(page).toHaveURL(/#\/practice\//);
     await expect(page.getByTestId("play-screen")).toBeVisible();

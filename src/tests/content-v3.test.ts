@@ -205,7 +205,7 @@ describe("오늘의 추리: 열나흘치 달력", () => {
       "daily-schedule-003",
     ]);
     DAILY_CALENDAR.order.forEach((id, day) => {
-      expect(getDailyPuzzle(addDays(DAILY_CALENDAR.start, day)).id, `${day + 1}일째`).toBe(id);
+      expect(getDailyPuzzle(addDays(DAILY_CALENDAR.start, day))?.id, `${day + 1}일째`).toBe(id);
     });
     expect(getDailyPuzzle("2026-11-30")).toBe(DAILY_SCHEDULE_2);
     expect(getDailyPuzzle("2026-12-05")).toBe(DAILY_SCHEDULE_3);

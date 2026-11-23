@@ -22,11 +22,22 @@ import { LockOpen } from "../games/CodeBreaker/CodeBreaker";
 import { josa } from "../games/logic";
 import { DotGrid, gridWords } from "../games/SealMatch/SealMatch";
 
+/** 결과 화면에서 돌아갈 곳: 단추의 글자(둘이 나란할 때의 짧은 것, 혼자일 때의 것)와 가는 길 */
+export interface ResultBack {
+  short: string;
+  label: string;
+  go: () => void;
+}
+
+const HOME_BACK: ResultBack = { short: "학원 홀", label: "학원 홀로", go: () => navigate({ name: "home" }, { replace: true }) };
+
 interface Props {
   puzzle: Puzzle;
   /** 방금 제출한 결과. null 이면 예전에 해결한 기록을 보는 중이다. */
   outcome: SubmitOutcome | null;
   onReplay?: () => void;
+  /** 돌아갈 곳. 없으면 학원 홀 */
+  back?: ResultBack;
 }
 
 /** 인장이 찍힌 뒤에 크레딧이 올라간다 */
@@ -251,7 +262,7 @@ function Solution({ puzzle }: { puzzle: Puzzle }) {
  * 채점된 시험지. 책상은 그대로이고, 풀던 시험지에 인장이 찍힌다.
  * 풀린 자물쇠는 풀이 때와 같은 자리에서 암호를 보여 준다.
  */
-export function DeskResult({ puzzle, outcome, onReplay }: Props) {
+export function DeskResult({ puzzle, outcome, onReplay, back = HOME_BACK }: Props) {
   const game = useGame();
   const progress = getProgress(game, puzzle.id);
   const fresh = outcome !== null;
@@ -265,7 +276,7 @@ export function DeskResult({ puzzle, outcome, onReplay }: Props) {
     return () => window.clearTimeout(id);
   }, [fresh]);
 
-  const goHome = () => navigate({ name: "home" }, { replace: true });
+  const goHome = back.go;
 
   const lead = !fresh
     ? `${progress.solvedAt ? seoulDateLabel(new Date(progress.solvedAt)) : ""}에 해결한 수사 과제입니다.`
@@ -332,12 +343,13 @@ export function DeskResult({ puzzle, outcome, onReplay }: Props) {
         {next ? (
           <>
             <button type="button" className="inkbtn deskfoot__hint" onClick={goHome} data-testid="result-home">
-              학원 복도
+              {back.short}
             </button>
             <button
               type="button"
               className="inkbtn inkbtn--wine deskfoot__submit"
-              onClick={() => navigate(next.route, { replace: true })}
+              // fresh: 오늘의 추리를 풀다 자정을 넘겼으면 다음 할 일이 같은 주소(#/daily)의 새 문제다
+              onClick={() => navigate(next.route, { replace: true, fresh: true })}
               data-testid="result-next"
             >
               {next.label}
@@ -345,7 +357,7 @@ export function DeskResult({ puzzle, outcome, onReplay }: Props) {
           </>
         ) : (
           <button type="button" className="inkbtn inkbtn--wine deskfoot__submit" onClick={goHome} data-testid="result-home">
-            학원 복도로
+            {back.label}
           </button>
         )}
       </footer>

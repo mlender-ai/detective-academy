@@ -234,7 +234,7 @@ function PromotionCeremony({ from, to, reward, onDone, onViewCard }: CeremonyPro
           신분증 보기
         </button>
         <button type="button" className="inkbtn inkbtn--wine deskfoot__submit" onClick={onDone} data-testid="ceremony-done">
-          학원 복도로
+          학원 홀로
         </button>
       </footer>
     </div>
@@ -310,7 +310,7 @@ function ExamGate({ rule, status, session, state, onOpen }: GateProps) {
       <footer className="deskfoot">
         {blocked ? (
           <button type="button" className="inkbtn inkbtn--wine deskfoot__submit" onClick={goHome} data-testid="exam-blocked">
-            학원 복도로
+            학원 홀로
           </button>
         ) : (
           <button type="button" className="inkbtn inkbtn--wine deskfoot__submit" onClick={onOpen} data-testid={between ? "open-sheet" : "open-envelope"}>
@@ -356,7 +356,7 @@ function ExamLocked({ rule, status }: { rule: PromotionRule; status: ExamStatus 
 
       <footer className="deskfoot">
         <button type="button" className="inkbtn deskfoot__hint" onClick={goHome}>
-          학원 복도
+          학원 홀
         </button>
         <button type="button" className="inkbtn inkbtn--wine deskfoot__submit" onClick={() => navigate({ name: "practice" }, { replace: true })} data-testid="exam-to-practice">
           연습실로 이동
@@ -424,7 +424,7 @@ function ExamFailed({ rule, session, status }: { rule: PromotionRule; session: E
           }}
           data-testid="failed-home"
         >
-          {canRetry ? "학원 복도" : "학원 복도로"}
+          {canRetry ? "학원 홀" : "학원 홀로"}
         </button>
         {canRetry && (
           <button type="button" className="inkbtn inkbtn--wine deskfoot__submit" onClick={() => gameStore.dismissExam()} data-testid="failed-retry">
@@ -463,7 +463,7 @@ function ExamPassed({ rule }: { rule: PromotionRule }) {
           신분증 보기
         </button>
         <button type="button" className="inkbtn inkbtn--wine deskfoot__submit" onClick={goHome}>
-          학원 복도로
+          학원 홀로
         </button>
       </footer>
     </div>

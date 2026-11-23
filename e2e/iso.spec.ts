@@ -61,7 +61,7 @@ test("문을 누르면 걸어가 살펴보고, 한 번 더 누르면 들어간�
   await page.getByTestId("practice-entry").tap();
   await arrived(page, "practice");
   await expect(page.locator(".isocard")).toContainText("연습실");
-  await expect(page.locator(".isocard")).toContainText("해결 0/15");
+  await expect(page.locator(".isocard")).toContainText("해결 0/22");
   await expect(page).toHaveURL(/#\/$|\/\?[^#]*$/);
   await page.getByTestId("practice-entry").tap();
   await expect(page).toHaveURL(/#\/practice/);
@@ -115,7 +115,7 @@ test("오늘의 추리를 풀고 돌아오면 게시판은 해결로 바뀌고 �
   await preset(page, "daily-unsolved");
   await arrived(page, "board");
   await page.getByTestId("daily-file-cta").click();
-  await solve(page, getDailyPuzzle(TEST_DATE));
+  await solve(page, getDailyPuzzle(TEST_DATE)!);
   await expect(page.getByTestId("reward")).toBeVisible();
   await page.goto("/?demo=1#/");
   await expect(home(page)).toHaveAttribute("data-home", "iso");

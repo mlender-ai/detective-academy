@@ -133,7 +133,9 @@
   padding: 4px 12px 2px;
 }
 
-/* ───────── 연습실: 아래 창에 고른 서류함의 과제 셋이 놓인다 ───────── */
+/* ───────── 연습실: 아래 창에 고른 서류함의 과제가 한 줄씩 놓인다 ─────────
+   과제는 서류함마다 대여섯 개다. 창의 높이는 그대로 못박아 두고(위의 방이 밀리지 않는다), 머리 아래의 목록이 그 안에서 위아래로 밀린다.
+   밀린다는 것은 두 가지로 보인다: 넷째 줄이 창의 아래 변에 잘려 있고, 머리의 오른쪽 끝에 ▲▼ 가 뜬다. */
 .practice--iso {
   overflow: hidden;
 }
@@ -142,11 +144,66 @@
   height: 184px;
 }
 
+.isowin--tasks .isocard {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: 100%;
+}
+
+.isowin--tasks .isocard__head {
+  flex: none;
+}
+
+.isowin--tasks .isotasks {
+  flex: 0 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  scrollbar-width: none;
+}
+
+.isowin--tasks .isotasks::-webkit-scrollbar {
+  display: none;
+}
+
+/* 줄은 44px(누르는 높이의 아래 한계): 세 줄이 다 보이고 넷째 줄의 제목이 창의 아래 변에 반쯤 잘려, 아래에 더 있다는 것이 보인다 */
+.isowin--tasks .isotask {
+  min-height: 44px;
+  padding-top: 3px;
+  padding-bottom: 3px;
+}
+
+/* 더 있는 쪽을 가리키는 세모: 머리(흰 바탕)의 오른쪽 끝 */
+.isocard__more {
+  flex: none;
+  min-width: 16px;
+  text-align: right;
+}
+
 .isotasks {
   display: grid;
   margin: 0;
   padding: 0 8px 4px;
   list-style: none;
+}
+
+/* 줄에 붙는 뒤집힌 꼬리표: 특수 도전, (지난 사건의) 오늘 */
+.isotask__flag {
+  display: inline-block;
+  margin-right: 6px;
+  padding: 0 4px;
+  font-weight: 400;
+  color: #000;
+  background: var(--m-w);
+}
+
+.isotask:active .isotask__flag {
+  color: var(--m-w);
+  background: #000;
 }
 
 .isotasks li + li {
@@ -365,6 +422,67 @@
   margin: 8px 10px 10px;
 }
 
+/* 단추 둘을 한 줄에: 왼쪽은 곁길(지난 사건), 오른쪽이 주 단추. 창의 높이는 단추 하나일 때와 같다. */
+.isocard__gos {
+  display: flex;
+  gap: 8px;
+  margin: 8px 10px 10px;
+}
+
+.isowin .isocard__gos .isocard__go {
+  flex: 1 1 0;
+  width: auto;
+  min-width: 0;
+  margin: 0 0 4px;
+  padding: 0 6px;
+  white-space: nowrap;
+}
+
+.isowin .isocard__gos .isocard__go:first-child {
+  flex: none;
+  font-size: 16px;
+}
+
+/* 둘이 나란할 때 주 단추의 ▶ 는 뺀다(추리 책상의 아래 단추 줄과 같다): 375px 폭에서 32px 글자 여섯 자가 들어갈 자리를 낸다 */
+.isocard__gos .inkbtn--wine::before {
+  content: none;
+}
+
+/* 375px 보다 좁은 화면에서는 주 단추의 글자도 16px 로 낮춘다(32px 이면 잘린다) */
+@media (max-width: 374px) {
+  .isowin .isocard__gos .isocard__go {
+    font-size: 16px;
+  }
+}
+
+/* ───────── 지난 사건(추리 책상): 기록부 한 장에 과제 줄이 날짜 순서로 놓인다 ───────── */
+.dailypast__ledger {
+  padding: 12px 10px 8px;
+}
+
+.dailypast__ledger .ledger__title {
+  padding-bottom: 6px;
+}
+
+.dailypast__note {
+  margin: 8px 0 4px;
+  font-family: var(--m-font);
+  line-height: 22px;
+}
+
+.dailypast__list {
+  padding: 0;
+}
+
+/* 신분증의 수사 기록: 오늘의 추리 줄 아래에 지난 사건으로 가는 작은 단추 */
+.records__more {
+  grid-column: 2;
+  justify-self: start;
+  min-height: 44px;
+  margin: 6px 0 10px;
+  padding: 0 12px;
+}
+
 @media (max-height: 700px) {
   .isostage .narr {
     min-height: 52px;
@@ -415,6 +533,14 @@
 
   .isowin .isocard__go {
     margin: 6px 10px 8px;
+  }
+
+  .isocard__gos {
+    margin: 6px 10px 8px;
+  }
+
+  .isowin .isocard__gos .isocard__go {
+    margin: 0 0 4px;
   }
 }
 

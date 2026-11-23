@@ -8,8 +8,9 @@ import type { Route } from "./router";
 export type NextStep = "daily" | "practice" | "exam" | "none";
 
 export function nextStep(state: GameState): NextStep {
+  // 달력이 끝난 날에는 오늘의 추리가 없다: 시험과 연습실로 넘어간다
   const daily = getDailyPuzzle(todayKey());
-  if (getProgress(state, daily.id).status !== "solved") return "daily";
+  if (daily && getProgress(state, daily.id).status !== "solved") return "daily";
   const exam = examStatus(state, gameNow());
   // 치르던 시험이 있거나(떨어진 결과를 아직 보지 않은 것 포함), 지금 응시할 수 있으면 시험실이 먼저다
   if (exam.session || exam.canStart) return "exam";

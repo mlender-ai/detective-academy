@@ -7,9 +7,9 @@ import { ensureContext, playSound } from "../app/sound";
 import { gameStore, useGame } from "../app/store";
 import { Crest, RankMark } from "../art/objects";
 import { Narration } from "../components/Narration";
-import { getDailyPuzzle, PRACTICE_PUZZLES } from "../data/puzzles";
+import { getDailyPuzzle, pastDailies, PRACTICE_PUZZLES } from "../data/puzzles";
 import { nextRank, rankLabel } from "../data/ranks";
-import { examRemainingMs, examStatus, getProgress, practiceUnlocked } from "../engine/progressEngine";
+import { emptyProgress, examRemainingMs, examStatus, getProgress, practiceUnlocked } from "../engine/progressEngine";
 import { formatCountdown, formatElapsed } from "../engine/time";
 import { IsoCanvas, type IsoHandle } from "../iso/IsoCanvas";
 import type { HallDecor, HallSpot } from "../iso/hallArt";
@@ -27,6 +27,9 @@ const ROUTE: Record<HallSpot, Route> = {
   archive: { name: "profile" },
   case: { name: "story", id: STORY.id },
 };
+
+/** 지난 사건의 목록: 달력이 끝난 날에는 게시판의 큰 단추가, 오늘 문제를 푼 날에는 그 옆의 작은 단추가 여기로 간다 */
+const PAST: Route = { name: "daily-past" };
 
 /** 누르는 자리의 차례(키보드로 옮겨 다닐 때의 순서) */
 const ORDER: HallSpot[] = ["board", "practice", "exam", "case", "archive"];
@@ -72,8 +75,14 @@ const ENTRANCE_DELAY_MS = 420;
  */
 export function HomeIso() {
   const game = useGame();
-  const daily = getDailyPuzzle(todayKey());
-  const dailyProgress = getProgress(game, daily.id);
+  const today = todayKey();
+  // 달력이 끝난 날에는 오늘의 추리가 없다(null): 게시판은 "새 사건 준비 중"과 지난 사건을 내놓는다
+  const daily = getDailyPuzzle(today);
+  const dailyProgress = daily ? getProgress(game, daily.id) : emptyProgress();
+  const past = pastDailies(today);
+  const pastSolved = past.filter((e) => getProgress(game, e.puzzle.id).status === "solved").length;
+  /** 오늘 것 말고도 지난 사건이 있는가 */
+  const hasPast = past.some((e) => e.puzzle.id !== daily?.id);
   const exam = examStatus(game, gameNow());
   const step = nextStep(game);
   const stepSpot = STEP_SPOT[step];
@@ -92,6 +101,8 @@ export function HomeIso() {
   const [fresh, setFresh] = useState(true);
   /** 도착하면 곧바로 들어갈 곳 */
   const enterOnArrive = useRef<HallSpot | null>(null);
+  /** 그때 열 화면이 그 자리의 보통 화면과 다르면 여기에 둔다(게시판 앞의 "지난 사건") */
+  const enterRoute = useRef<Route | null>(null);
   const touched = useRef(false);
   const leaving = useRef(false);
   const timers = useRef<number[]>([]);
@@ -124,21 +135,26 @@ export function HomeIso() {
     };
   }, []);
 
-  const leave = (id: HallSpot, beat: number) => {
+  /** 그 자리에서 들어가는 화면. 오늘의 추리가 없는 날의 게시판은 지난 사건의 목록이다. */
+  const routeOf = (id: HallSpot): Route => (id === "board" && !daily ? PAST : ROUTE[id]);
+
+  const leave = (id: HallSpot, beat: number, route: Route = routeOf(id)) => {
     if (leaving.current) return;
     leaving.current = true;
     playSound("place");
     const wait = prefersReducedMotion() ? 0 : beat;
-    if (wait === 0) navigate(ROUTE[id]);
-    else timers.current.push(window.setTimeout(() => navigate(ROUTE[id]), wait));
+    if (wait === 0) navigate(route);
+    else timers.current.push(window.setTimeout(() => navigate(route), wait));
   };
 
   const onArrive = (id: HallSpot) => {
     setHere(id);
     setHeading(null);
     if (enterOnArrive.current === id) {
+      const route = enterRoute.current ?? undefined;
       enterOnArrive.current = null;
-      leave(id, ARRIVE_BEAT_MS);
+      enterRoute.current = null;
+      leave(id, ARRIVE_BEAT_MS, route);
     }
   };
 
@@ -153,6 +169,7 @@ export function HomeIso() {
     touched.current = true;
     setExplored(true);
     enterOnArrive.current = null;
+    enterRoute.current = null;
     setHere(null);
     setHeading(null);
     setDecor(what);
@@ -171,27 +188,29 @@ export function HomeIso() {
       return;
     }
     enterOnArrive.current = null;
+    enterRoute.current = null;
     setDecor(null);
     setHere(null);
     setHeading(id);
     handle.go(id);
   };
 
-  /** 아래 창의 주 단추: 그 앞이면 바로, 가는 중이면 도착하는 대로 들어간다 */
-  const enter = (id: HallSpot) => {
+  /** 아래 창의 단추: 그 앞이면 바로, 가는 중이면 도착하는 대로 들어간다. route 를 주면 그 자리의 보통 화면 대신 그 화면을 연다. */
+  const enter = (id: HallSpot, route?: Route) => {
     if (leaving.current) return;
     const handle = sceneRef.current;
     touched.current = true;
     setExplored(true);
     if (!handle) {
-      navigate(ROUTE[id]);
+      navigate(route ?? routeOf(id));
       return;
     }
     if (here === id && !handle.busy()) {
-      leave(id, 0);
+      leave(id, 0, route);
       return;
     }
     enterOnArrive.current = id;
+    enterRoute.current = route ?? null;
     setHeading(id);
     handle.go(id);
   };
@@ -229,8 +248,13 @@ export function HomeIso() {
           : exam.unlocked
             ? `${exam.rule.to}급 오늘 응시 끝`
             : `${exam.rule.to}급 과제 ${exam.solved}/${exam.required}`;
-  const dailyState =
-    dailyProgress.status === "solved" ? "해결" : dailyProgress.status === "in_progress" ? `풀이 중 ${formatElapsed(dailyProgress.elapsedMs)}` : "미해결";
+  const dailyState = !daily
+    ? "준비 중"
+    : dailyProgress.status === "solved"
+      ? "해결"
+      : dailyProgress.status === "in_progress"
+        ? `풀이 중 ${formatElapsed(dailyProgress.elapsedMs)}`
+        : "미해결";
 
   const line = (() => {
     if (!explored || !selected) {
@@ -244,10 +268,11 @@ export function HomeIso() {
         if (examFailed) return "시험실 문에 쪽지가 붙어 있다. 시험이 끝났다.";
         return "시험실 유리에 불이 켜져 있다. 승급 시험이다.";
       }
-      if (step === "practice") return "오늘의 사건은 끝났다. 연습실에 풀지 않은 과제가 남아 있다.";
+      if (step === "practice") return daily ? "오늘의 사건은 끝났다. 연습실에 풀지 않은 과제가 남아 있다." : "게시판에 새 사건은 없다. 연습실에 풀지 않은 과제가 남아 있다.";
       return "홀은 조용하다. 창에 빗물만 흘러내린다.";
     }
     if (selected === "board") {
+      if (!daily) return "게시판 앞. 새 사건은 아직 붙지 않았다. 지난 사건의 기록이 남아 있다.";
       if (dailyProgress.status === "solved") return "게시판 앞. 오늘의 사건에는 해결 도장이 찍혀 있다.";
       if (dailyProgress.status === "in_progress") return "게시판 앞. 풀다 만 시험지가 그대로 붙어 있다.";
       return `게시판 앞. 오늘의 사건은 「${daily.title}」.`;
@@ -278,8 +303,18 @@ export function HomeIso() {
       id: "daily-file",
       state: `오늘의 추리 [${dailyState}]`,
       probe: <span data-testid="daily-file-status">{dailyState}</span>,
-      go: dailyProgress.status === "solved" ? "채점 기록 보기" : dailyProgress.status === "in_progress" ? "이어서 풀기" : "시험지 펼치기",
-      body: (
+      go: !daily ? "지난 사건 다시 보기" : dailyProgress.status === "solved" ? "채점 기록 보기" : dailyProgress.status === "in_progress" ? "이어서 풀기" : "시험지 펼치기",
+      body: !daily ? (
+        <>
+          <span className="isocard__subject">새 사건 준비 중</span>
+          {/* 한 줄로 둔다: 좁은 화면에서 두 줄로 꺾이면 높이가 못박힌 아래 창을 넘긴다 */}
+          <span className="isocard__line">
+            <span className="num" data-testid="daily-past-count">
+              지난 사건 {pastSolved}/{past.length} 해결
+            </span>
+          </span>
+        </>
+      ) : (
         <>
           <span className="isocard__subject">{daily.title}</span>
           <span className="isocard__line">
@@ -417,7 +452,8 @@ export function HomeIso() {
         ref={sceneRef}
         scene={scene}
         state={{
-          dailySolved: dailyProgress.status === "solved",
+          // 오늘의 추리가 없는 날의 게시판에는 풀 시험지가 없다: 해결 도장이 찍힌 종이로 둔다(빈 게시판의 그림은 아직 없다)
+          dailySolved: !daily || dailyProgress.status === "solved",
           examRank: exam.rule ? exam.rule.to : game.rank,
           examOpen,
           mark: stepSpot && selected !== stepSpot ? stepSpot : null,
@@ -477,9 +513,21 @@ export function HomeIso() {
               </span>
             </p>
             <div className="isocard__body">{card.body}</div>
-            <button type="button" className="inkbtn inkbtn--block inkbtn--wine isocard__go" data-testid={selected === "board" ? "daily-file-cta" : `${card.id}-go`} onClick={() => enter(selected)}>
-              {card.go}
-            </button>
+            {selected === "board" && daily && dailyProgress.status === "solved" && hasPast ? (
+              // 오늘 문제를 푼 날: 채점 기록 옆에 지난 사건으로 가는 단추를 같은 줄에 둔다(창의 높이는 그대로다)
+              <div className="isocard__gos">
+                <button type="button" className="inkbtn isocard__go" data-testid="daily-past-cta" onClick={() => enter("board", PAST)}>
+                  지난 사건
+                </button>
+                <button type="button" className="inkbtn inkbtn--wine isocard__go" data-testid="daily-file-cta" onClick={() => enter("board")}>
+                  {card.go}
+                </button>
+              </div>
+            ) : (
+              <button type="button" className="inkbtn inkbtn--block inkbtn--wine isocard__go" data-testid={selected === "board" ? "daily-file-cta" : `${card.id}-go`} onClick={() => enter(selected)}>
+                {card.go}
+              </button>
+            )}
           </div>
         ) : (
           <div className="isowin__idle">

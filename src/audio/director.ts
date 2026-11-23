@@ -9,6 +9,7 @@ export function trackFor(route: Route, game: GameState, admitting: boolean): Tra
     case "home":
       return "corridor";
     case "daily":
+    case "daily-past-play":
     case "practice-play":
     case "story":
       return "deduction";
