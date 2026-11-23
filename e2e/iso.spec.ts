@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { getDailyPuzzle } from "../src/data/puzzles";
+import { DAILY_CALENDAR, getDailyPuzzle } from "../src/data/puzzles";
 import { TEST_DATE, expectLayoutOk, offToneRatio, preset } from "./helpers";
 import { solve } from "./solve";
 
@@ -280,13 +280,13 @@ test("두 색뿐이다: 방, 이름표, 아래 창", async ({ page }) => {
  * 주소창이 없을 때의 크기 둘(375×812 · 430×932). 예전 홈의 네 줄·다섯 줄 배치를 보던 크기들을 그대로 물려받았다.
  */
 /** 2026년 11월의 그날을 오늘로 놓고, 게시판을 고른 홈의 아래 창이 제 자리(못박힌 높이) 안에 있는지 본다 */
-async function expectBoardFits(page: Page, day: number, height: number) {
-  await page.goto(`/?demo=1&date=2026-11-${day}`);
+async function expectBoardFits(page: Page, dateKey: string, height: number) {
+  await page.goto(`/?demo=1&date=${dateKey}`);
   await expect(home(page)).toHaveAttribute("data-at", /\w/);
-  // 이미 푼 문제가 다시 붙은 날(30일)은 탐정이 다른 곳에 선다: 게시판을 눌러 고른다
+  // 이미 푼 문제의 날은 탐정이 다른 곳에 선다: 게시판을 눌러 고른다
   if ((await home(page).getAttribute("data-at")) !== "board") await page.getByTestId("daily-file").tap();
   await arrived(page, "board");
-  const name = `11월 ${day}일의 게시판`;
+  const name = `${dateKey} 의 게시판`;
   await expectLayoutOk(page, '[data-testid="daily-file-cta"]');
   expect(await home(page).evaluate((el) => el.scrollHeight - el.clientHeight), `${name}: 홈이 세로로 넘친다`).toBeLessThanOrEqual(0);
   // 아래 창은 높이가 못박혀 있다: 제목이 길어 줄이 늘면 창 위로(방 쪽으로) 넘친다
@@ -296,13 +296,10 @@ async function expectBoardFits(page: Page, day: number, height: number) {
   expect(card.y + card.height, `${name}: 아래 창의 내용이 화면 아래로 넘친다`).toBeLessThanOrEqual(height);
 }
 
-/**
- * 알려진 결함(예전 홈의 배치 테스트를 옮기다 찾았다. 화면은 고치지 않고 보고했다):
- * 좁고(폭 384px 미만) 긴(높이 700px 초과) 화면에서는 제목이 긴 날의 게시판 제목(32px)이 두 줄로 꺾여 아래 창이 위로 넘친다.
- * 지금 달력에서 그런 날은 11월 29일(「다시 붙은 봉투의 인장」)이다. 높이 700px 아래에서는 제목이 16px 이라 넘치지 않는다.
- */
-const titleWraps = (w: number, h: number) => w < 384 && h > 700;
-const LONG_TITLE_DAY = 29;
+/** 달력의 i 번째 날짜 (0 = 시작일) */
+function calendarDate(i: number): string {
+  return new Date(Date.parse(`${DAILY_CALENDAR.start}T00:00:00Z`) + i * 86_400_000).toISOString().slice(0, 10);
+}
 
 const SIZES = [
   [390, 664],
@@ -335,26 +332,13 @@ for (const [w, h] of SIZES) {
       await expect(page.getByTestId("story-entry")).toHaveCount(0);
     });
 
-    test("오늘의 추리가 여덟 문제 가운데 무엇이든, 게시판을 고른 아래 창이 제 자리를 넘지 않는다", async ({ page }) => {
+    test("오늘의 추리가 달력의 어느 문제든, 게시판을 고른 아래 창이 제 자리를 넘지 않는다", async ({ page }) => {
+      test.setTimeout(90_000);
       await page.emulateMedia({ reducedMotion: "reduce" }); // 걷는 시간을 기다리지 않는다(배치는 같다)
       await preset(page, "promoted");
-      // 달력은 여덟 문제를 차례로 돈다: 23일부터 30일까지가 한 바퀴다
-      for (let day = 23; day <= 30; day++) {
-        if (titleWraps(w, h) && day === LONG_TITLE_DAY) continue; // 알려진 결함: 바로 아래의 테스트가 따로 본다
-        await expectBoardFits(page, day, h);
-      }
+      // 좁은 화면(폭 384px 아래)에서는 제목이 16px 로 낮아져 긴 제목도 한 줄이다. 새 문제의 제목이 길어 넘치면 여기서 걸린다.
+      for (let i = 0; i < DAILY_CALENDAR.order.length; i++) await expectBoardFits(page, calendarDate(i), h);
     });
-
-    if (titleWraps(w, h)) {
-      test("알려진 결함: 제목이 긴 날(11월 29일 「다시 붙은 봉투의 인장」)에는 게시판을 고른 아래 창이 방 쪽으로 넘친다", async ({ page }) => {
-        // 좁고 긴 화면에서는 32px 제목이 두 줄로 꺾여, 높이가 못박힌 아래 창의 머리줄(곳의 이름과 상태)이 방의 아래 테 밑으로 22px 밀려 가려진다.
-        // 화면의 결함이라 테스트를 풀어 주지 않고 "실패할 것"으로 적어 둔다: 화면을 고치면 이 테스트가 통과해 빨갛게 뜬다. 그때 이 표시와 위의 건너뛰기를 지운다.
-        test.fail(true, "쿼터뷰 홈의 넘침(폭 384px 미만 · 높이 700px 초과 · 제목이 긴 날)");
-        await page.emulateMedia({ reducedMotion: "reduce" });
-        await preset(page, "promoted");
-        await expectBoardFits(page, LONG_TITLE_DAY, h);
-      });
-    }
 
     test("D급(갈 곳 다섯): 넘치지 않고, 방의 문과 물건이 모두 화면 안에서 눌린다", async ({ page }) => {
       await preset(page, "promoted");

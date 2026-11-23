@@ -101,6 +101,18 @@ test.describe("연습실", () => {
     await expect(page.getByTestId("home-screen")).toHaveAttribute("data-home", "iso");
   });
 
+  test("걷는 중에 과제를 열어도, 돌아오면 그 과제의 서류함 앞이다", async ({ page }) => {
+    await open(page, "promoted", "practice");
+    await expect(room(page)).toHaveAttribute("data-at", "F");
+    // 서류함을 누르자마자(도착하기 전에) 과제를 연다
+    await page.getByTestId("drawer-D").tap();
+    await page.locator(".isotask").first().tap();
+    await expect(page.getByTestId("play-screen")).toBeVisible();
+    await page.getByTestId("play-back").click();
+    await expect(room(page)).toHaveAttribute("data-at", "D");
+    await expect(room(page)).toHaveAttribute("data-drawer", "D");
+  });
+
   for (const [w, h] of [
     [390, 664],
     [375, 629],

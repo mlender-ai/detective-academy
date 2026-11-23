@@ -87,6 +87,8 @@ export function PracticeIso() {
   const open = (id: string) => {
     if (leaving.current) return;
     leaving.current = true;
+    // 걷는 중에 과제를 열어도, 돌아오면 그 과제의 서류함 앞에 선다(도착한 서류함만 기억하면 이전 서류함으로 돌아온다)
+    if (rank) lastCabinet = rank;
     playSound("place");
     navigate({ name: "practice-play", id });
   };

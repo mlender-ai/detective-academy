@@ -383,6 +383,14 @@
   }
 }
 
+/* 좁은 휴대폰(폭 384px 아래): 32px 제목은 열 자 남짓에서 두 줄로 꺾여 높이가 못박힌 아래 창을 넘긴다. 제목을 낮춘다 */
+@media (max-width: 383px) {
+  .isocard__subject {
+    font-size: 16px;
+    line-height: 22px;
+  }
+}
+
 /* 주소창이 보이는 작은 휴대폰(높이 640px 아래, 예: 375×629): 위 띠와 아래 창을 더 조여 게시판 윗변까지 방이 다 보이게 한다 */
 @media (max-height: 640px) {
   .hall--iso .hall__top {
