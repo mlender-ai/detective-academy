@@ -175,7 +175,7 @@ export const D001_CH2: StoryChapter = {
       lines: [
         { label: "작업 계정", value: `${EDIT_LOG.accountLabel} (${NAME[EDIT_LOG.account]})` },
         { label: "작업 장치", value: EDIT_LOG.device },
-        { label: "복원한 순서", value: validOrders()[0].map(labelOf).join(" → ") },
+        { label: "복원한 순서", value: validOrders()[0].map((id, i) => `${i + 1}. ${labelOf(id)}`).join(" · ") },
         { label: "고친 때", value: `${ORIGINAL.createdAt}${numJosa(ORIGINAL.createdAt, "과", "와")} ${RELEASED.createdAt} 사이` },
       ],
       note: "기록에 남은 것은 계정이다. 그 계정으로 누가 작업했는지는 적혀 있지 않다.",
