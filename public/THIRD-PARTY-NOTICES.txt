@@ -8,9 +8,9 @@ THIRD-PARTY NOTICES
    https://github.com/kailashsr38/ascii-magic-art
    Copyright (c) 2026 ASCII Magic (ascii-magic.com)
 
-   움직이는 효과 넷(비 내리는 유리 · 촛불 · 회전하는 주화 · 모래시계)은 이 모음의
-   조각 rainy-window, candle-flame, spinning-coin, hourglass 와 lib/kit.js 를 바탕으로
-   1비트 점 격자용으로 고쳐 옮긴 것입니다(src/fx/ascii). 비와 촛불은 움직임과 그리는
+   움직이는 효과 셋(비 내리는 유리 · 회전하는 주화 · 모래시계)은 이 모음의
+   조각 rainy-window, spinning-coin, hourglass 와 lib/kit.js 를 바탕으로
+   1비트 점 격자용으로 고쳐 옮긴 것입니다(src/fx/ascii). 비는 움직임과 그리는
    방법을, 주화는 회전의 박자를, 모래시계는 구성을 가져왔고 그림은 다시 찍었습니다.
    라이브러리 자체와 글자 그림은 들어 있지 않습니다.
    사진을 옮긴 두 조각(ocean-sunset, starry-ridge: Unsplash License)은 쓰지 않았습니다.

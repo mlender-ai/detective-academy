@@ -2,17 +2,27 @@ import { expect, test, type Page } from "@playwright/test";
 import { PRACTICE_PUZZLES, PUZZLE_BY_ID } from "../src/data/puzzles";
 import { PROMOTION_RULES, rankLabel } from "../src/data/ranks";
 import type { Puzzle } from "../src/engine/types";
-import { expectLayoutOk, gameNowMs, offToneRatio, preset, shot, stored, TEST_DATE } from "./helpers";
+import { enterFromHome, expectLayoutOk, gameNowMs, offToneRatio, preset, shot, stored, TEST_DATE } from "./helpers";
 import { patchState, solve, submitWrong } from "./solve";
 
 /**
  * 콘텐츠와 성장 시스템 (V3 GATE 05).
- * 날짜별 오늘의 추리, 등급별 연습실 서랍, F→S 승급 시험(제한 시간 · 제출 횟수 · 하루 응시 횟수).
+ * 날짜별 오늘의 추리, 등급별 연습실 서류함, F→S 승급 시험(제한 시간 · 제출 횟수 · 하루 응시 횟수).
  * 새 문제 28개는 화면의 조작만으로 끝까지 풀어 본다(e2e/solve.ts). 정답이 하나뿐인지는 단위 테스트가 전수 탐색으로 확인한다.
  */
 
 const rule = (from: string) => PROMOTION_RULES.find((r) => r.from === from)!;
 const examPuzzles = (from: string) => rule(from).examPuzzleIds.map((id) => PUZZLE_BY_ID[id]);
+
+/** 홈의 아래 창(지금 고른 곳의 이야기). 오늘의 추리를 풀지 않은 날에는 게시판이 골라져 있어 그날의 문제가 적혀 있다. */
+const card = (page: Page) => page.locator('.isocard[data-spot="board"]');
+/** 홈의 시험실 문에 적힌 상태 */
+const examState = (page: Page, id: "exam-cta" | "exam-wait", text: RegExp) => expect(page.getByTestId(id)).toHaveAttribute("aria-label", text);
+/** 연습실에서 그 등급의 서류함 앞으로 간다(탐정이 그 앞에 설 때까지 기다린다) */
+async function toCabinet(page: Page, rank: string) {
+  await page.getByTestId(`drawer-${rank}`).click();
+  await expect(page.getByTestId("practice-room")).toHaveAttribute("data-at", rank);
+}
 
 /** 시험실로 간다 (홈을 거치지 않고 주소로) */
 async function toExam(page: Page, id: Parameters<typeof preset>[1], query = "") {
@@ -37,7 +47,7 @@ async function openSheet(page: Page) {
 test.describe("오늘의 추리: 날짜별 배정", () => {
   test("날짜마다 정해진 문제가 붙고, 날짜를 넘기면 새 문제가 미해결로 붙는다", async ({ page }) => {
     await preset(page, "daily-solved");
-    await expect(page.getByTestId("daily-file")).toContainText("해결");
+    await expect(page.getByTestId("daily-file-status")).toHaveText("해결");
     expect((await stored(page)).puzzles["daily-code-001"].status).toBe("solved");
     const credits = (await stored(page)).credits;
 
@@ -48,7 +58,7 @@ test.describe("오늘의 추리: 날짜별 배정", () => {
     await expect(page.getByTestId("demo-date")).toContainText("2026-11-23");
     await page.getByTestId("demo-toggle").click();
     await expect(page.getByTestId("daily-file-status")).toHaveText("미해결");
-    await page.getByTestId("daily-file").click();
+    await enterFromHome(page, "daily-file");
     await expect(page.getByTestId("play-screen")).toHaveAttribute("data-type", "evidence");
     await expect(page.locator(".exampaper__title, .casebrief__title").first()).toContainText("사라진 자료실 열쇠");
 
@@ -64,35 +74,39 @@ test.describe("오늘의 추리: 날짜별 배정", () => {
 
   test("주소의 ?demo=1&date= 로도 날짜를 옮길 수 있고, QA 주소가 아니면 듣지 않는다", async ({ page }) => {
     await preset(page, "daily-unsolved", "&date=2026-11-25");
-    await expect(page.getByTestId("daily-file")).toContainText("다시 잠긴 금고");
+    await expect(card(page)).toContainText("다시 잠긴 금고");
     // 여덟 날마다 돌아온다
     await page.goto("/?demo=1&date=2026-11-30");
-    await expect(page.getByTestId("daily-file")).toContainText("자료실 금고의 암호");
+    await expect(card(page)).toContainText("자료실 금고의 암호");
     // 엉뚱한 값은 무시한다
     await page.goto("/?demo=1&date=tomorrow");
-    await expect(page.getByTestId("daily-file")).toContainText("자료실 금고의 암호");
+    await expect(card(page)).toContainText("자료실 금고의 암호");
     await page.goto("/?date=2026-11-25");
     await expect(page.getByTestId("home-screen")).toBeVisible();
-    await expect(page.getByTestId("daily-file")).toContainText("자료실 금고의 암호");
+    await expect(card(page)).toContainText("자료실 금고의 암호");
   });
 });
 
-test.describe("연습실: 등급별 서랍", () => {
-  test("지금 등급까지의 서랍만 열려 있고, 잠긴 서랍의 과제는 주소로도 열리지 않는다", async ({ page }) => {
+test.describe("연습실: 등급별 서류함", () => {
+  test("지금 등급까지의 서류함만 열려 있고, 잠긴 서류함의 과제는 주소로도 열리지 않는다", async ({ page }) => {
     await preset(page, "daily-unsolved");
-    await page.getByTestId("practice-entry").click();
-    await expect(page.getByTestId("practice-room")).toBeVisible();
+    await enterFromHome(page, "practice-entry");
+    const room = page.getByTestId("practice-room");
+    await expect(room).toBeVisible();
     await expect(page.getByTestId("practice-total")).toHaveText("해결 0/15");
-    await expect(page.getByTestId("drawer-F")).toHaveAttribute("aria-selected", "true");
-    await expect(page.locator(".taskrow")).toHaveCount(3);
+    // 들어서면 지금 등급(F)의 서류함 앞에 서고, 과제 셋이 놓여 있다
+    await expect(room).toHaveAttribute("data-at", "F");
+    await expect(page.locator(".isotask")).toHaveCount(3);
     await expect(page.getByTestId("drawer-count")).toHaveText("해결 0/3");
+    await expect(page.getByTestId("drawer-F")).toHaveAttribute("data-locked", "false");
     for (const rank of ["D", "C", "B", "A"]) await expect(page.getByTestId(`drawer-${rank}`)).toHaveAttribute("data-locked", "true");
     await shot(page, "g5-practice-f");
 
-    // 잠긴 서랍을 들여다보면 과제 대신 안내가 있다
-    await page.getByTestId("drawer-D").click();
+    // 잠긴 서류함을 들여다보면 과제 대신 안내가 있다
+    await toCabinet(page, "D");
     await expect(page.getByTestId("drawer-locked")).toContainText("D급 초급 탐정에 오르면");
-    await expect(page.locator(".taskrow")).toHaveCount(0);
+    await expect(page.getByTestId("drawer-count")).toHaveText("잠김");
+    await expect(page.locator(".isotask")).toHaveCount(0);
     await shot(page, "g5-practice-locked");
 
     await page.goto("/?demo=1#/practice/practice-schedule-d");
@@ -100,14 +114,15 @@ test.describe("연습실: 등급별 서랍", () => {
     await expect(page.getByTestId("play-screen")).toHaveCount(0);
   });
 
-  test("승급하면 새 서랍이 열리고, 문제를 풀고 돌아오면 같은 서랍에 해결 표시가 남는다", async ({ page }) => {
+  test("승급하면 새 서류함이 열리고, 문제를 풀고 돌아오면 같은 서류함에 해결 표시가 남는다", async ({ page }) => {
     await preset(page, "promoted");
-    await page.getByTestId("practice-entry").click();
-    // 풀지 않은 과제가 남은 가장 낮은 서랍이 먼저 열린다 (F 서랍에 하나 남아 있다)
-    await expect(page.getByTestId("drawer-F")).toHaveAttribute("aria-selected", "true");
-    await page.getByTestId("drawer-D").click();
+    await enterFromHome(page, "practice-entry");
+    const room = page.getByTestId("practice-room");
+    // 풀지 않은 과제가 남은 가장 낮은 서류함 앞에 먼저 선다 (F 서류함에 하나 남아 있다)
+    await expect(room).toHaveAttribute("data-at", "F");
+    await toCabinet(page, "D");
     await expect(page.getByTestId("drawer-D")).toHaveAttribute("data-locked", "false");
-    await expect(page.locator(".taskrow")).toHaveCount(3);
+    await expect(page.locator(".isotask")).toHaveCount(3);
 
     const puzzle = PUZZLE_BY_ID["practice-truth-d"];
     await page.getByTestId(`practice-file-${puzzle.id}`).click();
@@ -117,14 +132,14 @@ test.describe("연습실: 등급별 서랍", () => {
     await expect(page.getByTestId("reward")).toContainText("+35");
 
     await page.goto("/?demo=1#/practice");
-    await expect(page.getByTestId("drawer-D")).toHaveAttribute("aria-selected", "true");
+    await expect(room).toHaveAttribute("data-at", "D");
     await expect(page.getByTestId(`practice-status-${puzzle.id}`)).toHaveText("해결");
     await expect(page.getByTestId("drawer-count")).toHaveText("해결 1/3");
   });
 
   for (const puzzle of PRACTICE_PUZZLES.filter((p) => p.id !== "practice-truth-001")) {
     test(`연습 과제를 화면의 조작으로 푼다: ${puzzle.id}`, async ({ page }) => {
-      // 모든 서랍이 열린 상태에서 이 과제의 기록만 지운다
+      // 모든 서류함이 열린 상태에서 이 과제의 기록만 지운다
       await preset(page, "rank-s");
       await patchState(page, (state) => {
         delete (state.puzzles as Record<string, unknown>)[puzzle.id];
@@ -157,7 +172,7 @@ test.describe("승급 시험: 응시 조건과 안내", () => {
     await preset(page, "daily-solved");
     await expect(page.getByTestId("promo-count")).toHaveText("1/3");
     await expect(page.getByTestId("exam-cta")).toHaveCount(0);
-    await page.getByTestId("exam-wait").click();
+    await enterFromHome(page, "exam-wait");
     await expect(page.getByTestId("exam-locked")).toBeVisible();
     await expect(page.getByTestId("exam-need")).toHaveText("1/3");
     await expect(page.locator(".roomnote .meter i[data-on='true']")).toHaveCount(1);
@@ -190,8 +205,8 @@ test.describe("승급 시험: 여러 문제를 차례로", () => {
     const [first, second] = examPuzzles("D");
     await preset(page, "ready-c");
     const before = (await stored(page)).credits;
-    await expect(page.getByTestId("exam-cta")).toContainText("C급 응시 가능");
-    await page.getByTestId("exam-cta").click();
+    await examState(page, "exam-cta", /C급 응시 가능/);
+    await enterFromHome(page, "exam-cta");
     await expect(page.getByTestId("exam-gate")).toBeVisible();
     await openEnvelope(page);
     await expect(page.getByTestId("play-title")).toHaveText("승급 시험 1/2");
@@ -215,8 +230,8 @@ test.describe("승급 시험: 여러 문제를 차례로", () => {
 
     // 홈에 나갔다 와도 시험은 이어진다
     await page.goto("/?demo=1");
-    await expect(page.getByTestId("exam-cta")).toContainText("C급 시험 중 1/2");
-    await page.getByTestId("exam-cta").click();
+    await examState(page, "exam-cta", /C급 시험 중 1\/2/);
+    await enterFromHome(page, "exam-cta");
     await expect(page.getByTestId("exam-between")).toBeVisible();
 
     await openSheet(page);
@@ -228,10 +243,10 @@ test.describe("승급 시험: 여러 문제를 차례로", () => {
     expect(after).toMatchObject({ rank: "C", exam: null, credits: before + 100 });
     expect(after.promotions).toHaveLength(2);
 
-    // 승급하면 C 서랍이 열리고, 다음 시험은 응시 전이다
+    // 승급하면 다음 시험은 응시 전이다
     await page.getByTestId("ceremony-done").click();
     await expect(page.getByTestId("home-rank")).toHaveText("C급 정식 탐정");
-    await expect(page.getByTestId("exam-wait")).toContainText("B급 과제");
+    await examState(page, "exam-wait", /B급 과제/);
   });
 
   for (const from of ["C", "B", "A"]) {
@@ -266,7 +281,7 @@ test.describe("승급 시험: 여러 문제를 차례로", () => {
         // 최고 등급: 더 치를 시험이 없고, 시험실에는 합격 기록이 남는다
         await page.getByTestId("ceremony-done").click();
         await expect(page.getByTestId("home-rank")).toHaveText("S급 명예 탐정");
-        await page.getByTestId("exam-record").click();
+        await enterFromHome(page, "exam-record");
         await expect(page.getByTestId("exam-passed")).toBeVisible();
         await expect(page.locator(".roomnote--record")).toHaveCount(5);
       }
@@ -315,8 +330,8 @@ test.describe("승급 시험: 제한 시간", () => {
 
     // 홈에도 시험이 끝났다고 적혀 있다
     await page.goto("/?demo=1");
-    await expect(page.getByTestId("exam-cta")).toContainText("B급 시험 종료");
-    await page.getByTestId("exam-cta").click();
+    await examState(page, "exam-cta", /B급 시험 종료/);
+    await enterFromHome(page, "exam-cta");
     await expect(page.getByTestId("exam-failed")).toBeVisible();
 
     // 다시 응시: 봉투부터, 제한 시간도 처음부터
@@ -334,8 +349,8 @@ test.describe("승급 시험: 제한 시간", () => {
       state.examDays = { C: { dateKey: "2026-11-22", count: 3 } };
     });
     await expect(page.getByTestId("exam-cta")).toHaveCount(0);
-    await expect(page.getByTestId("exam-wait")).toContainText("오늘 응시 끝");
-    await page.getByTestId("exam-wait").click();
+    await examState(page, "exam-wait", /오늘 응시 끝/);
+    await enterFromHome(page, "exam-wait");
     await expect(page.getByTestId("exam-gate")).toBeVisible();
     await expect(page.getByTestId("attempts-left")).toContainText("오늘 0번 남음");
     await expect(page.getByTestId("open-envelope")).toHaveCount(0);
@@ -395,7 +410,7 @@ test.describe("승급 시험: 제출 횟수", () => {
     await page.getByTestId("failed-home").click();
     await expect(page.getByTestId("home-screen")).toBeVisible();
     expect((await stored(page)).exam).toBeNull();
-    await expect(page.getByTestId("exam-cta")).toContainText("A급 응시 가능");
+    await examState(page, "exam-cta", /A급 응시 가능/);
   });
 
   test("A→S: 하루 한 번뿐인 시험에서 떨어지면 오늘은 다시 응시할 수 없다", async ({ page }) => {
@@ -410,7 +425,7 @@ test.describe("승급 시험: 제출 횟수", () => {
     await expect(page.getByTestId("attempts-left")).toContainText("오늘 0번 남음");
     await expect(page.getByTestId("failed-retry")).toHaveCount(0);
     await page.getByTestId("failed-home").click();
-    await expect(page.getByTestId("exam-wait")).toContainText("S급 오늘 응시 끝");
+    await examState(page, "exam-wait", /S급 오늘 응시 끝/);
   });
 });
 
@@ -430,10 +445,12 @@ test.describe("새 화면의 배치와 두 색", () => {
         await preset(page, "ready-s");
         await page.goto("/?demo=1#/practice");
         await expect(page.getByTestId("practice-room")).toBeVisible();
-        await expectLayoutOk(page, ".taskrow");
-        // 서랍 하나의 과제 셋이 스크롤 없이 다 보인다
-        const last = (await page.locator(".taskrow").last().boundingBox())!;
+        await expect(page.locator(".isotask")).toHaveCount(3);
+        await expectLayoutOk(page, ".isotask");
+        // 서류함 하나의 과제 셋이 스크롤 없이 다 보인다
+        const last = (await page.locator(".isotask").last().boundingBox())!;
         expect(last.y + last.height).toBeLessThanOrEqual(size.height);
+        expect(await page.getByTestId("practice-room").evaluate((el) => el.scrollHeight - el.clientHeight)).toBeLessThanOrEqual(0);
         await check("연습실");
         await shot(page, `g5-practice-${size.width}x${size.height}`);
 

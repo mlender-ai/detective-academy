@@ -1,9 +1,9 @@
 import { expect, test, type Page } from "@playwright/test";
-import { CINE_ON, dialValue, expectLayoutOk, offToneRatio, preset, setCode, setDial, stored, toSafe } from "./helpers";
+import { CINE_ON, dialValue, enterFromHome, expectLayoutOk, offToneRatio, preset, setCode, setDial, stored, toSafe } from "./helpers";
 
 /**
  * 암호 풀이 화면 (V3 GATE 03). 사용자가 B안 · 장면 전개를 골라 암호 해독의 기본 화면이 되었다.
- * - 기본(B안 장면 전개): 자료실에서 책상(기록)과 금고(자물쇠) 사이를 오가며 푼다.
+ * - 기본(B안 장면 전개): 자료실(쿼터뷰 방)에서 책상(기록)과 금고(자물쇠) 사이를 오가며 푼다.
  * - ?play=c  C안 혼합형: 자물쇠를 크게 두고 조건은 수사 수첩(접힘 · 간편 보기 · 전체 보기)에 담는다. 다른 문제에 쓸 UI 후보로 남겨 두었다.
  * 예전 풀이 화면과 A안(접기·펼치기)은 걷어냈다. 다시 보려면 docs/archive/v3-gate03-all-app/ 을 연다.
  * 둘 다 같은 엔진으로 판정하고 보상한다. 정답은 426 이다.
@@ -17,35 +17,42 @@ const query = (ux: Ux) => (ux === "b" ? "" : `&play=${ux}`);
 /** 오늘의 추리(암호 해독)를 그 안으로 연다 */
 async function open(page: Page, ux: Ux, id: Parameters<typeof preset>[1] = "daily-unsolved") {
   await preset(page, id, query(ux));
-  await page.getByTestId("daily-file").click();
+  await enterFromHome(page, "daily-file");
   await expect(page.getByTestId("play-screen")).toHaveAttribute("data-ux", ux);
 }
 
+/** 자료실의 방(쿼터뷰)이 그려진 캔버스 */
+const vaultRoom = (page: Page) => page.locator('.vaultscene [data-testid="iso-canvas"]');
+
 test("암호 해독의 기본 화면은 자료실 장면이다", async ({ page }) => {
   await preset(page, "daily-unsolved");
-  await page.getByTestId("daily-file").click();
+  await enterFromHome(page, "daily-file");
   await expect(page).not.toHaveURL(/play=/);
   await expect(page.getByTestId("play-screen")).toHaveAttribute("data-ux", "b");
-  await expect(page.locator('[data-testid="live-scene"][data-kind="vault"] canvas')).toBeVisible();
+  await expect(vaultRoom(page)).toBeVisible();
   await expect(page.getByTestId("record")).toBeVisible();
 });
 
-test("걷어낸 화면의 주소(?play=old · ?play=a)로 열어도 자료실 장면이 열린다", async ({ page }) => {
-  for (const old of ["old", "a"]) {
-    await preset(page, "daily-unsolved", `&play=${old}`);
-    await page.getByTestId("daily-file").click();
+test("걷어낸 화면의 주소(?play=old · ?play=a · ?view=side)로 열어도 자료실 장면이 열린다", async ({ page }) => {
+  for (const old of ["play=old", "play=a", "view=side"]) {
+    await preset(page, "daily-unsolved", `&${old}`);
+    await enterFromHome(page, "daily-file");
     await expect(page.getByTestId("play-screen")).toHaveAttribute("data-ux", "b");
+    await expect(vaultRoom(page)).toBeVisible();
+    await expect(page.getByTestId("live-scene")).toHaveCount(0);
     await expect(page.getByTestId("record")).toBeVisible();
   }
 });
 
 test("진술 추리는 그대로 추리 책상에서 푼다", async ({ page }) => {
   await preset(page, "daily-solved");
-  await page.getByTestId("practice-entry").click();
+  await enterFromHome(page, "practice-entry");
   await page.getByTestId("practice-file-practice-truth-001").click();
   const screen = page.getByTestId("play-screen");
   await expect(screen).toHaveAttribute("data-type", "truth");
   expect(await screen.getAttribute("data-ux")).toBeNull();
+  // 살아 있는 장면(방)은 놓이지 않는다
+  await expect(page.getByTestId("iso-stage")).toHaveCount(0);
   await expect(page.getByTestId("live-scene")).toHaveCount(0);
 });
 
@@ -53,7 +60,7 @@ test.describe("기본 · 장면 전개(자료실)", () => {
   test("책상의 기록과 금고의 자물쇠 사이를 오가도 다이얼과 메모가 그대로다", async ({ page }) => {
     await open(page, "b");
     const screen = page.getByTestId("play-screen");
-    await expect(page.locator('[data-testid="live-scene"][data-kind="vault"] canvas')).toBeVisible();
+    await expect(vaultRoom(page)).toBeVisible();
     // 들어서면 책상 앞: 기록이 보이고 자물쇠는 아직 없다
     await expect(screen).toHaveAttribute("data-at", "desk");
     await expect(page.getByTestId("record")).toBeVisible();
@@ -79,7 +86,7 @@ test.describe("기본 · 장면 전개(자료실)", () => {
     // 나갔다 와도 금고 앞에서 잇는다
     await page.getByTestId("play-back").click();
     await expect(page.getByTestId("home-screen")).toBeVisible();
-    await page.getByTestId("daily-file").click();
+    await enterFromHome(page, "daily-file");
     await expect(page.getByTestId("play-screen")).toHaveAttribute("data-at", "safe");
     expect(await dialValue(page, 0)).toBe(7);
   });
@@ -88,19 +95,21 @@ test.describe("기본 · 장면 전개(자료실)", () => {
     await open(page, "b");
     const screen = page.getByTestId("play-screen");
     await expect(screen).toHaveAttribute("data-at", "desk");
-    const canvas = (await page.locator('[data-testid="live-scene"] canvas').boundingBox())!;
-    // 금고는 방의 오른쪽(x 152~194점, y 28~72점), 책상은 가운데(x 60~118점)
-    const safe = { x: canvas.x + 173 * 2, y: canvas.y + 50 * 2 };
-    // 화면 전환이 끝날 때까지는 전환 층이 위에 있어 눌리지 않는다. 좌표로 누르는 것은 스스로 기다리지 않으므로 여기서 기다린다.
-    await expect
-      .poll(() => page.evaluate(({ x, y }) => !!document.elementFromPoint(x, y)?.closest('[data-testid="live-scene"]'), safe))
-      .toBe(true);
-    await page.touchscreen.tap(safe.x, safe.y);
+    // 방 안의 금고와 책상은 손가락으로 누르는 자리다(가운데를 실제로 두드린다)
+    const tapSpot = async (id: "scene-safe" | "scene-desk") => {
+      const box = (await page.getByTestId(id).boundingBox())!;
+      const at = { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+      // 화면 전환이 끝날 때까지는 전환 층이 위에 있어 눌리지 않는다. 좌표로 누르는 것은 스스로 기다리지 않으므로 여기서 기다린다.
+      await expect.poll(() => page.evaluate(({ x, y, id }) => document.elementFromPoint(x, y)?.closest("[data-testid]")?.getAttribute("data-testid") === id, { ...at, id })).toBe(true);
+      await page.touchscreen.tap(at.x, at.y);
+    };
+    await tapSpot("scene-safe");
     await expect(screen).toHaveAttribute("data-at", "safe");
     await expect(page.getByTestId("dial-0")).toBeVisible();
     await page.waitForTimeout(900);
-    await page.touchscreen.tap(canvas.x + 90 * 2, canvas.y + 50 * 2);
+    await tapSpot("scene-desk");
     await expect(screen).toHaveAttribute("data-at", "desk");
+    await expect(page.getByTestId("record")).toBeVisible();
   });
 
   test("수사 지원은 책상에서 받고, 금고 앞에서 정답을 내면 금고가 열린 뒤 결과로 이어진다", async ({ page }) => {
@@ -182,7 +191,7 @@ test.describe("C안 · 혼합형(수사 수첩) (?play=c)", () => {
 
     test("처음 여는 사건은 자료실의 도입 장면으로 시작하고, 누르면 바로 넘어간다", async ({ page }) => {
       await preset(page, "daily-unsolved", "&play=c");
-      await page.getByTestId("daily-file").click();
+      await enterFromHome(page, "daily-file");
       const intro = page.getByTestId("intro");
       await expect(intro).toBeVisible();
       await expect(intro).toContainText("자료실 금고의 암호");
@@ -214,7 +223,7 @@ test.describe("두 화면의 공통 약속", () => {
 
     test(`${ux === "b" ? "기본(자료실)" : "C안"}: 이미 해결한 사건은 기록으로 열리고, 다시 풀어도 보상은 한 번이다`, async ({ page }) => {
       await preset(page, "daily-solved", query(ux));
-      await page.getByTestId("daily-file").click();
+      await enterFromHome(page, "daily-file");
       await expect(page.getByTestId("result-screen")).toBeVisible();
       await page.getByTestId("replay").click();
       await expect(page.getByTestId("play-screen")).toHaveAttribute("data-ux", ux);
@@ -255,8 +264,15 @@ for (const size of [
       const go = (await page.getByTestId("to-safe").boundingBox())!.y;
       const memo = (await page.getByTestId("memo-9").boundingBox())!;
       expect(memo.y + memo.height, "숫자 메모가 단추 줄에 가려진다").toBeLessThanOrEqual(go);
-      // 장면이 책상과 금고가 보일 만큼 남는다 (124px = 62점)
-      expect((await page.getByTestId("live-scene").boundingBox())!.height).toBeGreaterThanOrEqual(124);
+      // 방이 책상과 금고가 보일 만큼 남는다: 띠의 높이가 196px(98점) 아래로 줄지 않고, 두 물건의 누르는 자리가 띠 안에서 서술 한 줄에 가리지 않는다
+      const stage = (await page.getByTestId("iso-stage").boundingBox())!;
+      expect(stage.height).toBeGreaterThanOrEqual(196);
+      const caption = (await page.locator(".isostage .narr").boundingBox())!;
+      for (const id of ["scene-desk", "scene-safe"]) {
+        const box = (await page.getByTestId(id).boundingBox())!;
+        expect(box.y + box.height / 2, `${id} 가 서술 한 줄에 가린다`).toBeGreaterThan(caption.y + caption.height);
+        expect(box.y + box.height / 2, `${id} 가 띠 아래로 잘린다`).toBeLessThan(stage.y + stage.height);
+      }
 
       await page.getByTestId("to-safe").click();
       await expectLayoutOk(page, '[data-testid="submit"]');

@@ -1,6 +1,6 @@
 @layer layout {
   /* 학원 복도: 홈과 입학 화면이 같이 쓰는 뼈대(복도 그림 자리, 학원 이름과 등급).
-     홈의 장면과 명령 창은 live.css 에 있다. */
+     홈(쿼터뷰 학원 홀)의 방과 아래 창은 iso.css 에 있다. */
 
   .hall {
     position: relative;

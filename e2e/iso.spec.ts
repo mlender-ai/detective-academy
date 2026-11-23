@@ -1,15 +1,14 @@
 import { expect, test, type Page } from "@playwright/test";
 import { getDailyPuzzle } from "../src/data/puzzles";
-import { HOME_DEFAULT, TEST_DATE, expectLayoutOk, offToneRatio, preset } from "./helpers";
+import { TEST_DATE, expectLayoutOk, offToneRatio, preset } from "./helpers";
 import { solve } from "./solve";
 
 /**
- * 쿼터뷰 홈(?view=iso). 화면의 대부분이 방이고, 갈 곳의 목록 대신 방 안의 문과 물건을 누른다.
- * 기본 홈(옆에서 본 복도)은 그대로이고 다른 테스트들이 본다. 여기서는 쿼터뷰 홈이 실제로 플레이되는지,
- * 낮은 화면에서 넘치지 않는지, 두 색 규칙을 지키는지 본다.
+ * 홈 · 쿼터뷰 학원 홀. 화면의 대부분이 방이고, 갈 곳의 목록 대신 방 안의 문과 물건을 누른다.
+ * 홈이 실제로 플레이되는지(걸어가 살펴보기, 큰 단추로 들어가기, 걷는 중의 누름), 여러 화면 크기에서 넘치지 않는지, 두 색 규칙을 지키는지 본다.
+ * 예전 홈(옆에서 본 복도 + 명령 창, ?view=side)은 걷어냈다: 그 주소로 열어도 이 홈이 열린다.
  */
 
-const ISO = "&view=iso";
 const SHOTS = "docs/compare/iso";
 
 const home = (page: Page) => page.getByTestId("home-screen");
@@ -23,31 +22,27 @@ async function tapWorld(page: Page, x: number, y: number) {
   await page.touchscreen.tap(box.x + (x / 196) * box.width, box.y + (y / 300) * box.height);
 }
 
-test.describe("기본 홈", () => {
-  // 다른 테스트들은 저장소의 값으로 홈을 옆에서 본 복도로 돌린다. 여기서는 그 값 없이 연다.
-  test.use({ storageState: HOME_DEFAULT });
-
-  test("아무 값 없이 열면 쿼터뷰 학원 홀이고, view=side 를 붙이면 옆에서 본 복도다", async ({ page }) => {
-    await preset(page, "daily-unsolved");
+test("걷어낸 홈의 주소(?view=side · ?home=old · ?home=a)로 열어도, 저장소에 예전 값이 남아 있어도 지금의 홈이 열린다", async ({ page }) => {
+  for (const old of ["view=side", "home=old", "home=a"]) {
+    await preset(page, "daily-unsolved", `&${old}`);
     await expect(home(page)).toHaveAttribute("data-home", "iso");
-    await arrived(page, "board");
-    await page.getByTestId("daily-file-cta").click();
-    await expect(page).toHaveURL(/#\/daily/);
-    await preset(page, "daily-unsolved", "&view=side");
-    await expect(home(page)).toHaveAttribute("data-home", "b");
-    await expect(page.getByTestId("iso-stage")).toHaveCount(0);
-  });
-});
-
-test("저장소에 view=side 가 있어도 주소의 view=iso 가 먼저다", async ({ page }) => {
-  await preset(page, "daily-unsolved");
-  await expect(home(page)).toHaveAttribute("data-home", "b");
-  await preset(page, "daily-unsolved", ISO);
+    await expect(page.getByTestId("iso-canvas")).toBeVisible();
+    await expect(page.locator(".cmd")).toHaveCount(0);
+    await expect(page.getByTestId("live-scene")).toHaveCount(0);
+  }
+  // 예전 홈으로 돌리던 저장소의 값(detective-academy:view)은 더는 듣지 않는다
+  await page.evaluate(() => window.localStorage.setItem("detective-academy:view", "side"));
+  await page.goto("/?demo=1");
   await expect(home(page)).toHaveAttribute("data-home", "iso");
+  await arrived(page, "board");
+  await page.getByTestId("daily-file-cta").click();
+  await expect(page).toHaveURL(/#\/daily/);
+  // 들어간 곳(자료실)도 방이다
+  await expect(page.getByTestId("play-screen")).toHaveAttribute("data-view", "iso");
 });
 
 test("들어서면 탐정이 오늘 할 일 앞에 서고, 큰 단추 한 번으로 들어간다", async ({ page }) => {
-  await preset(page, "daily-unsolved", ISO);
+  await preset(page, "daily-unsolved");
   await expect(home(page)).toHaveAttribute("data-home", "iso");
   await arrived(page, "board");
   // 갈 곳의 목록(명령 창)은 없다. 아래 창에는 지금 선 곳의 할 일 하나만 있다.
@@ -61,7 +56,7 @@ test("들어서면 탐정이 오늘 할 일 앞에 서고, 큰 단추 한 번으
 });
 
 test("문을 누르면 걸어가 살펴보고, 한 번 더 누르면 들어간다", async ({ page }) => {
-  await preset(page, "daily-unsolved", ISO);
+  await preset(page, "daily-unsolved");
   await arrived(page, "board");
   await page.getByTestId("practice-entry").tap();
   await arrived(page, "practice");
@@ -73,7 +68,7 @@ test("문을 누르면 걸어가 살펴보고, 한 번 더 누르면 들어간�
 });
 
 test("이름표를 눌러도 그곳으로 간다(창이나 의자로 새지 않는다)", async ({ page }) => {
-  await preset(page, "promoted", ISO);
+  await preset(page, "promoted");
   await arrived(page, "practice");
   for (const [id, spot] of [
     ["story-entry", "case"],
@@ -94,7 +89,7 @@ test("이름표를 눌러도 그곳으로 간다(창이나 의자로 새지 않�
 });
 
 test("이름표는 오늘 할 일과 고른 곳에만 남고, 둘러볼 때는 모두 보인다. 할 일 단추로 돌아간다.", async ({ page }) => {
-  await preset(page, "promoted", ISO);
+  await preset(page, "promoted");
   await arrived(page, "practice");
   // 들어선 직후에는 모두 보인다
   await expect(page.getByTestId("identity").locator(".isotag")).toBeVisible();
@@ -116,22 +111,21 @@ test("이름표는 오늘 할 일과 고른 곳에만 남고, 둘러볼 때는 �
   await arrived(page, "practice");
 });
 
-test("오늘의 추리를 풀고 돌아오면 쿼터뷰 홀 그대로이고, 게시판은 해결로 바뀌고 탐정은 다음 할 일로 간다", async ({ page }) => {
-  await preset(page, "daily-unsolved", ISO);
+test("오늘의 추리를 풀고 돌아오면 게시판은 해결로 바뀌고 탐정은 다음 할 일로 간다", async ({ page }) => {
+  await preset(page, "daily-unsolved");
   await arrived(page, "board");
   await page.getByTestId("daily-file-cta").click();
   await solve(page, getDailyPuzzle(TEST_DATE));
   await expect(page.getByTestId("reward")).toBeVisible();
-  await page.goto("/?demo=1&view=iso#/");
+  await page.goto("/?demo=1#/");
   await expect(home(page)).toHaveAttribute("data-home", "iso");
   await expect(page.getByTestId("daily-file-status")).toHaveText("해결");
   await expect(home(page)).toHaveAttribute("data-next", "practice");
   await arrived(page, "practice");
-  expect(page.url()).toContain("view=iso");
 });
 
 test("가는 중에 같은 곳을 한 번 더 누르면 걸음을 건너뛴다", async ({ page }) => {
-  await preset(page, "daily-unsolved", ISO);
+  await preset(page, "daily-unsolved");
   await arrived(page, "board");
   const spot = page.getByTestId("exam-wait");
   await spot.tap();
@@ -142,8 +136,51 @@ test("가는 중에 같은 곳을 한 번 더 누르면 걸음을 건너뛴다",
   await expect(page.locator(".isocard")).toContainText("승급 시험실");
 });
 
+test("가는 중에 아래 창의 큰 단추를 누르면 도착하는 대로 들어간다 (3초 안쪽)", async ({ page }) => {
+  await preset(page, "daily-unsolved");
+  await arrived(page, "board");
+  const started = Date.now();
+  await page.getByTestId("practice-entry").tap();
+  // 누르자마자 아래 창이 그곳으로 바뀐다(탐정은 아직 걷는 중이다)
+  await expect(page.locator(".isocard")).toContainText("연습실");
+  await page.getByTestId("practice-entry-go").click();
+  await expect(page).toHaveURL(/#\/practice$/);
+  expect(Date.now() - started).toBeLessThan(3000);
+});
+
+test("걷는 중에 큰 단추를 빠르게 여러 번 눌러도 한 번만 들어간다", async ({ page }) => {
+  await preset(page, "exam-ready");
+  await arrived(page, "exam");
+  // 가장 먼 길: 시험실 문 앞 → 기록 보관함
+  await page.getByTestId("identity").tap();
+  const go = page.getByTestId("identity-go");
+  await go.click();
+  await go.click({ force: true, timeout: 1000 }).catch(() => undefined);
+  await expect(page).toHaveURL(/#\/profile$/);
+  await page.waitForTimeout(500);
+  await page.goBack();
+  // 한 번만 들어갔으므로 한 번 뒤로 가면 홈이고, 눌림이 살아 있다
+  await expect(home(page)).toBeVisible();
+  await arrived(page, "exam");
+  await page.getByTestId("exam-cta-go").click();
+  await expect(page.getByTestId("exam-gate")).toBeVisible();
+});
+
+test("탐정이 걷는 중에 할 일이 바뀌어도, 새 할 일의 큰 단추를 누르면 그곳으로 들어간다", async ({ page }) => {
+  // 연습실로 걸어가는 중에(들어선 지 0.42초 뒤에 출발한다) 할 일을 시험실로 바꾼다.
+  // 아래 창은 곧바로 시험실로 바뀌지만 탐정은 아직 연습실로 가는 중이다. 이때 눌러도 시험실로 가야 한다.
+  await preset(page, "daily-solved");
+  await expect(home(page)).toHaveAttribute("data-next", "practice");
+  await page.waitForTimeout(550);
+  await page.getByTestId("demo-toggle").click();
+  await page.getByTestId("demo-exam-ready").click();
+  await page.getByTestId("exam-cta-go").click();
+  await expect(page).toHaveURL(/#\/exam$/);
+  await expect(page.getByTestId("exam-gate")).toBeVisible();
+});
+
 test("바닥을 누르면 그리로 걷고, 아래 창은 안내로 바뀐다", async ({ page }) => {
-  await preset(page, "daily-unsolved", ISO);
+  await preset(page, "daily-unsolved");
   await arrived(page, "board");
   await tapWorld(page, 110, 250);
   await expect(home(page)).toHaveAttribute("data-at", "");
@@ -164,7 +201,7 @@ test("바닥을 누르면 그리로 걷고, 아래 창은 안내로 바뀐다", 
 });
 
 test("창을 누르면 다가가 살펴본다: 서술 한 줄이 그 이야기로 바뀐다", async ({ page }) => {
-  await preset(page, "daily-unsolved", ISO);
+  await preset(page, "daily-unsolved");
   await arrived(page, "board");
   await tapWorld(page, 149, 150);
   await expect(home(page)).toHaveAttribute("data-at", "");
@@ -174,7 +211,7 @@ test("창을 누르면 다가가 살펴본다: 서술 한 줄이 그 이야기�
 });
 
 test("음악은 꺼진 채 시작하고, 방 구석의 단추로 켜고 끈다", async ({ page }) => {
-  await preset(page, "daily-unsolved", ISO);
+  await preset(page, "daily-unsolved");
   await arrived(page, "board");
   const music = page.getByTestId("iso-music");
   await expect(music).toHaveAttribute("aria-checked", "false");
@@ -193,10 +230,10 @@ test("음악은 꺼진 채 시작하고, 방 구석의 단추로 켜고 끈다",
 });
 
 test("사건 접수함(텔레비전)은 D급부터 방에 놓인다", async ({ page }) => {
-  await preset(page, "daily-unsolved", ISO);
+  await preset(page, "daily-unsolved");
   await arrived(page, "board");
   await expect(page.getByTestId("story-entry")).toHaveCount(0);
-  await preset(page, "promoted", ISO);
+  await preset(page, "promoted");
   await expect(page.getByTestId("story-entry")).toBeVisible();
   await page.getByTestId("story-entry").tap();
   await arrived(page, "case");
@@ -207,7 +244,7 @@ test("사건 접수함(텔레비전)은 D급부터 방에 놓인다", async ({ p
 });
 
 test("시험을 볼 수 있으면 탐정이 시험실 문 앞에 서고 응시로 이어진다", async ({ page }) => {
-  await preset(page, "exam-ready", ISO);
+  await preset(page, "exam-ready");
   await arrived(page, "exam");
   await expect(page.locator(".isocard")).toContainText("D급 응시 가능");
   await page.screenshot({ path: `${SHOTS}/home-iso-exam.png`, style: ".demo { visibility: hidden !important; }" });
@@ -216,7 +253,7 @@ test("시험을 볼 수 있으면 탐정이 시험실 문 앞에 서고 응시�
 });
 
 test("키보드로도 간다: 누르는 자리로 옮겨 가 Enter", async ({ page }) => {
-  await preset(page, "daily-unsolved", ISO);
+  await preset(page, "daily-unsolved");
   await arrived(page, "board");
   await page.getByTestId("practice-entry").focus();
   await page.keyboard.press("Enter");
@@ -226,7 +263,7 @@ test("키보드로도 간다: 누르는 자리로 옮겨 가 Enter", async ({ pa
 });
 
 test("두 색뿐이다: 방, 이름표, 아래 창", async ({ page }) => {
-  await preset(page, "promoted", ISO);
+  await preset(page, "promoted");
   await arrived(page, "practice");
   expect(await offToneRatio(page)).toBeLessThan(0.0005);
   await page.getByTestId("exam-wait").tap();
@@ -238,15 +275,89 @@ test("두 색뿐이다: 방, 이름표, 아래 창", async ({ page }) => {
   expect(await offToneRatio(page)).toBeLessThan(0.0005);
 });
 
-for (const [w, h] of [
+/**
+ * 주소창이 보이는 휴대폰의 크기들(390×664 아이폰 12~14 · 375×629 13 미니 · 393×659 15·16 · 375×667 · 390×720 · 428×746 프로 맥스)과
+ * 주소창이 없을 때의 크기 둘(375×812 · 430×932). 예전 홈의 네 줄·다섯 줄 배치를 보던 크기들을 그대로 물려받았다.
+ */
+/** 2026년 11월의 그날을 오늘로 놓고, 게시판을 고른 홈의 아래 창이 제 자리(못박힌 높이) 안에 있는지 본다 */
+async function expectBoardFits(page: Page, day: number, height: number) {
+  await page.goto(`/?demo=1&date=2026-11-${day}`);
+  await expect(home(page)).toHaveAttribute("data-at", /\w/);
+  // 이미 푼 문제가 다시 붙은 날(30일)은 탐정이 다른 곳에 선다: 게시판을 눌러 고른다
+  if ((await home(page).getAttribute("data-at")) !== "board") await page.getByTestId("daily-file").tap();
+  await arrived(page, "board");
+  const name = `11월 ${day}일의 게시판`;
+  await expectLayoutOk(page, '[data-testid="daily-file-cta"]');
+  expect(await home(page).evaluate((el) => el.scrollHeight - el.clientHeight), `${name}: 홈이 세로로 넘친다`).toBeLessThanOrEqual(0);
+  // 아래 창은 높이가 못박혀 있다: 제목이 길어 줄이 늘면 창 위로(방 쪽으로) 넘친다
+  const win = (await page.locator(".isowin").boundingBox())!;
+  const card = (await page.locator(".isocard").boundingBox())!;
+  expect(card.y, `${name}: 아래 창의 내용이 방 쪽으로 넘친다`).toBeGreaterThanOrEqual(win.y);
+  expect(card.y + card.height, `${name}: 아래 창의 내용이 화면 아래로 넘친다`).toBeLessThanOrEqual(height);
+}
+
+/**
+ * 알려진 결함(예전 홈의 배치 테스트를 옮기다 찾았다. 화면은 고치지 않고 보고했다):
+ * 좁고(폭 384px 미만) 긴(높이 700px 초과) 화면에서는 제목이 긴 날의 게시판 제목(32px)이 두 줄로 꺾여 아래 창이 위로 넘친다.
+ * 지금 달력에서 그런 날은 11월 29일(「다시 붙은 봉투의 인장」)이다. 높이 700px 아래에서는 제목이 16px 이라 넘치지 않는다.
+ */
+const titleWraps = (w: number, h: number) => w < 384 && h > 700;
+const LONG_TITLE_DAY = 29;
+
+const SIZES = [
   [390, 664],
   [375, 629],
-] as const) {
-  test.describe(`낮은 화면 ${w}×${h}`, () => {
+  [393, 659],
+  [375, 667],
+  [390, 720],
+  [428, 746],
+  [375, 812],
+  [430, 932],
+] as const;
+
+for (const [w, h] of SIZES) {
+  test.describe(`화면 크기 ${w}×${h}`, () => {
     test.use({ viewport: { width: w, height: h } });
 
-    test("넘치지 않고, 방의 문과 물건이 모두 화면 안에서 눌린다", async ({ page }) => {
-      await preset(page, "promoted", ISO);
+    test("F급(갈 곳 넷): 오늘의 추리가 붙은 게시판의 큰 단추와 방 안의 누르는 자리가 화면 안에 있다", async ({ page }) => {
+      await preset(page, "daily-unsolved");
+      await arrived(page, "board");
+      await expectLayoutOk(page, '[data-testid="daily-file-cta"]');
+      expect(await home(page).evaluate((el) => el.scrollHeight - el.clientHeight)).toBeLessThanOrEqual(0);
+      const stage = (await page.getByTestId("iso-stage").boundingBox())!;
+      for (const id of ["daily-file", "practice-entry", "exam-wait", "identity"]) {
+        const box = (await page.getByTestId(id).boundingBox())!;
+        expect(box.width, `${id} 의 터치 영역이 좁다`).toBeGreaterThanOrEqual(44);
+        expect(box.height, `${id} 의 터치 영역이 낮다`).toBeGreaterThanOrEqual(44);
+        expect(box.y + box.height / 2, `${id} 가 방 아래로 잘린다`).toBeLessThan(stage.y + stage.height);
+      }
+      // 사건 접수함은 D급부터 놓인다
+      await expect(page.getByTestId("story-entry")).toHaveCount(0);
+    });
+
+    test("오늘의 추리가 여덟 문제 가운데 무엇이든, 게시판을 고른 아래 창이 제 자리를 넘지 않는다", async ({ page }) => {
+      await page.emulateMedia({ reducedMotion: "reduce" }); // 걷는 시간을 기다리지 않는다(배치는 같다)
+      await preset(page, "promoted");
+      // 달력은 여덟 문제를 차례로 돈다: 23일부터 30일까지가 한 바퀴다
+      for (let day = 23; day <= 30; day++) {
+        if (titleWraps(w, h) && day === LONG_TITLE_DAY) continue; // 알려진 결함: 바로 아래의 테스트가 따로 본다
+        await expectBoardFits(page, day, h);
+      }
+    });
+
+    if (titleWraps(w, h)) {
+      test("알려진 결함: 제목이 긴 날(11월 29일 「다시 붙은 봉투의 인장」)에는 게시판을 고른 아래 창이 방 쪽으로 넘친다", async ({ page }) => {
+        // 좁고 긴 화면에서는 32px 제목이 두 줄로 꺾여, 높이가 못박힌 아래 창의 머리줄(곳의 이름과 상태)이 방의 아래 테 밑으로 22px 밀려 가려진다.
+        // 화면의 결함이라 테스트를 풀어 주지 않고 "실패할 것"으로 적어 둔다: 화면을 고치면 이 테스트가 통과해 빨갛게 뜬다. 그때 이 표시와 위의 건너뛰기를 지운다.
+        test.fail(true, "쿼터뷰 홈의 넘침(폭 384px 미만 · 높이 700px 초과 · 제목이 긴 날)");
+        await page.emulateMedia({ reducedMotion: "reduce" });
+        await preset(page, "promoted");
+        await expectBoardFits(page, LONG_TITLE_DAY, h);
+      });
+    }
+
+    test("D급(갈 곳 다섯): 넘치지 않고, 방의 문과 물건이 모두 화면 안에서 눌린다", async ({ page }) => {
+      await preset(page, "promoted");
       await arrived(page, "practice");
       const overflow = await home(page).evaluate((el) => el.scrollHeight - el.clientHeight);
       expect(overflow).toBeLessThanOrEqual(0);
@@ -282,7 +393,7 @@ for (const [w, h] of [
         expect(now.y).toBe(before.y);
       }
       expect(await home(page).evaluate((el) => el.scrollHeight - el.clientHeight)).toBeLessThanOrEqual(0);
-      await page.screenshot({ path: `${SHOTS}/home-iso-${w}x${h}.png`, style: ".demo { visibility: hidden !important; }" });
+      if ((w === 390 && h === 664) || (w === 375 && h === 629)) await page.screenshot({ path: `${SHOTS}/home-iso-${w}x${h}.png`, style: ".demo { visibility: hidden !important; }" });
     });
   });
 }
@@ -291,7 +402,7 @@ test.describe("모션 줄이기", () => {
   test.use({ reducedMotion: "reduce" });
 
   test("걷지 않고 곧바로 그 앞에 서며, 장면은 멈춘 한 장이다", async ({ page }) => {
-    await preset(page, "daily-unsolved", ISO);
+    await preset(page, "daily-unsolved");
     await arrived(page, "board");
     await page.getByTestId("practice-entry").tap();
     await arrived(page, "practice");

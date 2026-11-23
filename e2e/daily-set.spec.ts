@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { CINE_ON, expectLayoutOk, offToneRatio, placeByTap, preset, setCode, shot, stored, toSafe } from "./helpers";
+import { CINE_ON, enterFromHome, expectLayoutOk, offToneRatio, placeByTap, preset, setCode, shot, stored, toSafe } from "./helpers";
 
 /**
  * 일일 문제 일곱 개 (V3 GATE 04). 아직 날짜에 배정하지 않았고, QA 주소의 ?day=1~7 로 오늘의 추리 자리에 놓는다.
@@ -10,31 +10,33 @@ import { CINE_ON, expectLayoutOk, offToneRatio, placeByTap, preset, setCode, sho
 /** 그 일차의 문제를 오늘의 추리로 놓고 연다 */
 async function openDay(page: Page, day: number, id: Parameters<typeof preset>[1] = "daily-unsolved") {
   await preset(page, id, `&day=${day}`);
-  await page.getByTestId("daily-file").click();
+  await enterFromHome(page, "daily-file");
   await expect(page.getByTestId("play-screen")).toBeVisible();
 }
 
 const card = (page: Page, id: string) => page.getByTestId(`card-${id}`);
+/** 홈의 아래 창: 오늘의 추리를 풀지 않은 날에는 게시판이 골라져 있어 그날의 문제가 적혀 있다 */
+const posted = (page: Page) => page.locator('.isocard[data-spot="board"]');
 
 test.describe("일차 전환", () => {
   test("?day= 가 없으면 오늘의 추리는 그대로이고, 있으면 그 일차의 문제가 게시판에 붙는다", async ({ page }) => {
     await preset(page, "daily-unsolved");
-    await expect(page.getByTestId("daily-file")).toContainText("자료실 금고의 암호");
+    await expect(posted(page)).toContainText("자료실 금고의 암호");
 
     await preset(page, "daily-unsolved", "&day=1");
-    await expect(page.getByTestId("daily-file")).toContainText("사라진 자료실 열쇠");
-    await expect(page.getByTestId("daily-file")).toContainText("증거 조합");
+    await expect(posted(page)).toContainText("사라진 자료실 열쇠");
+    await expect(posted(page)).toContainText("증거 조합");
 
     // 없는 일차는 무시한다
     await preset(page, "daily-unsolved", "&day=9");
-    await expect(page.getByTestId("daily-file")).toContainText("자료실 금고의 암호");
+    await expect(posted(page)).toContainText("자료실 금고의 암호");
   });
 
   test("QA 주소가 아니면 ?day= 는 듣지 않는다", async ({ page }) => {
     await preset(page, "daily-unsolved");
     await page.goto("/?day=2");
     await expect(page.getByTestId("home-screen")).toBeVisible();
-    await expect(page.getByTestId("daily-file")).toContainText("자료실 금고의 암호");
+    await expect(posted(page)).toContainText("자료실 금고의 암호");
   });
 });
 
@@ -325,7 +327,7 @@ test.describe("연출과 화풍", () => {
 
     test("사건을 열면 제목 아래에 여는 글이 나오고, 누르면 바로 걷힌다", async ({ page }) => {
       await preset(page, "daily-unsolved", "&day=2");
-      await page.getByTestId("daily-file").click();
+      await enterFromHome(page, "daily-file");
       const cine = page.getByTestId("cine-card");
       await expect(cine).toContainText("추천서의 인장");
       await expect(cine).toContainText("학원장 추천서 한 장이 가짜로 의심된다");

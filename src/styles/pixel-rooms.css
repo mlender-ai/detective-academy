@@ -48,16 +48,6 @@
   background: var(--px-paper-dim);
 }
 
-.desknote {
-  padding: 8px 12px;
-  font-size: 15px;
-  font-weight: 400;
-  line-height: 1.4;
-  color: var(--px-sepia);
-  border: 0;
-  transform: none;
-}
-
 /* 큰 등급 휘장: 방패 위에 등급 글자 */
 .pxmedal {
   position: relative;
@@ -358,11 +348,6 @@
 }
 
 /* ───────── 연습실 ───────── */
-
-.practice__scroll {
-  gap: 16px;
-  padding-top: 10px;
-}
 
 .worksheet {
   transform: none;
@@ -1058,110 +1043,6 @@
   100% {
     opacity: 0.3;
   }
-}
-
-/* 시험 봉투: 덮개가 한 장면에 젖혀지고, 시험지가 네 장면으로 올라온다 */
-.envelope {
-  transform: none;
-}
-
-.envelope::before {
-  inset: 6px -4px -6px 4px;
-  background: rgba(28, 23, 34, 0.4);
-  filter: none;
-}
-
-.envelope > .sprite {
-  position: absolute;
-  left: 0;
-  top: 0;
-}
-
-.envelope__lid {
-  top: -88px !important;
-  opacity: 0;
-  transform: none;
-}
-
-.envelope__letter {
-  left: 14px;
-  right: 14px;
-  top: 8px;
-  height: 126px;
-  gap: 4px;
-  padding-top: 12px;
-  background: var(--px-paper-lit);
-  border: 0;
-  box-shadow: var(--px-frame);
-}
-
-.envelope__letter-title {
-  font-family: var(--font-px-big);
-  font-size: 12px;
-  font-weight: 400;
-  letter-spacing: 0;
-  color: var(--px-wine);
-}
-
-.envelope__letter-rank {
-  font-family: var(--font-px-big);
-  font-size: 24px;
-  font-weight: 400;
-  line-height: 1.1;
-}
-
-.envelope__letter i {
-  height: 2px;
-  margin-top: 8px;
-  background: var(--px-paper-dim);
-}
-
-.envelope[data-state="opening"] .envelope__flap {
-  animation: px-flap 240ms steps(1) both;
-}
-
-.envelope[data-state="opening"] .envelope__lid {
-  animation: px-lid 240ms steps(1) both;
-}
-
-.envelope[data-state="opening"] .envelope__letter {
-  animation: px-letter 420ms steps(4) 300ms both;
-}
-
-@keyframes px-flap {
-  0% {
-    opacity: 1;
-  }
-  33% {
-    opacity: 0;
-  }
-  66% {
-    opacity: 1;
-  }
-  100% {
-    opacity: 0;
-  }
-}
-
-@keyframes px-lid {
-  0%,
-  66% {
-    opacity: 0;
-  }
-  100% {
-    opacity: 1;
-  }
-}
-
-@keyframes px-letter {
-  to {
-    transform: translateY(-84px);
-  }
-}
-
-/* 잠긴 봉투는 빛이 바랬다. 젖혀진 덮개는 숨겨 둔 채로 둔다. */
-.envelope[data-state="locked"] > .sprite:not(.envelope__lid) {
-  filter: grayscale(0.8);
 }
 
 .roomnote {
