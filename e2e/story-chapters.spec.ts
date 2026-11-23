@@ -5,7 +5,11 @@ import { SESSIONS } from "../src/story/cases/d001/logic";
 import { differencesOf } from "../src/story/engine/storyEngine";
 import type { ChapterProgress, DeduceScene, StoryChapter, StoryScene } from "../src/story/engine/storyTypes";
 import { c, ch1, ch2, ch3, ch4, clearChapter, combos, correctDeductions, detective, logic, playToDeduction, sceneOfKind, upTo } from "../src/tests/story/d001-play";
-import { STORAGE_KEY, enterFromHome, expectLayoutOk, offToneRatio, preset, stored } from "./helpers";
+import { PUZZLE_BY_ID, getDailyPuzzle, practiceOfRank } from "../src/data/puzzles";
+import { PROMOTION_RULES } from "../src/data/ranks";
+import type { RankId } from "../src/engine/types";
+import { STORAGE_KEY, TEST_DATE, enroll, enterFromHome, expectLayoutOk, offToneRatio, preset, stored } from "./helpers";
+import { solve as solvePuzzle } from "./solve";
 
 /**
  * 사건 수사 · CASE D-001 의 제2~4장과 사건 해결까지를 화면의 조작으로 확인한다.
@@ -890,3 +894,131 @@ for (const size of [
     });
   });
 }
+
+/* ───────── 첫 공개 버전의 전체 흐름 ───────── */
+
+test.describe("첫 공개 버전의 전체 흐름", () => {
+  /** 봉투(또는 다음 시험지)를 열고 문제가 뜰 때까지 기다린다 */
+  const openExamSheet = async (page: Page, id: "open-envelope" | "open-sheet") => {
+    await page.getByTestId(id).click();
+    await page.getByTestId(id).click({ timeout: 800 }).catch(() => undefined);
+    await expect(page.getByTestId("play-screen")).toBeVisible();
+  };
+
+  /** 지금 등급의 승급 시험을 홈에서 들어가 끝까지 치르고 홀로 돌아온다 */
+  async function passExam(page: Page, from: RankId, title: string) {
+    const rule = PROMOTION_RULES.find((r) => r.from === from)!;
+    await enterFromHome(page, "exam-cta");
+    await expect(page.getByTestId("exam-gate")).toBeVisible();
+    // 시험의 규칙은 봉투를 열기 전에 보인다
+    await expect(page.getByTestId("exam-facts")).toContainText(`${rule.examPuzzleIds.length}문제`);
+    for (const [i, id] of rule.examPuzzleIds.entries()) {
+      await openExamSheet(page, i === 0 ? "open-envelope" : "open-sheet");
+      await solvePuzzle(page, PUZZLE_BY_ID[id]);
+    }
+    await expect(page.getByTestId("ceremony")).toHaveAttribute("data-done", "true", { timeout: 15_000 });
+    await expect(page.getByTestId("id-rank")).toHaveText(title);
+    await page.getByTestId("ceremony-done").click();
+    await expect(page.getByTestId("home-rank")).toHaveText(title);
+  }
+
+  test("첫 실행 → 입학 → 오늘의 추리 → 연습실 → F→D 시험 → 사건 D-001 네 장 → D→C 시험 → C급, 그리고 다시 접속", async ({ page }) => {
+    test.setTimeout(300_000);
+    // 첫 실행: 저장이 없다(QA 패널도 쓰지 않는다). 게임 날짜는 테스트 설정의 달력 첫날이다.
+    await page.goto("/");
+    await enroll(page);
+    await expect(page.getByTestId("home-rank")).toHaveText("F급 견습 탐정");
+    await expect(page.getByTestId("credit-balance")).toHaveText("40");
+    await expect(page.getByTestId("story-entry")).toHaveCount(0);
+
+    // 오늘의 추리
+    const daily = getDailyPuzzle(TEST_DATE)!;
+    await enterFromHome(page, "daily-file");
+    await solvePuzzle(page, daily);
+    await expect(page.getByTestId("result-screen")).toBeVisible();
+    await expect(page.getByTestId("reward")).toContainText(`+${daily.reward}`);
+    await page.getByTestId("result-home").click();
+
+    // 연습실: F 서류함의 과제를 풀어 응시 조건(과제 셋)을 채운다
+    const need = PROMOTION_RULES[0].requiredSolved - 1;
+    for (const puzzle of practiceOfRank("F").slice(0, need)) {
+      await enterFromHome(page, "practice-entry");
+      await page.getByTestId("drawer-F").click();
+      await page.getByTestId(`practice-file-${puzzle.id}`).click();
+      await solvePuzzle(page, puzzle);
+      await expect(page.getByTestId("result-screen")).toBeVisible();
+      await page.getByTestId("result-home").click();
+      await expect(page.getByTestId("home-screen")).toBeVisible();
+    }
+
+    // F→D 승급 시험
+    await passExam(page, "F", "D급 초급 탐정");
+    let state = await stored(page);
+    expect(state.rank).toBe("D");
+
+    // D급: 사건 접수함이 놓이고 그것이 오늘 할 일이다. 다음 시험은 사건 해결을 기다린다.
+    await expect(page.getByTestId("story-entry")).toHaveAttribute("data-primary", "true");
+    await expect(page.getByTestId("exam-wait")).toHaveAttribute("aria-label", /C급 사건 미해결/);
+    await enterFromHome(page, "exam-wait");
+    await expect(page.getByTestId("exam-locked")).toBeVisible();
+    await expect(page.getByTestId("exam-need-case")).toContainText("미해결");
+    // 조건 미달 화면의 주 단추가 사건 수사로 보낸다
+    await page.getByTestId("exam-to-case").click();
+    await page.getByTestId("story-accept").click();
+
+    // CASE D-001: 네 장을 차례로
+    for (const ch of c.chapters) {
+      await expect(page.getByTestId("story-intro-title")).toHaveText(ch.title);
+      await page.getByTestId("story-intro-skip").click();
+      await playToDeduce(page, ch);
+      await deduce(page, ch);
+      await skipEnding(page, ch);
+      await expect(page.getByTestId("result-reward")).toHaveText(`+${ch.reward}`);
+      if (ch.ending.next) {
+        // 장 사이에서 새로고침해도(다시 접속) 그 자리에서 잇는다: 끝 장면이 다시 열리고(건너뛸 수 있다) 보상은 다시 받지 않는다
+        if (ch === ch2) {
+          const credits = (await stored(page)).credits;
+          await page.reload();
+          await skipEnding(page, ch);
+          await expect(page.getByTestId("story-result")).toBeVisible();
+          expect((await stored(page)).credits).toBe(credits);
+        }
+        await page.getByTestId("result-continue").click();
+      }
+    }
+    await expect(page.getByTestId("result-closing")).toHaveText(ch4.ending.closing!);
+    await expect(page.getByTestId("result-case-reward")).toHaveText(`+${c.reward}`);
+    await page.getByTestId("result-record").click();
+    await page.getByTestId("record-home").click();
+    state = await stored(page);
+    // 사건 해결은 등급을 직접 올리지 않는다. 시험이 열릴 뿐이다
+    expect(state.rank).toBe("D");
+    await expect(page.getByTestId("story-entry-status")).toHaveText("사건 해결");
+    await expect(page.getByTestId("exam-cta")).toHaveAttribute("aria-label", /C급 응시 가능/);
+    await expect(page.getByTestId("exam-cta")).toHaveAttribute("data-primary", "true");
+
+    // D→C 승급 시험: 세 문제
+    const creditsBeforeExam = state.credits;
+    await passExam(page, "D", "C급 정식 탐정");
+    state = await stored(page);
+    expect(state.rank).toBe("C");
+    expect(state.credits).toBe(creditsBeforeExam + PROMOTION_RULES[1].reward);
+
+    // 기록과 보상: 다시 접속해도 등급 · 크레딧 · 사건 해결 · 승급 기록이 그대로다
+    const expected = 40 + daily.reward + practiceOfRank("F").slice(0, need).reduce((n, p) => n + p.reward, 0) + PROMOTION_RULES[0].reward + TOTAL + PROMOTION_RULES[1].reward;
+    expect(state.credits).toBe(expected);
+    await page.reload();
+    await expect(page.getByTestId("home-rank")).toHaveText("C급 정식 탐정");
+    await expect(page.getByTestId("credit-balance")).toHaveText(String(expected));
+    await expect(page.getByTestId("story-entry-status")).toHaveText("사건 해결");
+    const again = await stored(page);
+    expect(again.credits).toBe(expected);
+    expect(again.promotions.map((p: { to: string }) => p.to)).toEqual(["D", "C"]);
+    expect(again.story.cases[c.id].rewardClaimed).toBe(true);
+    // C급의 서류함이 열렸다
+    await enterFromHome(page, "practice-entry");
+    await page.getByTestId("drawer-C").click();
+    await expect(page.getByTestId("drawer-locked")).toHaveCount(0);
+    await expect(page.locator(".isotask").first()).toBeVisible();
+  });
+});
