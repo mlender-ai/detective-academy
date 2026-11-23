@@ -38,7 +38,7 @@ export interface SpotDef {
 
 /* ───────── 빛 ───────── */
 
-interface Lamp {
+export interface Lamp {
   x: number;
   y: number;
   z: number;
@@ -64,7 +64,7 @@ const SCONCE = { x: 3.9, z: 3.9 };
 const smooth = (t: number) => (t <= 0 ? 0 : t >= 1 ? 1 : t * t * (3 - 2 * t));
 
 /** 갓 아래로 퍼지는 빛. 바닥(z = 0)에는 둥근 웅덩이로, 벽에는 갓보다 낮은 곳을 가운데로 한 빛무리로 든다. */
-function lampLight(l: Lamp, x: number, y: number, z: number) {
+export function lampLight(l: Lamp, x: number, y: number, z: number) {
   const r = Math.hypot(x - l.x, y - l.y);
   if (z <= 0) return l.floor * smooth(1 - r / l.floorR);
   // 갓 위로는 비추지 않는다
@@ -95,12 +95,12 @@ function windowLight(x: number, y: number) {
 const AMBIENT = 0.06;
 
 /** 빛을 가리는 상자: 바닥 자리와 높이(칸) */
-interface Blocker extends Footprint {
+export interface Blocker extends Footprint {
   h: number;
 }
 
 /** 바닥의 (x, y)에서 전등을 올려다본 선이 상자에 막히는가 */
-function shaded(l: Lamp, x: number, y: number, blockers: Blocker[]) {
+export function shaded(l: Lamp, x: number, y: number, blockers: Blocker[]) {
   for (const b of blockers) {
     // 선분 (x, y, 0) → (l.x, l.y, l.z) 와 상자의 겹침을 세 축의 구간으로 본다
     let t0 = 0;
@@ -141,7 +141,7 @@ export function litAt(x: number, y: number) {
 
 /* ───────── 평평하게 그리는 조각들 (벽과 물건의 앞면에 붙인다) ───────── */
 
-const GLYPH: Record<string, string[]> = {
+export const GLYPH: Record<string, string[]> = {
   F: ["#####", "#....", "#....", "####.", "#....", "#....", "#...."],
   D: ["####.", "#...#", "#...#", "#...#", "#...#", "#...#", "####."],
   C: [".####", "#....", "#....", "#....", "#....", "#....", ".####"],
@@ -151,7 +151,7 @@ const GLYPH: Record<string, string[]> = {
 };
 
 /** 종이 한 장: 흰 바탕에 검은 글줄 */
-function paper(L: Layer, x: number, y: number, w: number, h: number, lines = true) {
+export function paper(L: Layer, x: number, y: number, w: number, h: number, lines = true) {
   L.rectInk(x, y, w, h, 1);
   L.rectInk(x - 1, y - 1, w + 2, 1, -1);
   L.rectInk(x - 1, y + h, w + 2, 1, -1);
@@ -197,7 +197,7 @@ function boardFlat(solved: boolean) {
  * 문: 흰 틀 한 줄 안의 검은 문짝. leaves 가 2 면 가운데에서 갈린다. glassH 가 있으면 윗부분이 유리(밝기 glassTone)이고,
  * 없으면 판 하나의 테만 긋는다. 줄을 겹겹이 두르지 않는다: 이 크기에서는 빗금 잡음이 된다.
  */
-function doorFlat(w: number, h: number, leaves: 1 | 2, glassH: number, glassTone: number) {
+export function doorFlat(w: number, h: number, leaves: 1 | 2, glassH: number, glassTone: number) {
   const L = new Layer(w, h);
   L.rect(0, 0, w, h, 0);
   L.frame(0, 0, w, h, 1);
@@ -221,7 +221,7 @@ function doorFlat(w: number, h: number, leaves: 1 | 2, glassH: number, glassTone
 }
 
 /** 연습실 문이 열린 모습: 문 안의 불빛이 보인다 */
-function doorOpenFlat(w: number, h: number) {
+export function doorOpenFlat(w: number, h: number) {
   const L = new Layer(w, h);
   L.rect(0, 0, w, h, 0);
   L.frame(0, 0, w, h, 1);
@@ -238,7 +238,7 @@ function doorOpenFlat(w: number, h: number) {
 }
 
 /** 문 위의 등급 표찰 (17×13점) */
-function plateFlat(rank: string) {
+export function plateFlat(rank: string) {
   const L = new Layer(17, 13);
   L.rectInk(0, 0, 17, 13, -1);
   L.rectInk(1, 1, 15, 11, 1);
@@ -290,7 +290,7 @@ function windowFlat() {
 }
 
 /** 보관함의 앞면: 점묘 면에 서랍 셋. 서랍은 검은 금 한 줄로 가르고 흰 손잡이만 둔다. */
-function cabinetFlat(w: number, h: number, tone: number) {
+export function cabinetFlat(w: number, h: number, tone: number) {
   const L = new Layer(w, h);
   L.rect(0, 0, w, h, tone);
   const dh = Math.floor(h / 3);
@@ -642,7 +642,7 @@ export interface Patch {
   by: Float32Array;
 }
 
-function patch(values: Float32Array): Patch {
+export function patch(values: Float32Array): Patch {
   const at: number[] = [];
   for (let i = 0; i < values.length; i++) if (values[i]) at.push(i);
   return { at: Int32Array.from(at), by: Float32Array.from(at, (i) => values[i]) };
@@ -697,7 +697,7 @@ function pool(cx: number, cy: number, rx: number, ry: number, power: number) {
 }
 
 /** 물건의 화면 네모에서 누를 영역을 만든다(손가락에 맞춰 넉넉하게, 적어도 24점 = 48px) */
-function hitOf(p: { x: number; y: number; w: number; h: number }, pad = 3): [number, number, number, number] {
+export function hitOf(p: { x: number; y: number; w: number; h: number }, pad = 3): [number, number, number, number] {
   const w = Math.max(24, p.w + pad * 2);
   const h = Math.max(24, p.h + pad * 2);
   return [Math.round(p.x + p.w / 2 - w / 2), Math.round(p.y + p.h / 2 - h / 2), w, h];

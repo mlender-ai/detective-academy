@@ -17,28 +17,34 @@
   -webkit-tap-highlight-color: transparent;
 }
 
+/* 방의 그림은 장면마다 크기가 다르다(--iso-w · --iso-h 는 캔버스의 점 × 2px). 가운데에 놓고 아래에 붙인다. */
 .isostage__world {
   position: absolute;
-  left: calc(50% - 196px);
-  left: round(down, calc(50% - 196px), 2px);
+  left: calc(50% - var(--iso-w, 392px) / 2);
+  left: round(down, calc(50% - var(--iso-w, 392px) / 2), 2px);
   bottom: 0;
-  width: 392px;
-  height: 600px;
+  width: var(--iso-w, 392px);
+  height: var(--iso-h, 600px);
   cursor: pointer;
+}
+
+.isostage[data-still="true"] .isostage__world {
+  cursor: default;
 }
 
 /* 아래에 붙이되 2px 격자에서 어긋나지 않게 한다: 방의 틀의 높이가 홀수이면(화면 높이가 홀수일 때) 한 화소 올려 짝수 자리에 둔다 */
 @supports (top: round(down, 1px, 2px)) {
   .isostage__world {
-    top: round(down, calc(100% - 600px), 2px);
+    /* 방의 틀이 그림보다 높으면(긴 화면의 작은 방) 가운데에서 조금 아래에 둔다 */
+    top: round(down, min(calc((100% - var(--iso-h, 600px)) / 2 + 24px), calc(100% - var(--iso-h, 600px))), 2px);
     bottom: auto;
   }
 }
 
 .isostage canvas {
   display: block;
-  width: 392px;
-  height: 600px;
+  width: 100%;
+  height: 100%;
   image-rendering: pixelated;
 }
 
@@ -113,6 +119,114 @@
   padding: 8px 12px 8px;
   background: #000;
   /* 띠는 누름을 받아 삼킨다: 화면이 낮아 띠가 방의 윗부분을 덮을 때, 글자를 눌렀는데 밑의 창으로 걸어가는 일이 없게 */
+}
+
+/* ───────── 풀이 화면 위쪽의 띠로 놓이는 방(자료실) ─────────
+   방은 284px(142점)까지 다 보이고, 화면이 낮으면 어두운 위쪽부터 가려진다. 서술 한 줄은 그 위쪽 어둠에 얹힌다. */
+.isostage.vaultscene--iso {
+  flex: 0 1000 284px;
+  min-height: 196px;
+}
+
+.isostage.vaultscene--iso .narr {
+  min-height: 50px;
+  padding: 4px 12px 2px;
+}
+
+/* ───────── 연습실: 아래 창에 고른 서류함의 과제 셋이 놓인다 ───────── */
+.practice--iso {
+  overflow: hidden;
+}
+
+.isowin.isowin--tasks {
+  height: 184px;
+}
+
+.isotasks {
+  display: grid;
+  margin: 0;
+  padding: 0 8px 4px;
+  list-style: none;
+}
+
+.isotasks li + li {
+  background: repeating-linear-gradient(90deg, var(--m-w) 0 2px, #000 2px 6px) 0 0 / 100% 2px no-repeat;
+}
+
+/* 과제 한 줄: 제목, 그 아래에 유형과 상태(또는 보상). 눌린 줄과 권하는 줄은 뒤집힌다. */
+.isotask {
+  display: grid;
+  gap: 0;
+  width: 100%;
+  min-height: 48px;
+  margin: 0;
+  padding: 4px 4px 2px;
+  font-family: var(--m-font);
+  font-size: 16px;
+  line-height: 22px;
+  text-align: left;
+  color: var(--m-w);
+  background: none;
+  border: 0;
+  border-radius: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.isotask__title {
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: clip;
+}
+
+.isotask__meta {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--m-cap);
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.isotask[data-primary="true"] .isotask__title::before {
+  content: "▶ ";
+}
+
+.isotask:active {
+  color: #000;
+  background: var(--m-w);
+}
+
+.isocard__shut {
+  margin: 0;
+  padding: 10px;
+  font-family: var(--m-font);
+  font-size: 16px;
+  line-height: 22px;
+  color: var(--m-w);
+}
+
+/* 잠긴 서류함의 이름표는 점선 테 */
+.isospot[data-locked="true"] .isotag {
+  box-shadow: none;
+  outline: 2px dotted var(--m-w);
+  outline-offset: 0;
+}
+
+/* ───────── 시험실: 위 막대 아래에 방, 그 아래에 안내와 단추 ─────────
+   예전 화면의 띠 배경과 큰 봉투 그림은 놓지 않는다(봉투는 방 안의 책상 위에 있다). */
+.room.room--iso {
+  --room-h: 0px;
+}
+
+/* 안내는 제 높이만큼만 차지하고, 남는 높이는 모두 방이 쓴다. 화면이 낮아 방이 168px 까지 줄면 그때부터 안내가 스크롤된다. */
+.room--iso .room__scroll {
+  flex: 0 1 auto;
+  min-height: 0;
+  padding: 10px 12px 12px;
+}
+
+.isostage.examscene {
+  flex: 1 1 0;
+  min-height: 168px;
 }
 
 /* 음악 켜고 끄기: 방의 오른쪽 아래 구석(바닥 판 바깥의 어둠). 켜면 뒤집힌다. 누르는 자리는 글자보다 넓게 잡는다. */

@@ -1,9 +1,12 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { VIEW_ISO } from "../../app/variant";
 import { LiveScene, type LiveSceneHandle } from "../../components/LiveScene";
 import { Narration } from "../../components/Narration";
 import type { CodeInput, CodePuzzle } from "../../engine/types";
 import { ClueList, CodeLock, Engraved, MemoPad, memoSummary, useCodeBoard } from "../../games/CodeBreaker/CodeBreaker";
 import type { GameProps } from "../../games/logic";
+import { IsoCanvas } from "../../iso/IsoCanvas";
+import { makeVaultRoom } from "../../iso/vaultRoom";
 import { VaultScene, type VaultSpot } from "../../scene/vaultScene";
 import { HintButton, PlayBar, PlayFoot, PlayNotice, PlayOverlays } from "../playParts";
 import { usePlaySession } from "../usePlaySession";
@@ -33,6 +36,8 @@ export function ScenePlay({ puzzle, variant = "case", replay = false, onExit, on
   const story = vaultStory(puzzle);
 
   const sceneRef = useRef<LiveSceneHandle<VaultSpot>>(null);
+  // 쿼터뷰 자료실(기본). 옆에서 본 자료실은 ?view=side 로 열린다.
+  const room = useMemo(() => (VIEW_ISO ? makeVaultRoom() : null), []);
   // 마지막에 서 있던 곳을 기억한다: 풀다가 나갔다 와도 금고 앞이었으면 금고 앞에서 잇는다
   const [spot, setSpot] = useStored<VaultSpot>(`scene:${puzzle.id}`, "desk");
   /** 탐정이 실제로 도착했는가 (도착 전에는 들어서는 중이다) */
@@ -65,6 +70,7 @@ export function ScenePlay({ puzzle, variant = "case", replay = false, onExit, on
     <div
       className="screen desk inkworld sceneplay"
       data-ux="b"
+      data-view={room ? "iso" : "side"}
       data-type="code"
       data-phase={session.phase}
       data-at={spot}
@@ -72,17 +78,46 @@ export function ScenePlay({ puzzle, variant = "case", replay = false, onExit, on
     >
       <PlayBar puzzle={puzzle} session={session} variant={variant} replay={replay} onExit={onExit} />
 
-      <LiveScene
-        ref={sceneRef}
-        kind="vault"
-        make={() => new VaultScene()}
-        className="vaultscene"
-        state={{ open: solved, mark: solved ? null : spot === "desk" ? "safe" : "desk" }}
-        onArrive={() => setArrived(true)}
-        onPick={walk}
-      />
-
-      <Narration text={line} />
+      {room ? (
+        // 서술 한 줄은 방 위쪽의 어둠에 얹는다(화면이 낮으면 방의 윗부분을 띠가 가린다)
+        <IsoCanvas
+          ref={sceneRef}
+          scene={room}
+          className="vaultscene vaultscene--iso"
+          state={{ open: solved, mark: solved ? null : spot === "desk" ? "safe" : "desk" }}
+          onArrive={() => setArrived(true)}
+          caption={<Narration text={line} />}
+        >
+          {(["desk", "safe"] as const).map((id) => {
+            const [x, y, w, h] = room.hitRect(id);
+            return (
+              <button
+                key={id}
+                type="button"
+                className="isospot"
+                style={{ left: x * 2, top: y * 2, width: w * 2, height: h * 2 }}
+                data-on={spot === id}
+                aria-label={id === "desk" ? "책상: 시도 기록과 메모" : "금고: 자물쇠"}
+                data-testid={`scene-${id}`}
+                onClick={() => walk(id)}
+              />
+            );
+          })}
+        </IsoCanvas>
+      ) : (
+        <>
+          <LiveScene
+            ref={sceneRef}
+            kind="vault"
+            make={() => new VaultScene()}
+            className="vaultscene"
+            state={{ open: solved, mark: solved ? null : spot === "desk" ? "safe" : "desk" }}
+            onArrive={() => setArrived(true)}
+            onPick={walk}
+          />
+          <Narration text={line} />
+        </>
+      )}
 
       <div className="sceneplay__panel">
         {spot === "desk" ? (

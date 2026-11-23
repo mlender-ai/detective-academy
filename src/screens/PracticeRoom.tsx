@@ -3,6 +3,7 @@ import { flushSync } from "react-dom";
 import { goBack, navigate } from "../app/router";
 import { playSound } from "../app/sound";
 import { useGame } from "../app/store";
+import { VIEW_ISO } from "../app/variant";
 import { RankMark } from "../art/objects";
 import { Sprite } from "../art/pixel";
 import { DeskWood } from "../components/DeskWood";
@@ -14,6 +15,7 @@ import { formatElapsed } from "../engine/time";
 import type { GameState, PuzzleProgress, RankId } from "../engine/types";
 import { TYPE_NAME } from "../games/logic";
 import { CaseSession } from "./CaseSession";
+import { PracticeIso } from "./PracticeIso";
 
 /** 과제가 든 서랍: 등급마다 하나 (최고 등급에는 연습 과제가 없다) */
 const DRAWERS: RankId[] = RANKS.map((r) => r.id).filter((id) => practiceOfRank(id).length > 0);
@@ -41,6 +43,11 @@ function startDrawer(game: GameState): RankId {
  * 지금 등급까지의 서랍은 열려 있고, 그 위의 서랍은 승급해야 열린다. 푼 과제는 언제든 다시 풀어 볼 수 있다.
  */
 export function PracticeRoom() {
+  // 기본은 쿼터뷰 연습실이다(2026-11-23, 사용자: "나머지도 방으로"). 아래의 화면은 ?view=side 로 열린다.
+  return VIEW_ISO ? <PracticeIso /> : <PracticeDesk />;
+}
+
+function PracticeDesk() {
   const game = useGame();
   const [drawer, setDrawer] = useState<RankId>(() => lastDrawer ?? startDrawer(game));
   const [morphId, setMorphId] = useState(lastOpenedId);
