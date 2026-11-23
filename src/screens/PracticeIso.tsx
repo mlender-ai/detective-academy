@@ -131,7 +131,7 @@ export function PracticeIso() {
   const line = !selected
     ? "연습실. 벽을 따라 등급마다 서류함이 서 있다."
     : selected === "door"
-      ? "복도로 나가는 문."
+      ? "홀로 나가는 문."
       : locked
         ? `${rank}급 서류함. 자물쇠가 걸려 있다.`
         : solvedHere === sheets.length
@@ -188,11 +188,11 @@ export function PracticeIso() {
               data-locked={shut}
               data-done={done}
               data-testid={id === "door" ? "practice-door" : `drawer-${id}`}
-              aria-label={id === "door" ? "복도로 나가는 문" : `${id}급 서류함${shut ? ", 잠김" : done ? ", 모두 해결" : ""}`}
+              aria-label={id === "door" ? "홀로 나가는 문" : `${id}급 서류함${shut ? ", 잠김" : done ? ", 모두 해결" : ""}`}
               onClick={() => look(id)}
             >
               <span className="isotag" style={{ left: (tx - x) * 2, top: (ty - y) * 2 }} aria-hidden="true">
-                {id === "door" ? "복도" : id}
+                {id === "door" ? "홀" : id}
               </span>
             </button>
           );
@@ -261,7 +261,7 @@ export function PracticeIso() {
           <div className="isocard" key="door">
             <p className="isocard__head">
               <span aria-hidden="true">▶</span>
-              <span className="isocard__name">복도로 나가는 문</span>
+              <span className="isocard__name">홀로 나가는 문</span>
             </p>
             <button type="button" className="inkbtn inkbtn--block inkbtn--wine isocard__go" data-testid="practice-door-go" onClick={exit}>
               학원 홀로

@@ -1,7 +1,7 @@
 // 자료실을 "층"으로 나눠 그린다. 암호 풀이의 장면(B안의 무대, C안의 도입)이 쓴다.
 // 왼쪽에 문, 가운데에 서가와 책상(기록이 놓인 곳), 오른쪽에 금고. 방은 화면에 다 들어와서 카메라는 움직이지 않는다.
 import { fillPoly, gray, lineDots, makeSprite, putDot, rectDots, spriteCanvas, type Sprite } from "./dot";
-import type { Placed } from "./sideArt";
+import type { Placed } from "./placed";
 import { clipTo, toneLayer, tracePath, type Pt } from "./stage";
 
 /** 방 전체의 폭과 높이(점) */

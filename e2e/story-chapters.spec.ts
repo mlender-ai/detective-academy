@@ -673,6 +673,7 @@ test.describe("제4장 · 토끼의 정체", () => {
     expect(verdict.wrong).toEqual([off.id]);
     await expect(page.getByTestId("assign-wrong")).toHaveText(verdict.reason);
     await expect(page.getByTestId(`row-${off.id}`)).toHaveAttribute("data-flagged", "true");
+    await page.screenshot({ path: "docs/screenshots/story-ch4-timeline-wrong.png" });
     expect((await chapterOf(page, ch4)).wrong).toBe(1);
     await expect(page.getByTestId("story-next")).toHaveCount(0);
     // 넣어 둔 것은 저장된다

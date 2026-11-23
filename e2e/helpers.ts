@@ -70,7 +70,14 @@ export async function enterFromHome(page: Page, id: HomeSpot) {
   const spot = page.getByTestId(id);
   await expect(spot).toBeVisible();
   if ((await spot.getAttribute("data-on")) !== "true") await spot.click();
-  await homeGo(page, id).click();
+  // 탐정이 그 앞에 막 도착한 참이었다면(모션 줄이기에서는 곧바로 선다) 방금의 누름이 곧 "한 번 더 눌러 들어가기"다.
+  // 그때는 홈이 이미 사라졌으므로 큰 단추를 기다리지 않는다.
+  const go = homeGo(page, id);
+  const home = page.getByTestId("home-screen");
+  await Promise.race([go.waitFor({ state: "visible" }), home.waitFor({ state: "detached" })]);
+  if ((await home.count()) > 0 && (await go.count()) > 0) await go.click().catch(async (error) => {
+    if ((await home.count()) > 0) throw error;
+  });
 }
 
 /** QA 패널(?demo=1)로 원하는 진행 상태를 만든다 */

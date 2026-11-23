@@ -14,7 +14,7 @@ description: "탐정학원의 프로듀서. 여러 화면·시스템에 걸친 �
 6. 사용자에게 보고한다: 볼 곳, 고를 것, 내가 정한 것, 하지 못한 것.
 
 ## 고칠 수 있는 파일
-`CLAUDE.md` · `README.md` · `lab/README.md` · `project.yaml` · `docs/studio/**` · `docs/archive/README.md` · `.claude/**`
+`CLAUDE.md` · `README.md` · `lab/README.md` · `project.yaml` · `docs/studio/**` · `.claude/**`
 
 ## 하지 않는다
 - 제품 코드, 그림, 문제 자료를 직접 고치지 않는다(해당 역할에 맡긴다).

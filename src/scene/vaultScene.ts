@@ -4,7 +4,7 @@ import { detectiveSprite, shadowRadius, type Action } from "./detective";
 import { spriteCanvas } from "./dot";
 import { easeInOut, turnToward, type Scene } from "./homeScene";
 import { bracketSpots, cornerBrackets } from "./marks";
-import type { Placed } from "./sideArt";
+import type { Placed } from "./placed";
 import type { InkOp, StageFrame, ToneOp } from "./stage";
 import { V_BOX, V_WALK, VH, VW, paintVault, type VaultArt } from "./vaultArt";
 

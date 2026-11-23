@@ -3,7 +3,7 @@
 // 시점마다 사람만 달라진다: 앉아 있다 → 일어나 나간다 → 빈 의자에 가면만 걸려 있다 → 화면이 꺼진다.
 // 그리는 방식은 학원의 장면과 같다(밝기 층을 점묘로 바꾸고 먹 층을 얹는다).
 import { BAYER4, fillPoly, getDot, gray, haloDots, lineDots, makeSprite, putDot, rectDots, spriteCanvas, type Sprite } from "../../scene/dot";
-import type { Placed } from "../../scene/sideArt";
+import type { Placed } from "../../scene/placed";
 import { toneLayer, type InkOp, type StageFrame, type ToneOp } from "../../scene/stage";
 
 /** 방송 화면의 폭과 높이(점). 화면에는 두 배(328×184px)로 놓인다. */

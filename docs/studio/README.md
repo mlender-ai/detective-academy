@@ -76,14 +76,14 @@ Claude Code Game Studios(CCGS, <https://github.com/Donchitos/Claude-Code-Game-St
 
 | 역할 | 맡는 일 | 고칠 수 있는 파일 |
 |---|---|---|
-| `producer` | 범위·순서·배정, 검수 게이트, 진행 기록 | `CLAUDE.md` · `README.md` · `lab/README.md` · `project.yaml` · `docs/studio/**` · `docs/archive/README.md` · `.claude/**` |
+| `producer` | 범위·순서·배정, 검수 게이트, 진행 기록 | `CLAUDE.md` · `README.md` · `lab/README.md` · `project.yaml` · `docs/studio/**` · `.claude/**` |
 | `art-director` | 화풍, 그림 재료, 그림 검수 | `DESIGN.md` · `src/art/**` · `src/assets/**` · `src/scene/*Art.ts` · `src/iso/*Art.ts` · `src/story/art/**` · `scripts/mono-art.mjs` · `src/styles/{tokens,mono,mono-rooms,mono-pixel,pixel,pixel-rooms,art}.css` |
 | `game-designer` | 퍼즐·사건의 규칙과 내용 | `PRODUCT.md`(규칙·흐름) · `src/data/{puzzles,dailySet,people}.ts` · `src/data/sets/**` · `src/story/cases/**` |
 | `systems-designer` | 등급·시험·크레딧의 수치 | `src/data/ranks.ts` · `src/engine/creditEngine.ts` · `PRODUCT.md`(수치) |
 | `ux-designer` | 흐름·배치·터치·문구, 사용성 검수 | `src/styles/{base,components,hall,desk,rooms,live,codeux,cases,growth,story,sound,iso}.css` |
 | `gameplay-programmer` | 화면·엔진·장면 코드 | `src/app/**` · `src/screens/**` · `src/components/**` · `src/games/**` · `src/engine/**`(정책 표 제외) · `src/scene/**`(아래 두 줄 제외) · `src/iso/**`(그림 `*Art.ts` 제외) · `src/audio/**`(사운드 디자이너가 없을 때) · `src/story/{engine,scenes,components}/**` · `src/main.tsx` · `index.html` · `vite.config.ts` |
 | `qa-tester` | 실제 플레이 검수, 테스트, 회귀 | `src/tests/**` · `e2e/**` · `playwright.config.ts` · `scripts/{shot,capture-all}.mjs` · `docs/screenshots/**` |
-| `technical-artist` (필요할 때) | 렌더링, 외부 그래픽의 1비트 변환, 굽기 | `src/scene/{stage,dot,marks}.ts` · `src/fx/**` · `src/styles/fx.css` · `scripts/` 의 굽기 도구 · `lab/ascii/**` |
+| `technical-artist` (필요할 때) | 렌더링, 외부 그래픽의 1비트 변환, 굽기 | `src/scene/{stage,dot,marks}.ts` · `src/fx/**` · `src/styles/fx.css` · `scripts/` 의 굽기 도구 |
 | `sound-designer` (필요할 때) | 효과음, 음악, 재생 코드 | `src/app/sound.ts` · `src/audio/**` · `public/audio/**` · `lab/audio/**` |
 | `performance-analyst` (필요할 때) | 측정, 기술 비교 | `lab/perf/**` (제품 파일은 읽기만) |
 

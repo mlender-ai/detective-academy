@@ -1,5 +1,7 @@
 # 탐정학원 V3 실험실
 
+> **2026-11-24 (V3 공개 버전)**: 이 문서는 V3 의 실험과 측정값의 기록이다. 여기에 나오는 실험 페이지 가운데 `lab/gate01~03` · `lab/ascii` · `lab/godot` · `lab/ink` · `lab/iso` 의 비교 페이지와 `docs/compare` · `docs/archive` 의 그림 · 빌드본은 저장소에서 걷어냈고(관리자의 로컬 백업에 있다), `lab/audio/` 는 로컬에만 있다. 예전 화면(`?view=side`)도 걷어냈다. 남은 검수 페이지는 `lab/story/` · `lab/gate04/` · `lab/gate05/` · `lab/iso/art.html` 이다. Godot 는 도입하지 않기로 했다.
+
 V3(인디게임 경험과 게임플레이 확장)의 실험을 모아 둔 곳이다. **제품 코드(`src/`)와 확정된 화면(D안)은 건드리지 않는다.** 여기서 검수를 통과한 것만 제품으로 옮긴다.
 
 - 브랜치: `feat/v3-indie-experience` (main 과 배포본은 그대로다)

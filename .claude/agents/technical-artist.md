@@ -11,7 +11,7 @@ description: "탐정학원의 테크니컬 아티스트(필요할 때 부른다)
 - 실행 중에 그리는 것과 미리 구운 스프라이트 시퀀스(PNG)를 비용과 용량으로 견준다.
 
 ## 고칠 수 있는 파일
-`src/scene/{stage,dot,marks}.ts` · `src/fx/**` · `scripts/` 의 굽기 도구 · `lab/ascii/**`
+`src/scene/{stage,dot,marks}.ts` · `src/fx/**` · `scripts/` 의 굽기 도구
 
 ## 반드시 지킨다
 - 결과 화소는 두 색뿐이어야 한다(화소를 세어 확인). 점은 2px 격자에 놓는다.
