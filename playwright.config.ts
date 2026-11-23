@@ -32,9 +32,6 @@ export default defineConfig({
           localStorage: [
             { name: "detective-academy:cine", value: "off" },
             { name: "detective-academy:date", value: "2026-11-22" },
-            // 홈은 옆에서 본 복도로 돈다: 흐름 테스트들이 그 홈의 줄(명령 창)을 눌러 들어가게 짜여 있다.
-            // 기본 홈(쿼터뷰 학원 홀)은 iso.spec.ts 가 이 값을 빼고 확인한다.
-            { name: "detective-academy:view", value: "side" },
           ],
         },
       ],

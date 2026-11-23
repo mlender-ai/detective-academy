@@ -1,5 +1,5 @@
 import { chromium, expect, test, type Page } from "@playwright/test";
-import { expectLayoutOk, preset, stored } from "./helpers";
+import { enterFromHome, expectLayoutOk, preset, stored } from "./helpers";
 
 /**
  * 배경 음악(OST). 기본은 꺼짐이고, 신분증 화면에서 켜면 화면에 맞는 곡이 흐른다.
@@ -30,7 +30,7 @@ async function musicOn(page: Page, id: Parameters<typeof preset>[1] = "promoted"
 test("음악은 기본이 꺼짐이다: 음원을 내려받지 않고, 아무 곡도 흐르지 않는다", async ({ page }) => {
   const requests = audioRequests(page);
   await preset(page, "daily-unsolved");
-  await page.getByTestId("daily-file").click();
+  await enterFromHome(page, "daily-file");
   await expect(page.getByTestId("play-screen")).toBeVisible();
   await page.goBack();
   await page.goto("/?demo=1#/profile");
@@ -48,7 +48,7 @@ test("신분증에서 음악을 켜면 테마가 흐르고, 화면을 따라 곡
   await page.getByTestId("story-back").or(page.getByTestId("profile-back")).or(page.locator(".deskbar .tilebtn")).first().click();
   await expect(page.getByTestId("home-screen")).toBeVisible();
   await expect(flowing(page)).toHaveAttribute("data-music", "corridor");
-  await page.getByTestId("practice-entry").click();
+  await enterFromHome(page, "practice-entry");
   await expect(page).toHaveURL(/#\/practice$/);
   await expect(flowing(page)).toHaveAttribute("data-music", "theme");
   await page.locator('[data-testid^="practice-file-"]').first().click();

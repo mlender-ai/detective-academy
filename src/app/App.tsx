@@ -5,24 +5,23 @@ import { AdmissionScreen } from "../screens/AdmissionScreen";
 import { DailyChallenge } from "../screens/DailyChallenge";
 import { DetectiveProfile } from "../screens/DetectiveProfile";
 import { HomeIso } from "../screens/HomeIso";
-import { HomePlayable } from "../screens/HomePlayable";
-import { PracticePlay, PracticeRoom } from "../screens/PracticeRoom";
+import { PracticeIso } from "../screens/PracticeIso";
+import { PracticePlay } from "../screens/PracticeRoom";
 import { PromotionExam } from "../screens/PromotionExam";
 import { StoryCaseScreen } from "../story/scenes/StoryCaseScreen";
 import { DemoPanel, isDemoMode } from "./DemoPanel";
 import { navigate, toHash, useRoute, type Route } from "./router";
 import { useGame } from "./store";
-import { VIEW_ISO } from "./variant";
 
 function Screen({ route }: { route: Route }) {
   switch (route.name) {
     case "home":
-      // 홈은 쿼터뷰 학원 홀이다 (2026-11-23, 사용자: "쿼터뷰로"). ?view=side 면 옆에서 본 복도(V3 GATE 02 의 B안)
-      return VIEW_ISO ? <HomeIso /> : <HomePlayable />;
+      // 홈은 쿼터뷰 학원 홀이다 (2026-11-23, 사용자: "쿼터뷰로")
+      return <HomeIso />;
     case "daily":
       return <DailyChallenge />;
     case "practice":
-      return <PracticeRoom />;
+      return <PracticeIso />;
     case "practice-play":
       return <PracticePlay id={route.id} />;
     case "exam":

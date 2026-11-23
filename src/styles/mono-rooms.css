@@ -34,14 +34,6 @@
   outline-offset: -2px;
 }
 
-.desknote {
-  font-size: 16px;
-  line-height: 22px;
-  color: var(--m-w);
-  background: #000;
-  box-shadow: var(--m-frame);
-}
-
 /* 등급 휘장의 글자: 점묘 위에서도 읽히게 검은 테를 두른다 */
 .pxmedal b,
 .pxmedal[data-rank] b {
@@ -691,44 +683,6 @@
 .room--ceremony:not([data-step="0"]) .room__glow {
   opacity: 0;
   animation: m-flash 560ms steps(1) both;
-}
-
-.envelope::before {
-  inset: 8px -8px -8px 8px;
-  background: #000;
-}
-
-.envelope__letter {
-  color: var(--m-w);
-  background: #000;
-  box-shadow: var(--m-frame);
-}
-
-.envelope__letter-title {
-  font-family: var(--m-font);
-  font-size: 16px;
-  color: var(--m-w);
-}
-
-.envelope__letter-rank {
-  font-family: var(--m-font);
-  font-size: 32px;
-}
-
-.envelope__letter i {
-  background: none;
-  border-top: 2px dotted var(--m-w);
-}
-
-/* 잠긴 봉투는 반만 찍힌다. 안의 시험지가 비쳐 보이지 않게 숨긴다. */
-.envelope[data-state="locked"] .envelope__letter {
-  visibility: hidden;
-}
-
-.envelope[data-state="locked"] > .sprite:not(.envelope__lid) {
-  filter: none;
-  -webkit-mask: var(--m-ghost2);
-  mask: var(--m-ghost2);
 }
 
 .roomnote {

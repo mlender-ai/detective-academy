@@ -1,5 +1,5 @@
 /**
- * 점 격자. 움직이는 작은 그림(비, 촛불, 동전, 모래시계)을 흑백 점으로 그리는 바탕이다.
+ * 점 격자. 움직이는 작은 그림(비, 주화, 모래시계)을 흑백 점으로 그리는 바탕이다.
  * 칸 하나가 화면의 점 하나(2px)다. 칸마다 두 가지를 가진다.
  *  - 밝기(tone, 0~1): 4×4 베이어 격자로 흰 점·검은 점으로 바뀐다(중간 밝기는 점묘가 된다).
  *  - 먹(ink): 1 = 흰 점, -1 = 검은 점, 0 = 없음. 점묘 뒤에 그대로 얹힌다.
@@ -121,64 +121,6 @@ export class DotCanvas {
 
   draw(ox = 0, oy = 0, clear = false) {
     paintDots(this.grid, this.image.data, ox, oy, clear);
-    this.ctx.putImageData(this.image, 0, 0);
-  }
-}
-
-/** 장면의 밝기 층으로 쓸 회색 캔버스 (Stage 의 ToneOp 로 더하거나 곱한다) */
-export class ToneCanvas {
-  private ctx: CanvasRenderingContext2D;
-  private image: ImageData;
-
-  constructor(readonly grid: DotGrid) {
-    this.canvas = document.createElement("canvas");
-    this.canvas.width = grid.w;
-    this.canvas.height = grid.h;
-    this.ctx = this.canvas.getContext("2d")!;
-    this.image = this.ctx.createImageData(grid.w, grid.h);
-  }
-
-  readonly canvas: HTMLCanvasElement;
-
-  draw() {
-    const { tone } = this.grid;
-    const d = this.image.data;
-    for (let i = 0; i < tone.length; i++) {
-      const v = Math.max(0, Math.min(255, Math.round(tone[i] * 255)));
-      const o = i * 4;
-      d[o] = d[o + 1] = d[o + 2] = v;
-      d[o + 3] = 255;
-    }
-    this.ctx.putImageData(this.image, 0, 0);
-  }
-}
-
-/** 장면의 먹 층으로 쓸 캔버스 (흰 점 · 검은 점 · 빈칸. Stage 의 InkOp 로 얹는다) */
-export class InkCanvas {
-  private ctx: CanvasRenderingContext2D;
-  private image: ImageData;
-
-  constructor(readonly grid: DotGrid) {
-    this.canvas = document.createElement("canvas");
-    this.canvas.width = grid.w;
-    this.canvas.height = grid.h;
-    this.ctx = this.canvas.getContext("2d")!;
-    this.image = this.ctx.createImageData(grid.w, grid.h);
-  }
-
-  readonly canvas: HTMLCanvasElement;
-
-  draw() {
-    const { ink } = this.grid;
-    const d = this.image.data;
-    for (let i = 0; i < ink.length; i++) {
-      const k = ink[i];
-      const o = i * 4;
-      d[o] = k > 0 ? INK_RGB[0] : 0;
-      d[o + 1] = k > 0 ? INK_RGB[1] : 0;
-      d[o + 2] = k > 0 ? INK_RGB[2] : 0;
-      d[o + 3] = k === 0 ? 0 : 255;
-    }
     this.ctx.putImageData(this.image, 0, 0);
   }
 }
