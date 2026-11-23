@@ -12,3 +12,17 @@ playwright-report/
 
 # 실험실의 의존성
 lab/node_modules/
+
+# 테스트가 돌 때마다 다시 찍는 캡처(출력물)
+docs/screenshots/
+docs/compare/
+
+# 음악 후보와 듣는 페이지(로컬 R&D 결과물. 게임에 실린 곡은 src/assets/audio)
+lab/audio/
+
+# 대용량 모델·R&D 산출물은 저장소에 넣지 않는다
+*.safetensors
+*.ckpt
+*.gguf
+*.pck
+*.wasm.gz
