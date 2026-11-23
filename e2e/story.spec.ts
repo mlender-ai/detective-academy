@@ -2,8 +2,8 @@ import { expect, test, type Page } from "@playwright/test";
 import { enterFromHome, expectLayoutOk, offToneRatio, preset, stored } from "./helpers";
 
 /**
- * 사건 수사(스토리) · CASE D-001 「BJ 토끼의 마지막 방송」 제1장을 화면의 조작으로 확인한다.
- * 사건의 논리(정답이 하나인가, 근거가 받치는가)는 src/tests/story/d001.test.ts 가 따로 본다.
+ * 사건 수사(스토리) · CASE D-001 「BJ 토끼의 마지막 방송」 제1장과 홈의 사건 접수함을 화면의 조작으로 확인한다.
+ * 제2~4장과 사건 해결까지는 story-chapters.spec.ts, 사건의 논리(정답이 하나인가, 근거가 받치는가)는 src/tests/story/ 가 따로 본다.
  */
 
 const CHAPTER = "d001/ch1";
@@ -237,9 +237,9 @@ test.describe("제1장 · 마지막 7분", () => {
     await expect(page.getByTestId("result-records")).toHaveText("3개 확인");
     await expect(page.getByTestId("result-reward")).toHaveText("+120");
     await expect(result).toContainText("그렇다면 이 영상을 예약한 사람은 누구인가?");
-    // 다음 장은 제목만 적힌다: 들어가는 단추는 없다
+    // 다음 장의 제목이 적히고, 거기로 이어 가는 단추가 있다
     await expect(page.getByTestId("result-next")).toContainText("제2장 · 사라진 원본");
-    await expect(page.getByRole("button", { name: /제2장|사라진 원본|다음 장/ })).toHaveCount(0);
+    await expect(page.getByTestId("result-continue")).toHaveText("다음 장으로");
 
     const after = await stored(page);
     expect(after.credits).toBe(before.credits + 120);
@@ -248,23 +248,31 @@ test.describe("제1장 · 마지막 7분", () => {
     expect(after.progress).toEqual(before.progress);
     expect(after.exam).toEqual(before.exam);
 
+    // 사건 기록: 네 장이 차례로 놓여 있다. 해결한 장을 펼치면 확인된 것과 아직 모르는 것이 적혀 있다
     await page.getByTestId("result-record").click();
     const record = page.getByTestId("story-record");
     await expect(record).toBeVisible();
+    await expect(page.getByTestId("record-progress")).toContainText("해결 1/4");
+    await expect(page.getByTestId("chapter-ch1-status")).toHaveText("해결");
+    await expect(page.getByTestId("chapter-ch2-status")).toHaveText("새 장");
+    await expect(page.getByTestId("chapter-ch3-status")).toHaveText("잠김");
+    await page.getByTestId("chapter-ch1").click();
     await expect(page.getByTestId("record-conclusion")).toContainText("예약 송출");
     await expect(page.getByTestId("record-open")).toContainText("살아 있는가");
     await expect(page.getByTestId("record-open")).toContainText("예약한 사람은 누구인가");
-    await expect(record.getByTestId("evidence-e04")).toContainText("운영팀 공용 계정");
-    await expect(page.getByRole("button", { name: /제2장|사라진 원본|다음 장/ })).toHaveCount(0);
+    await page.getByTestId("record-evidence").click();
+    await expect(page.getByTestId("case-evidence").getByTestId("evidence-e04")).toContainText("운영팀 공용 계정");
+    await page.getByTestId("case-evidence-close").click();
+    await expect(page.getByTestId("record-continue")).toHaveText("제2장 수사 시작");
 
     await page.getByTestId("story-back").click();
-    await expect(page.getByTestId("story-entry-status")).toHaveText("1장 해결");
+    await expect(page.getByTestId("story-entry-status")).toHaveText("수사 중 · 1/4장");
     await expect(page.getByTestId("credit-balance")).toHaveAttribute("aria-label", `보유 수사 크레딧 ${before.credits + 120}`);
     // 승급 시험의 응시 조건은 그대로다
     await expect(page.getByTestId("exam-wait")).toBeVisible();
   });
 
-  test("해결한 뒤 다시 들어오면 사건 기록이 열리고, 장면을 다시 봐도 보상은 한 번뿐이다", async ({ page }) => {
+  test("해결한 뒤 다시 들어오면 사건 기록이 열리고, 끝 장면을 다시 보거나 다시 풀어도 보상은 한 번뿐이다", async ({ page }) => {
     await toDeduction(page);
     await solve(page);
     await page.getByTestId("ending-skip").click();
@@ -274,23 +282,44 @@ test.describe("제1장 · 마지막 7분", () => {
 
     await enterFromHome(page, "story-entry");
     await expect(page.getByTestId("story-record")).toBeVisible();
-    await page.getByTestId("record-replay").click();
-    await expect(page.getByTestId("stream")).toBeVisible();
-    // 해결한 뒤에는 모든 장면이 열려 있다
-    await page.getByTestId("step-deduction").click();
-    await expect(page.getByTestId("deduce-seal")).toBeVisible();
-    await expect(page.getByTestId("choice-dead")).toBeDisabled();
-    await page.getByTestId("story-next").click();
-    await expect(page.getByTestId("story-ending")).toBeVisible();
-    await page.getByTestId("ending-skip").click();
+    // 이미 본 끝 장면은 연출 없이 결과부터 나온다(다시 보려면 고른다). 보상은 "받음"으로 적힌다
+    await page.getByTestId("chapter-ch1").click();
+    await page.getByTestId("record-ending").click();
+    await expect(page.getByTestId("story-result")).toBeVisible();
+    await expect(page.getByTestId("ending-skip")).toHaveCount(0);
     await expect(page.getByTestId("result-reward")).toHaveText("+120 받음");
+    await page.getByTestId("result-again").click();
+    await expect(page.getByTestId("ending-label")).toHaveText("예약 영상", { timeout: 6_000 });
+    await page.getByTestId("ending-skip").click();
     await page.getByTestId("result-record").click();
     await expect(page.getByTestId("story-record")).toBeVisible();
     expect((await stored(page)).credits).toBe(credits);
-    // 뒤로 단추: 장면에서는 사건 기록으로, 사건 기록에서는 복도로
+
+    // 다시 풀기: 처음 장면부터 다시 푼다. 도입은 다시 나오지 않고, 보상도 다시 받지 않는다
+    await page.getByTestId("chapter-ch1").click();
+    await expect(page.getByTestId("record-replay-note")).toContainText("보상은 다시 받지 않는다");
     await page.getByTestId("record-replay").click();
+    await expect(page.getByTestId("stream")).toBeVisible();
+    await expect(page.getByTestId("story-title")).toContainText("다시 풀기");
+    await expect(page.getByTestId("broadcast-tally")).toContainText("0/4");
+    await expect(page.getByTestId("step-log")).toBeDisabled();
+    // 뒤로 단추: 장면에서는 사건 기록으로, 사건 기록에서는 홀로
     await page.getByTestId("story-back").click();
     await expect(page.getByTestId("story-record")).toBeVisible();
+    await expect(page.getByTestId("chapter-ch1-status")).toHaveText("해결 · 다시 푸는 중");
+    // 다시 푸는 동안에도 다음 장은 열려 있다
+    await expect(page.getByTestId("chapter-ch2-status")).toHaveText("새 장");
+    await page.getByTestId("chapter-ch1").click();
+    await page.getByTestId("record-resume").click();
+    await investigate(page);
+    await pickRecord(page);
+    await linkFacts(page);
+    await page.getByTestId("story-next").click();
+    await solve(page);
+    await expect(page.getByTestId("result-reward")).toHaveText("+120 받음");
+    expect((await stored(page)).credits).toBe(credits);
+    await page.getByTestId("result-record").click();
+    await expect(page.getByTestId("chapter-ch1-status")).toHaveText("해결");
     await page.getByTestId("story-back").click();
     await expect(page.getByTestId("home-screen")).toBeVisible();
   });
@@ -312,7 +341,7 @@ test.describe("제1장 · 마지막 7분", () => {
     await page.getByTestId("evidence-gain-ok").click();
     await pickRecord(page);
     await page.getByTestId("story-back").click();
-    await expect(page.getByTestId("story-entry-status")).toHaveText("수사 중");
+    await expect(page.getByTestId("story-entry-status")).toHaveText("수사 중 · 0/4장");
     await enterFromHome(page, "story-entry");
     // 전송 기록 장면에서 잇는다: 고른 기록과 원본 파일이 그대로 있다
     await expect(page.getByTestId("record-file")).toBeVisible();
