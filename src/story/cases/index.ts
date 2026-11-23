@@ -28,7 +28,8 @@ export interface ChapterLogic {
 }
 
 export const CASES: StoryCase[] = [D001];
-export const CASE_BY_ID: Record<string, StoryCase> = Object.fromEntries(CASES.map((c) => [c.id, c]));
+/** 사건 id → 사건. 주소로 들어온 이름("__proto__" 같은 것)이 사건으로 읽히지 않도록 바탕이 없는 표로 둔다. */
+export const CASE_BY_ID: Record<string, StoryCase> = Object.assign(Object.create(null) as Record<string, StoryCase>, Object.fromEntries(CASES.map((c) => [c.id, c])));
 
 const noRecord = () => ({ correct: false, reason: "" });
 
@@ -69,7 +70,7 @@ export function logicOf(key: string): ChapterLogic {
 }
 
 /** 사건 id 로 사건을 찾는다. 없으면 null */
-export const findCase = (id: string): StoryCase | null => (Object.prototype.hasOwnProperty.call(CASE_BY_ID, id) ? CASE_BY_ID[id] : null);
+export const findCase = (id: string): StoryCase | null => CASE_BY_ID[id] ?? null;
 
 /** 그 사건의 장을 id 로 찾는다. 없으면 null */
 export const findChapter = (c: StoryCase, chapterId: string): StoryChapter | null => c.chapters.find((ch) => ch.id === chapterId) ?? null;

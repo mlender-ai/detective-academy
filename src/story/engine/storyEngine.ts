@@ -12,7 +12,7 @@
 import { rankIndex } from "../../data/ranks";
 import { hintCost, spend } from "../../engine/creditEngine";
 import type { GameState } from "../../engine/types";
-import { CASE_BY_ID, chapterKey, hasLogic, logicOf, playableChapters } from "../cases";
+import { chapterKey, findCase, hasLogic, logicOf, playableChapters } from "../cases";
 import type {
   AssignScene,
   CaseProgress,
@@ -141,7 +141,7 @@ export function caseStatus(state: GameState, c: StoryCase): "locked" | "new" | "
  * 승급 시험의 응시 조건 같은 곳에서 사건 id 로 묻는다. 없는 사건이면 false.
  */
 export function caseSolved(state: GameState, caseId: string): boolean {
-  const c = CASE_BY_ID[caseId];
+  const c = findCase(caseId);
   if (!c || c.chapters.length === 0) return false;
   return c.chapters.every((ch) => chapterCleared(getChapter(state, c, ch)));
 }
