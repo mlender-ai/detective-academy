@@ -86,7 +86,7 @@ export function StoryIntro({ c, ch, seen, onStart, onExit }: Props) {
               </div>
               <div>
                 <dt>예상 시간</dt>
-                <dd className="num">{c.minutes}</dd>
+                <dd className="num">{ch.minutes}</dd>
               </div>
             </dl>
           </article>

@@ -1,13 +1,21 @@
 /**
- * CASE D-001 · BJ 토끼의 마지막 방송 (D급의 첫 사건).
- * 이번에 있는 것은 제1장 「마지막 7분」뿐이다. 2~4장과 사건의 전체 진상은 아직 없다.
+ * CASE D-001 · BJ 토끼의 마지막 방송 (D급의 첫 사건). 전 4장.
+ *  제1장 「마지막 7분」     마지막 방송은 실제 생방송이었는가           → 미리 만든 영상의 예약 송출이었다
+ *  제2장 「사라진 원본」    공개된 방송은 원래 만든 영상과 같은가       → 은퇴 영상이 방송 전에 글자만 바뀌어 나갔다 (ch2.ts)
+ *  제3장 「세 사람의 비밀」 영상을 고친 사람은 누구인가                 → 매니저 오상민 (ch3.ts)
+ *  제4장 「토끼의 정체」    윤서린에게 무슨 일이 있었는가               → 스스로 떠났고, 살아 있으며 무사하다 (ch4.ts)
+ * 장마다 그 장의 증거로 확정되는 것만 확정한다. 사건의 진상과 장면별 조작은 docs/story/d001.md.
  *
  * 제1장이 묻는 것은 하나다: 마지막 방송은 실시간 카메라 방송이었는가, 미리 준비된 영상이 나간 것인가.
  * 토끼의 생사, 지금 있는 곳, 영상을 예약한 사람은 이 장의 증거로 정해지지 않는다(logic.ts 가 그것까지 검증한다).
- * 방송 플랫폼 "루나캐스트"와 그 규칙은 지어낸 것이다.
+ * 방송 플랫폼 "루나캐스트"와 그 규칙은 지어낸 것이다. 등장인물은 지어낸 인물이다.
  */
 import type { StoryCase, StoryChapter } from "../../engine/storyTypes";
+import { D001_CH2 } from "./ch2";
+import { D001_CH3 } from "./ch3";
+import { D001_CH4 } from "./ch4";
 import { BROADCAST, E, F, MODE_TEXT, RULES, SESSIONS, SOURCE_FILE, lengthText } from "./logic";
+import { CAST, DOHEE } from "./people";
 
 const sessionB = SESSIONS.find((s) => s.id === SOURCE_FILE.session)!;
 const sessionC = SESSIONS.find((s) => s.status === "failed")!;
@@ -17,6 +25,7 @@ export const D001_CH1: StoryChapter = {
   id: "ch1",
   no: 1,
   title: "마지막 7분",
+  minutes: "5~8분",
   intro: [
     "2026년 11월 21일.",
     "인터넷 방송인 BJ 토끼가 마지막 방송을 남기고 사라졌다.",
@@ -302,10 +311,16 @@ export const D001: StoryCase = {
   title: "BJ 토끼의 마지막 방송",
   rank: "D",
   genre: "인터넷 방송 · 실종 의혹 · 정보 조작",
-  minutes: "5~8분",
+  totalMinutes: "20~30분",
   brief: "구독자 38만의 방송인이 「오늘 밤, 토끼는 죽습니다」라는 방송을 7분 만에 끝내고 사라졌다. 마지막 방송이 진짜 생방송이었는지 확인해 달라는 의뢰.",
-  chapters: [D001_CH1],
+  chapters: [D001_CH1, D001_CH2, D001_CH3, D001_CH4],
   plannedChapters: 4,
+  // 2~4장은 자료·판정·진행 엔진까지 있다. 화면이 붙으면 이 줄을 지운다(그때부터 홈과 사건 화면이 네 장을 모두 연다).
+  released: 1,
+  // 사건 해결 보상: 초기 실험값. D→C 승급 시험의 합격 보상과 같은 값으로 두었다.
+  reward: 100,
+  cast: CAST,
+  client: DOHEE,
 };
 
 /** 플랫폼의 이름과 규칙 (지어낸 것) */
