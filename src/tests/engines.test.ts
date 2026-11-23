@@ -329,7 +329,9 @@ describe("승급 시험: 응시 조건", () => {
     expect(PROMOTION_RULES.map((r) => r.examPuzzleIds.length)).toEqual([1, 3, 3, 4, 5]);
     // D→C 시험의 셋째 문제는 맨 뒤에 붙었다(앞의 두 문제와 순서는 그대로다)
     expect(rule("D").examPuzzleIds).toEqual(["exam-code-d-c", "exam-truth-d-c", "exam-evidence-d-c"]);
-    expect(PROMOTION_RULES.map((r) => r.requiredSolved)).toEqual([3, 5, 8, 12, 15]);
+    // D→C 는 과제 수가 아니라 사건 해결이 조건이다(과제 수는 F→D 와 같은 3)
+    expect(PROMOTION_RULES.map((r) => r.requiredSolved)).toEqual([3, 3, 8, 12, 15]);
+    expect(PROMOTION_RULES.map((r) => r.requiredCase ?? null)).toEqual([null, "d001", null, null, null]);
     const ids = PROMOTION_RULES.flatMap((r) => r.examPuzzleIds);
     expect(new Set(ids).size).toBe(16);
     for (const id of ids) expect(PUZZLE_BY_ID[id]?.category, id).toBe("exam");
@@ -793,5 +795,41 @@ describe("시간", () => {
     expect(formatCountdown(1)).toBe("00:01");
     expect(formatCountdown(0)).toBe("00:00");
     expect(formatCountdown(-5)).toBe("00:00");
+  });
+});
+
+describe("승급 시험: 사건 해결이 응시 조건인 등급(D→C)", () => {
+  const NOW_CASE = new Date("2026-11-22T03:00:00Z");
+
+  it("D급은 과제 수를 채워도 사건을 해결하기 전에는 응시할 수 없고, 해결하면 곧바로 열린다", async () => {
+    const { demoSolveCase } = await import("../story/engine/demo");
+    const { caseSolved } = await import("../story/engine/storyEngine");
+    const d = buildDemoState("promoted", NOW_CASE);
+    expect(d.rank).toBe("D");
+    const before = examStatus(d, NOW_CASE);
+    expect(before).toMatchObject({ tasksDone: true, caseRequired: "d001", caseDone: false, unlocked: false, canStart: false });
+    // 조건 미달이면 시험은 시작되지 않는다
+    expect(startExam(d, NOW_CASE)).toBe(d);
+
+    const solved = demoSolveCase(d, "d001", NOW_CASE);
+    expect(caseSolved(solved, "d001")).toBe(true);
+    // 사건 해결은 등급을 직접 올리지 않는다
+    expect(solved.rank).toBe("D");
+    expect(examStatus(solved, NOW_CASE)).toMatchObject({ caseDone: true, unlocked: true, canStart: true });
+    expect(startExam(solved, NOW_CASE).exam?.status).toBe("active");
+  });
+
+  it("사건이 조건이 아닌 등급은 사건과 무관하다", () => {
+    const f = buildDemoState("exam-ready", NOW_CASE);
+    expect(examStatus(f, NOW_CASE)).toMatchObject({ caseRequired: null, caseDone: true, canStart: true });
+  });
+
+  it("장을 세 개만 해결해서는 열리지 않는다", async () => {
+    const { clearChapter, c } = await import("./story/d001-play");
+    let s = buildDemoState("promoted", NOW_CASE);
+    for (const ch of c.chapters.slice(0, 3)) s = clearChapter(s, ch, NOW_CASE);
+    expect(examStatus(s, NOW_CASE)).toMatchObject({ caseDone: false, canStart: false });
+    s = clearChapter(s, c.chapters[3], NOW_CASE);
+    expect(examStatus(s, NOW_CASE)).toMatchObject({ caseDone: true, canStart: true });
   });
 });

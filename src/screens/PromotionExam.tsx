@@ -1,3 +1,4 @@
+import { findCase } from "../story/cases";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { gameNow } from "../app/clock";
 import { motionMs, prefersReducedMotion, useSequence } from "../app/motion";
@@ -335,6 +336,14 @@ function TaskMeter({ solved, required }: { solved: number; required: number }) {
 
 function ExamLocked({ rule, status }: { rule: PromotionRule; status: ExamStatus }) {
   const left = Math.max(0, status.required - status.solved);
+  // 사건 해결이 응시 조건인 시험(D→C): 과제 수와 사건을 따로 보여 준다
+  const needCase = status.caseRequired ? findCase(status.caseRequired) : null;
+  const caseBlocks = !!needCase && !status.caseDone;
+  const lead = !status.tasksDone
+    ? caseBlocks
+      ? `아직 응시할 수 없습니다. 과제를 ${left}개 더 해결하고, 아래의 사건을 끝까지 해결하면 봉투가 열립니다.`
+      : `아직 응시할 수 없습니다. 오늘의 추리와 연습실의 과제를 ${left}개 더 해결하면 봉투가 열립니다.`
+    : `아직 응시할 수 없습니다. ${needCase?.code ?? "사건"} 「${needCase?.title ?? ""}」을 끝까지 해결하면 봉투가 열립니다.`;
   return (
     <div className="screen room room--iso inkworld" data-state="locked" data-testid="exam-locked">
       <RoomBar title={`${rule.to}급 승급 시험`} note="응시 전" />
@@ -342,7 +351,7 @@ function ExamLocked({ rule, status }: { rule: PromotionRule; status: ExamStatus 
 
       <div className="screen__scroll room__scroll">
         <section className="roomnote leaf" aria-label="응시 조건">
-          <p className="roomnote__lead">아직 응시할 수 없습니다. 오늘의 추리와 연습실의 과제를 {left}개 더 해결하면 봉투가 열립니다.</p>
+          <p className="roomnote__lead">{lead}</p>
           <div className="roomnote__need">
             <span>해결한 과제</span>
             <b className="num" data-testid="exam-need">
@@ -350,6 +359,12 @@ function ExamLocked({ rule, status }: { rule: PromotionRule; status: ExamStatus 
             </b>
             <TaskMeter solved={status.solved} required={status.required} />
           </div>
+          {needCase && (
+            <div className="roomnote__need" data-testid="exam-need-case" data-done={status.caseDone}>
+              <span>사건 수사 · {needCase.code}</span>
+              <b>{status.caseDone ? "해결" : "미해결"}</b>
+            </div>
+          )}
           <ExamFacts rule={rule} status={status} />
         </section>
       </div>
@@ -358,9 +373,15 @@ function ExamLocked({ rule, status }: { rule: PromotionRule; status: ExamStatus 
         <button type="button" className="inkbtn deskfoot__hint" onClick={goHome}>
           학원 홀
         </button>
-        <button type="button" className="inkbtn inkbtn--wine deskfoot__submit" onClick={() => navigate({ name: "practice" }, { replace: true })} data-testid="exam-to-practice">
-          연습실로 이동
-        </button>
+        {status.tasksDone && caseBlocks ? (
+          <button type="button" className="inkbtn inkbtn--wine deskfoot__submit" onClick={() => navigate({ name: "story", id: needCase.id }, { replace: true })} data-testid="exam-to-case">
+            사건 수사로 이동
+          </button>
+        ) : (
+          <button type="button" className="inkbtn inkbtn--wine deskfoot__submit" onClick={() => navigate({ name: "practice" }, { replace: true })} data-testid="exam-to-practice">
+            연습실로 이동
+          </button>
+        )}
       </footer>
     </div>
   );

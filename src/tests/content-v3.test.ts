@@ -258,8 +258,8 @@ describe("연습실 서랍 · D→C 시험 · 특수 도전", () => {
     // 수사 지원을 쓸 수 있는 시험이라 힌트가 두 단계 있다
     expect(rule.exam.hints).toBe(true);
     expect(EXAM_EVIDENCE_D_C.hints).toHaveLength(2);
-    // 응시 조건·보상 등 시험의 다른 값은 건드리지 않았다
-    expect(rule).toMatchObject({ requiredSolved: 5, reward: 100 });
+    // 응시 조건은 사건 해결(D급의 정규 사건)이고 과제 수는 F→D 와 같다. 합격 보상은 그대로다
+    expect(rule).toMatchObject({ requiredSolved: 3, requiredCase: "d001", reward: 100 });
   });
 
   it("특수 도전은 하나뿐이고, 표시와 보상이 따로 있다", () => {

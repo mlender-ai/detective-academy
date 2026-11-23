@@ -14,7 +14,7 @@ import { formatCountdown, formatElapsed } from "../engine/time";
 import { IsoCanvas, type IsoHandle } from "../iso/IsoCanvas";
 import type { HallDecor, HallSpot } from "../iso/hallArt";
 import { HallScene } from "../iso/hallScene";
-import { CASES } from "../story/cases";
+import { CASES, findCase } from "../story/cases";
 import { caseStatus, getChapter } from "../story/engine/storyEngine";
 
 /** 지금 접수함에 들어 있는 사건 */
@@ -247,7 +247,9 @@ export function HomeIso() {
           ? `${exam.rule.to}급 응시 가능`
           : exam.unlocked
             ? `${exam.rule.to}급 오늘 응시 끝`
-            : `${exam.rule.to}급 과제 ${exam.solved}/${exam.required}`;
+            : exam.tasksDone
+              ? `${exam.rule.to}급 사건 미해결`
+              : `${exam.rule.to}급 과제 ${exam.solved}/${exam.required}`;
   const dailyState = !daily
     ? "준비 중"
     : dailyProgress.status === "solved"
@@ -370,6 +372,11 @@ export function HomeIso() {
                 {exam.rule.to}급 승급 시험 · <span className="num">{examTotal}문제</span>
               </span>
               <span>{exam.canStart ? "봉투가 기다린다." : "내일 다시 열린다."}</span>
+            </span>
+          ) : exam.tasksDone ? (
+            // 과제 수는 채웠고 사건 해결이 남았다(D→C)
+            <span className="isocard__line" data-testid="exam-need-case">
+              <span>{findCase(exam.caseRequired ?? "")?.code ?? "사건"} 해결 뒤에 열린다.</span>
             </span>
           ) : (
             <span className="isocard__line">

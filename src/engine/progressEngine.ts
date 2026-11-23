@@ -2,6 +2,8 @@
  * 진행 상태 엔진. 모든 함수는 GameState 를 받아 새 GameState 를 돌려주는 순수 함수다.
  * 저장(localStorage)과 화면은 이 파일을 모른다.
  */
+import { demoSolveCase } from "../story/engine/demo";
+import { caseSolved } from "../story/engine/storyEngine";
 import { ALL_PUZZLES, PRACTICE_PUZZLES, PUZZLE_BY_ID, dailyOpenOn, getDailyPuzzle } from "../data/puzzles";
 import { PROMOTION_RULES, RANKS, rankIndex, submitLimit, type PromotionRule } from "../data/ranks";
 import { CASES } from "../story/cases";
@@ -213,7 +215,13 @@ export interface ExamStatus {
   /** 응시 조건: 처음 해결한 과제 solved / required */
   required: number;
   solved: number;
-  /** 응시 조건을 채웠는가 */
+  /** 과제 수의 조건을 채웠는가 */
+  tasksDone: boolean;
+  /** 먼저 해결해야 하는 사건의 이름표. 없으면 null */
+  caseRequired: string | null;
+  /** 그 사건을 해결했는가(조건이 없으면 true) */
+  caseDone: boolean;
+  /** 응시 조건을 모두 채웠는가 */
   unlocked: boolean;
   /** 더 치를 시험이 없는가 (최고 등급) */
   passed: boolean;
@@ -229,10 +237,13 @@ export interface ExamStatus {
 export function examStatus(state: GameState, now: Date = new Date()): ExamStatus {
   const rule = promotionRuleFor(state.rank);
   if (!rule) {
-    return { rule: null, required: 0, solved: 0, unlocked: false, passed: state.promotions.length > 0, session: null, attemptsLeft: null, canStart: false };
+    return { rule: null, required: 0, solved: 0, tasksDone: false, caseRequired: null, caseDone: true, unlocked: false, passed: state.promotions.length > 0, session: null, attemptsLeft: null, canStart: false };
   }
   const solved = Math.min(tasksSolved(state), rule.requiredSolved);
-  const unlocked = solved >= rule.requiredSolved;
+  const tasksDone = solved >= rule.requiredSolved;
+  const caseRequired = rule.requiredCase ?? null;
+  const caseDone = caseRequired === null || caseSolved(state, caseRequired);
+  const unlocked = tasksDone && caseDone;
   const session = state.exam && state.exam.from === rule.from ? state.exam : null;
   const limit = rule.exam.attemptsPerDay;
   const attemptsLeft = limit === null ? null : Math.max(0, limit - examAttemptsToday(state, rule.from, now));
@@ -241,6 +252,9 @@ export function examStatus(state: GameState, now: Date = new Date()): ExamStatus
     rule,
     required: rule.requiredSolved,
     solved,
+    tasksDone,
+    caseRequired,
+    caseDone,
     unlocked,
     passed: false,
     session,
@@ -664,6 +678,8 @@ export function buildDemoState(preset: DemoPreset, now: Date = new Date()): Game
     const climbing = rankIndex(state.rank) < rankIndex(target.rank);
     if (!climbing && !target.ready) break;
     fillTasks(rule);
+    // 사건 해결이 응시 조건인 등급: 시험을 볼 수 있는 상태가 되려면 사건도 해결되어 있어야 한다
+    if (rule.requiredCase) state = demoSolveCase(state, rule.requiredCase, now);
     if (!climbing) break;
     // 시험을 치러 올라간다. 프리셋은 하루 응시 횟수를 쓰지 않은 상태로 남긴다.
     state = startExam(state, now);

@@ -55,6 +55,11 @@ export interface PromotionRule {
    * 등급마다 새로 세지 않고 입학부터 쌓인 수로 본다(지시서의 표 3·5·8·12·15 를 이렇게 읽었다).
    */
   requiredSolved: number;
+  /**
+   * 응시 조건: 먼저 해결해야 하는 사건(사건 수사)의 이름표. 없으면 과제 수만 본다.
+   * D→C 는 D급의 정규 사건을 끝까지 해결해야 열린다(V3 공개 버전 지시서: "사건 해결 → C급 승급 시험 해금").
+   */
+  requiredCase?: string;
   /** 시험에 차례로 나오는 문제. 모두 맞혀야 합격이다. */
   examPuzzleIds: string[];
   exam: ExamRules;
@@ -74,9 +79,11 @@ export const PROMOTION_RULES: PromotionRule[] = [
     reward: 80,
   },
   {
+    // 사건 해결이 조건이다. 과제 수는 F→D 와 같은 3 으로 두어, 사건을 끝낸 D급이 곧바로 응시할 수 있게 한다(예전 값 5)
     from: "D",
     to: "C",
-    requiredSolved: 5,
+    requiredSolved: 3,
+    requiredCase: "d001",
     examPuzzleIds: ["exam-code-d-c", "exam-truth-d-c", "exam-evidence-d-c"],
     exam: OPEN,
     reward: 100,

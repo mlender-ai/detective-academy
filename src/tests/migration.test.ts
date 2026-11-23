@@ -129,7 +129,8 @@ describe("main 의 저장으로 이어서 플레이한다", () => {
       if (!practiceUnlocked(next, puzzle) || getProgress(next, puzzle.id).status === "solved") continue;
       next = submitAnswer(next, puzzle, puzzle.solution, now).state;
     }
-    expect(examStatus(next, now).canStart).toBe(true);
+    // 과제 수는 채웠지만 D→C 는 사건(D-001)을 해결해야 열린다: 예전 사용자도 사건부터 푼다
+    expect(examStatus(next, now)).toMatchObject({ tasksDone: true, caseRequired: "d001", caseDone: false, canStart: false });
     expect(next.rank).toBe("D");
     expect(next.credits).toBeGreaterThan(350);
   });
